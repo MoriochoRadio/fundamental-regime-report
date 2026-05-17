@@ -201,6 +201,19 @@ PROGRESS.md를 갱신하고 git 커밋을 제안한다.
 - 시각화 (대화형): **plotly**
 - 시각화 (정적·리포트): **matplotlib**
 
+### 8.6 레이아웃 원칙
+- **src layout**: 메인 패키지는 `src/frr/` (이름은 `frr`).
+  설치 후 `from frr.data import dart` 형태로 임포트.
+- **LLM 단일 출구**: 외부 LLM SDK는 **오직 `src/frr/llm/`** 에서만
+  import한다. 다른 모듈은 `LLMProvider` 인터페이스만 본다.
+- **`app/` 정적 읽기 전용**: Streamlit 코드는 어떤 학습·계산·LLM 호출도
+  하지 않는다. `reports/` 의 정적 JSON과 `models/`의 학습된 모델만 읽는다.
+  → CI에서 `app/` 안에 LLM SDK import가 없는지 검사 가능.
+- **데이터 흐름 단방향**: `raw → interim → processed → reports`.
+  역방향 의존(예: processed가 raw를 다시 패치) 금지.
+- **점진 생성**: 디렉터리·파일은 *단계 진입 시점*에 필요한 만큼만 만든다.
+  빈 패키지나 placeholder 파일을 미리 두지 않는다.
+
 ---
 
 ## 9. 안티-패턴 (Do Not)
