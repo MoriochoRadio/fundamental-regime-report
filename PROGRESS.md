@@ -3,16 +3,16 @@
 이 문서는 본 프로젝트의 **변하는 상태**를 추적한다.
 변하지 않는 사실·규칙·방향은 `CLAUDE.md` 에 있다.
 
-**마지막 갱신**: 2026-05-17 (단계 1 진입)
+**마지막 갱신**: 2026-05-18 (단계 1 환경 셋업 완료)
 
 ---
 
 ## 1. 현재 상태 (Current Status)
 
-- **단계**: **1 — 데이터 셋업** (진입 직후, D1·D7·분석 기간 결정 대기)
-- **요약**: 단계 0(셋업·합의) 완료. 단계 1 진입.
-  당장 결정해야 할 것은 **D1(유니버스), D7(재무 lag), 분석 기간**.
-  결정 후 `pyproject.toml`/`configs/data.yaml`/`src/frr/data/*` 작성 시작.
+- **단계**: **1 — 데이터 셋업** (환경 셋업 완료, 가용성 검증 직전)
+- **요약**: D1/D7/기간 확정 → uv 설치 → Python 3.13 (호환성 사유) →
+  `pyproject.toml` + `uv sync` 완료. 124 패키지 설치, 모든 핵심 모듈
+  import 성공. 다음은 *유니버스 가용성 검증 스크립트* 작성·실행.
 - **원격**: https://github.com/MoriochoRadio/fundamental-regime-report (Public, MIT)
 
 ---
@@ -29,6 +29,8 @@
 - [x] AI/ML 역할 분리 원칙 명문화 (CLAUDE.md §3.4) — 직접 학습 ML이 주연, LLM은 빌드타임 배치 1회만
 - [x] 디렉터리 구조 합의 (CLAUDE.md §8.6) — src layout, 패키지명 `frr`, LLM 단일 출구, app/는 정적 읽기 전용, 점진 생성
 - [x] 단계별 진행 계획 확정 — 5단계 7.5~11주, 각 단계의 산출물·DoD·결정 시점 명시
+- [x] D1/D7/분석 기간 확정 (point-in-time KOSPI200 + 상폐 / rcept_dt+1영업일 / 2010-2024)
+- [x] **단계 1 환경 셋업 완료** — uv 설치, Python 3.13, `pyproject.toml`, `uv.lock`, `src/frr/` 패키지 스켈레톤, 모든 핵심 패키지 import 검증
 
 ---
 
@@ -41,12 +43,12 @@
 3. ~~단계별 진행 계획~~ ✅
 4. **단계 1 진입** — 다음 작업:
    1. ~~D1·D7·분석 기간 결정~~ ✅
-   2. **★ 유니버스 가용성 사전 확인** ← **다음 (사용자 조건 3)**
+   2. ~~`pyproject.toml` + `uv sync`~~ ✅ 완료
+   3. **★ 유니버스 가용성 사전 확인** ← **다음 (사용자 조건 3)**
       - pykrx로 15년치 분기별 KOSPI200 구성 조회 가능 여부
       - 상장폐지/관리종목 정보 조회 가능 여부
       - 가능한 시작일자, 분기 그라뉼래리티 한계 확인
       - 결과에 따라 D1을 조정할 수도 있음
-   3. `pyproject.toml` 작성 + `uv sync` (위 검증을 위한 최소 의존성부터)
    4. `configs/data.yaml` 작성
    5. `src/frr/data/{dart, krx, calendars, cache}.py` 작성
    6. `scripts/collect_data.py` + 룩어헤드 차단 테스트 작성
@@ -83,6 +85,16 @@
 
 > 확정되면 시간 역순으로 누적. 동시에 CLAUDE.md에도 반영한다.
 
+- **2026-05-18** — 단계 1 환경 셋업 호환성 결정:
+  - **Python 3.11 → 3.13** 으로 갱신. *사유*: `opendartreader>=0.3.0` 이
+    Python 3.13을 요구. 옛 버전(`<0.2.5`) 사용은 보안·DART API 변경 대응
+    공백 우려로 비추.
+  - **`setuptools` 70~79 범위로 핀**. *사유*: `pykrx`가 `pkg_resources`를
+    import하는데 setuptools 80에서 제거됨.
+  - **`opendartreader` 0.3+ import 이름은 소문자** (`import opendartreader`).
+    0.2.x의 `OpenDartReader` PascalCase와 다르므로 코드 작성 시 주의.
+  - **`opendartreader.__version__`이 dist 메타데이터(0.3.2)와 다른 0.2.4**
+    를 노출 — 메인테이너 동기화 누락. 실제 코드는 0.3.2. 작동 영향 없음.
 - **2026-05-17** — D1·D7·분석 기간 확정 (단계 1 진입 결정):
   - **D1 유니버스**: *point-in-time* — 분기별 KOSPI200 구성 종목
     + 분석 기간 내 KOSPI200 상장폐지 종목 (15년 union ≈ 300~350)
