@@ -3,16 +3,17 @@
 이 문서는 본 프로젝트의 **변하는 상태**를 추적한다.
 변하지 않는 사실·규칙·방향은 `CLAUDE.md` 에 있다.
 
-**마지막 갱신**: 2026-05-17
+**마지막 갱신**: 2026-05-17 (GitHub 레포 셋업 완료)
 
 ---
 
 ## 1. 현재 상태 (Current Status)
 
-- **단계**: 0 — 프로젝트 셋업 / 방향 합의
-- **요약**: 빈 프로젝트 루트(`C:\Users\neo62\FinanceProj`)에 협업 문서
-  (`CLAUDE.md`, `PROGRESS.md`) 초안 작성 완료. 아직 코드·디렉터리 구조
-  ·기술 스택은 확정되지 않았다.
+- **단계**: 0 — 프로젝트 셋업 / 방향 합의 (형상관리 기반 확보 완료)
+- **요약**: 협업 문서(`CLAUDE.md`, `PROGRESS.md`) + 라이선스/리드미/.gitignore
+  스캐폴딩 완료. **GitHub 원격 연결·초기 푸시까지 완료**.
+  다음은 *권장 기술 스택* 제안 단계.
+- **원격**: https://github.com/MoriochoRadio/fundamental-regime-report (Public, MIT)
 
 ---
 
@@ -21,6 +22,9 @@
 - [x] 프로젝트 목적·스코프·작업 방식을 사용자와 합의
 - [x] `CLAUDE.md` 초안 작성 (목표·포함/제외·방법론·산출물·협업 규칙)
 - [x] `PROGRESS.md` 초안 작성 (본 문서)
+- [x] 스캐폴딩: `README.md`, `LICENSE` (MIT), `.gitignore` (Python + data/model + .claude)
+- [x] `git init` + 초기 커밋 (`c7c1852`)
+- [x] GitHub 레포 생성·원격 연결·초기 푸시 (`origin/main`)
 
 ---
 
@@ -60,7 +64,8 @@
 
 > 확정되면 시간 역순으로 누적. 동시에 CLAUDE.md에도 반영한다.
 
-- *(아직 확정 사항 없음)*
+- **2026-05-17** — 저장소 `MoriochoRadio/fundamental-regime-report`,
+  Public, MIT 라이선스로 생성. GitHub 형상관리를 진행 기준으로 채택.
 
 ---
 
