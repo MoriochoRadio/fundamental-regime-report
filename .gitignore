@@ -1,0 +1,83 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# --- Virtual environments ---
+.venv/
+venv/
+env/
+ENV/
+
+# --- Environment / secrets ---
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets/
+credentials/
+
+# --- Jupyter / IPython ---
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# --- Data & model artifacts ---
+# (디렉터리 구조 합의 후 구체화 예정 — 지금은 광범위하게 차단)
+data/raw/
+data/interim/
+data/processed/
+data/cache/
+data/external/
+models/checkpoints/
+models/artifacts/
+*.parquet
+*.feather
+*.pkl
+*.joblib
+*.h5
+*.onnx
+
+# --- Logs / runs ---
+logs/
+runs/
+mlruns/
+wandb/
+.lightning_logs/
+tensorboard/
+
+# --- Coverage / testing ---
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- IDE / editor ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Claude Code (로컬 설정) ---
+.claude/
+
+# --- 프로젝트 산출물 임시 ---
+*.tmp
+*.bak
+*.old
