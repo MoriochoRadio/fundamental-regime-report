@@ -3,7 +3,7 @@
 이 문서는 본 프로젝트의 **변하는 상태**를 추적한다.
 변하지 않는 사실·규칙·방향은 `CLAUDE.md` 에 있다.
 
-**마지막 갱신**: 2026-05-18 (krx.py + 50 테스트 통과, 상장일 이전 캐시 혼입 이슈 기록)
+**마지막 갱신**: 2026-05-18 (dart.py + 61 테스트 통과, D10 결정 대기 추가)
 
 ---
 
@@ -53,6 +53,9 @@
 - [x] **전체 42 통과 + 1 skip** (3.17초). ruff clean.
 - [x] **`src/frr/data/krx.py` v1 작성** — `KRXSingleTicker.fetch_ohlcv(ticker, start, end, refresh)`. 캐시 정책: *요청 ⊆ 캐시 → 슬라이스 hit (네트워크 0)*, *그 외 → 합집합 범위 재페치 (캐시 점진 확장)*. 의존성 주입(`fetcher` 인자)으로 단위 테스트 네트워크 0회.
 - [x] **`tests/test_krx.py` 8 테스트 통과** — 캐시 정책 6경로(없음/⊆/왼쪽/오른쪽/gap/refresh) + 잘못된 범위 + pykrx 실호출 통합. 전체 50 + 1 skip (3.05s).
+- [x] **`.env.example` 추가** — DART 키 자리 + 발급 안내 + 보안 규칙. `.env` 는 `.gitignore` 대상.
+- [x] **`src/frr/data/dart.py` v1 작성** — `DARTReporter`: `fetch_report(ticker, year, period)` / `available_at(t)` / `latest_available(t)`. **`rcept_no` 첫 8자 → `rcept_dt`** 추출, **`available_from = rcept_dt + 1영업일`** (D7 룩어헤드 차단의 코드 구현). 캐시 = parquet + yaml sidecar, `notfound` 상태 메타 기록으로 DART 한도 절약. CFS 기본 (D10 결정 대기).
+- [x] **`tests/test_dart.py` 11 테스트 통과** — 단위 10 + **통합 1 (실 DART API + 실 캘린더 FDR fetch로 005930 2020 사업보고서 페치 + rcept_dt 2021-03-09 + available_from 2021-03-10 검증)**. 전체 61 + 1 skip (4.49s).
 
 ---
 
@@ -72,12 +75,11 @@
    6. ~~`universe_loader.py`~~ ✅ v1 + 12 테스트
    7. ~~`src/frr/data/calendars.py`~~ ✅ v1 + 20 테스트
    8. ~~`src/frr/data/fdr.py`~~ ✅ v1 + 10 테스트 (FDR 상폐 한계 발견)
-   9. ~~`src/frr/data/krx.py`~~ ✅ v1 + 8 테스트 (확장 가능 캐시)
-   10. **`src/frr/data/dart.py`** — DART 재무제표 + rcept_dt 기반 lag 적용
-      (`calendars.add_business_days(rcept_dt, +1)`)
-   11. `configs/data.yaml` (분석 기간·캐시 경로·lag·유니버스 매니페스트 경로)
+   9. ~~`src/frr/data/krx.py`~~ ✅ v1 + 8 테스트
+   10. ~~`src/frr/data/dart.py`~~ ✅ v1 + 11 테스트 (D7 룩어헤드 차단 코드 구현체)
+   11. **`configs/data.yaml`** ← **다음** — 분석 기간·캐시 경로·lag·유니버스 매니페스트 경로
    12. `scripts/collect_data.py` (배치 수집 진입점)
-   13. `tests/test_time_align.py` — D7 lag 적용 + 룩어헤드 차단 통합 테스트
+   13. `tests/test_time_align.py` — D7 lag 적용 + 룩어헤드 차단 통합 테스트 (격리 두 항목은 단계 2)
    14. GitHub Actions CI (`.github/workflows/ci.yml`) — lint + pytest
 
 ### 단계 2 진입 시 추가될 DoD (사전 메모)
@@ -133,6 +135,7 @@
 | - | 분석 기간 | ~~2010-2024 (가용성 미충족)~~ | ✅ **2015-01-01 ~ 2024-12-31** (가용성 사유) |
 | D8 | 평가 지표 | 부실 분류: AUC/PR-AUC/Brier? 국면: 안정성/지속성/사후해석성? | 미정 |
 | D9 | 모델 카드/리포트 양식 | 출력 스키마(JSON) → LLM 서술화 파이프라인 | 미정 |
+| D10 | 연결(CFS) vs 별도(OFS) 재무제표 선택 | dart.py v1은 `OpenDartReader.finstate` 기본 호출(CFS 우선). 단계 2 D2(부실 라벨)·피처 설계에 영향: 지주회사·금융지주는 별도 기반이 더 정확할 수도. 일부 종목 CFS 미작성 → OFS fallback 정책 필요. | 미정 (단계 2 진입 시 재검토) |
 
 ---
 
@@ -140,6 +143,17 @@
 
 > 확정되면 시간 역순으로 누적. 동시에 CLAUDE.md에도 반영한다.
 
+- **2026-05-18** — `dart.py` v1 작성 + D10(CFS/OFS) 결정 대기 등록:
+  - `DARTReporter.fetch_report(ticker, year, period)` 가 OpenDartReader.finstate
+    를 호출하고, **`rcept_no` 첫 8자에서 `rcept_dt`** 를 추출한 뒤
+    **`available_from = calendars.add_business_days(rcept_dt, 1)`** 로 D7
+    룩어헤드 차단을 코드화. `available_at(t)` / `latest_available(t)` 가
+    *t 이후 available_from* 인 보고서를 절대 반환하지 않음.
+  - 캐시: `data/raw/dart/{ticker}/{year}_{period}.{parquet, meta.yaml}`.
+    `notfound` 상태도 메타에 기록해 재페치 회피 (DART 한도 절약).
+  - **`finstate` 기본은 연결재무제표(CFS)**. 단계 2의 D2 부실 라벨·피처
+    설계에 영향 가능 → **D10 결정 대기** 등록 (단계 2 진입 시 재검토).
+  - 통합 테스트 1개로 사용자 키로 005930 2020 FY 페치 성공 검증.
 - **2026-05-18** — `fdr.py` 작성 + FDR 상폐 데이터 한계 발견:
   - `FDRDataSource.listing()` / `delisting()` + parquet 캐시. 종목코드
     6자리 str 강제·날짜 datetime64 정규화. Module docstring에 상폐
