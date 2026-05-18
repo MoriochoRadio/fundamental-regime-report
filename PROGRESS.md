@@ -3,7 +3,7 @@
 이 문서는 본 프로젝트의 **변하는 상태**를 추적한다.
 변하지 않는 사실·규칙·방향은 `CLAUDE.md` 에 있다.
 
-**마지막 갱신**: 2026-05-18 (collect summary 파일 출력 + 82 테스트 통과)
+**마지막 갱신**: 2026-05-18 (test_time_align + 86 테스트 통과, 사용자 전체 수집 진행 중)
 
 ---
 
@@ -63,6 +63,8 @@
 - [x] **collect summary 파일 출력 (v1.1)** — `write_summary()` 추가. `collect_universe()` 가 종료 시 자동으로 `data/raw/collect_summary.yaml` (덮어쓰기) + `collect_summary_YYYYMMDD_HHMMSS.yaml` (이력) 동시 저장. YAML 페이로드: generated_at + analysis_window + counts + failures(count·by_stage·items). CLI: `--summary-path PATH` override + `--no-summary-file` 비활성. 테스트 5 추가 (총 14). 전체 82 + 1 skip (5.78s).
 - [x] **CLI `.env` 자동 로딩 (v1.2 fix)** — 사용자 `--limit 3` 점검에서 *DART 0/120 구조적 실패* 발견. 원인: `scripts/collect_data.py` 가 `load_dotenv()` 호출 안 함 → `DART_API_KEY` 미주입. 수정: `main()` 시작부에 `load_dotenv()` 추가 (진입점 책임 패턴, 어댑터는 `os.environ` 그대로). 점검의 가치가 실제 발휘된 사례.
 - [x] **캘린더 padding (v1.3 fix)** — 2차 `--limit 3` 점검: DART 120 중 45 ok·71 notfound·**4 구조적 실패** (`2024-12-30 이후 영업일이 캘린더 범위 밖`). 원인: DART 보고서 `rcept_dt` 가 analysis_end(2024-12-31) *이후*에 접수됨 (사업보고서 +90일). 수정: `collect_universe()` 의 캘린더 fetch end 를 `analysis.end + 365일`로 확장 (`CALENDAR_END_PADDING_DAYS=365`). 캐시 fetch 비용 거의 0.
+- [x] **사용자 `--limit 3` 점검 통과** — 3차 실행: 3종목 / KRX 3 / FDR OK / **DART 49 ok + 71 notfound + 0 failures**. 구조적 실패 0. 71 notfound 는 *도메인 사실* (000030 우리은행 2017 합병 폐지 → 2018+ 보고서 미존재 ≈ 28건 + 분기보고서 부분 미제출). **사용자 전체 수집 시작** (~250 종목, 예상 1~2시간).
+- [x] **`tests/test_time_align.py` 4 테스트 통과** — 단계 1 룩어헤드 차단 통합 시나리오 (universe.as_of + dart.available_at 동시·available_from↔캘린더 일치·분기 경계·연 경계). 격리 두 항목(유니버스 변수·상폐 메타)은 *단계 2 진입 시* 추가 — module docstring 에 placeholder 명시. 전체 86 + 1 skip (6.56s).
 
 ---
 
@@ -88,8 +90,8 @@
    12. ~~`scripts/collect_data.py` + `src/frr/data/collect.py`~~ ✅ + 9 테스트
    13. **사용자 점검 실행** (`--limit 3` → 전체 수집) ← **다음 (사용자)**
        - ~~소단계 v1.1: 최종 요약 파일 저장~~ ✅ 완료. summary YAML 자동 생성.
-   14. `tests/test_time_align.py` — D7 lag 적용 + 룩어헤드 차단 통합 테스트 (격리 두 항목은 단계 2)
-   15. GitHub Actions CI (`.github/workflows/ci.yml`) — lint + pytest
+   14. ~~`tests/test_time_align.py`~~ ✅ 4 통합 테스트 (격리 두 항목은 단계 2 placeholder)
+   15. **GitHub Actions CI (`.github/workflows/ci.yml`)** ← **다음** — lint + pytest
 
 ### 단계 2 진입 시 추가될 DoD (사전 메모)
 
