@@ -25,7 +25,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Iterable
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import yaml
@@ -40,6 +40,12 @@ from frr.data.universe_loader import KOSPI200QuarterlyLoader
 logger = logging.getLogger(__name__)
 
 DEFAULT_SUMMARY_REL = Path("data/raw/collect_summary.yaml")
+
+# 캘린더 범위는 analysis_end 보다 *충분히 더 미래*까지 필요하다 —
+# DART 사업보고서는 사업연도말 + 90일 안에 접수되고, 분기보고서는 +45일.
+# 보고서의 `rcept_dt + 1영업일` 계산이 캘린더 범위 안에 들어오도록 365일
+# padding (지연 제출 케이스까지 안전). 캐시 fetch 비용은 거의 0.
+CALENDAR_END_PADDING_DAYS = 365
 
 
 @dataclass
@@ -206,10 +212,11 @@ def collect_universe(
     root = Path(project_root) if project_root else Path.cwd()
     config = load_data_config(config_path)
 
-    # 캘린더
+    # 캘린더 — analysis_end 이후 DART 보고서 접수일까지 커버하도록 padding.
     if calendar is None:
+        cal_end = config.analysis.end + timedelta(days=CALENDAR_END_PADDING_DAYS)
         calendar = KRXBusinessCalendar.from_cache_or_fetch(
-            config.analysis.start, config.analysis.end, project_root=root
+            config.analysis.start, cal_end, project_root=root
         )
 
     # FDR listing/delisting (한 번만)
