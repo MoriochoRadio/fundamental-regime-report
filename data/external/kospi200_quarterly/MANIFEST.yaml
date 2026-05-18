@@ -9,24 +9,18 @@
 
 source_system: "KRX 정보데이터시스템 (http://data.krx.co.kr)"
 menu_path: "통계 > 기본통계 > 지수 > 주가지수 > [11006] 지수구성종목"
+menu_path_note: "docs/data_sources.md §3.1에 기재된 [11005] → 실제 [11006]로 KRX UI 변경됨 (2026-05-18 확인)"
 index_code: "1028"
 index_name_kr: "코스피 200"
 index_name_en: "KOSPI 200"
 
-# 응답 CSV 공통 스키마 (2026-05-18 첫 다운로드로 확인).
-# 새 분기에서 컬럼이 달라지면 해당 분기 entry의 notes에 기록하고
-# 본 스키마를 갱신한다.
-csv_schema:
-  encoding: cp949   # BOM 없음
-  has_header: true
-  expected_row_count: 200
-  columns:
-    - { name: "종목코드",   dtype: "str",   note: "6자리 문자열, 앞 0 보존" }
-    - { name: "종목명",     dtype: "str",   note: "UTF-8 한국어" }
-    - { name: "종가",       dtype: "float", note: "분기말 영업일 종가 (KRW)" }
-    - { name: "대비",       dtype: "float", note: "전일 대비, 음수 가능" }
-    - { name: "등락률",     dtype: "float", note: "퍼센트 값 (예: 0.91 = 0.91%)" }
-    - { name: "상장시가총액", dtype: "float", note: "과학표기법 가능, 단위 KRW" }
+# 다운로드 일괄 보고 (2026-05-18, 전체 40개 분기):
+# - 모든 파일: cp949 인코딩 (UTF-8 BOM 아님), 헤더 = 종목코드,종목명,종가,대비,등락률,상장시가총액
+# - 행 수: 헤더 1행 + 데이터 200~202행 (인덱스 리밸런싱 시점 따라 일시적으로 201/202 발생)
+# - 상장시가총액 표기: 과학표기법 (예: 2.12258345E8) - 로더에서 float 파싱 필요
+# - 종목코드: 6자리 문자열 (앞 0 보존) - dtype=str 필수
+# - holiday_fallback 분기: 13/40 - 비영업일/연말폐장 입력 시 KRX가 직전 영업일로 자동 처리하지 않고
+#   '데이터 없음' 응답 - 직전 영업일로 수동 fallback 적용
 
 # 각 분기 엔트리.
 # - requested_date    : 분기말 calendar 일자 (입력 일자)
@@ -35,7 +29,8 @@ csv_schema:
 # - downloaded_at     : 다운로드 시점 (YYYY-MM-DD), null이면 미작성
 # - sha256            : 파일 sha256 해시, null이면 미작성
 # - encoding          : "utf-8-sig" 또는 "cp949"
-# - notes             : 필요 시 메모
+# - rows              : 헤더 포함 행 수 (데이터 = rows-1)
+# - notes             : 필요 시 (null이면 빈 값)
 
 quarters:
   - quarter: 2015Q1
@@ -45,316 +40,356 @@ quarters:
     downloaded_at: 2026-05-18
     sha256: 4307c9cb8251c28801c374f1ca0079a91009939b93f0e79260c979e1a3de0a7c
     encoding: cp949
-    notes: "200 rows; KRX [11006] 지수구성종목 (메뉴번호는 docs §3.1의 11005가 아닌 11006으로 변경됨). CSV 응답에 기준일 표기 없어 입력 일자(영업일) 그대로 actual_reference_date에 기록."
+    rows: 201
+    notes: null
   - quarter: 2015Q2
     requested_date: 2015-06-30
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
+    actual_reference_date: 2015-06-30
+    filename: kospi200_2015Q2_20150630.csv
+    downloaded_at: 2026-05-18
+    sha256: 70674068859688a3d89670d53e5c784ae589f38502c4c64a15cef088962953b3
+    encoding: cp949
+    rows: 201
     notes: null
   - quarter: 2015Q3
     requested_date: 2015-09-30
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
+    actual_reference_date: 2015-09-30
+    filename: kospi200_2015Q3_20150930.csv
+    downloaded_at: 2026-05-18
+    sha256: ff3a1874fb759cfce7da9a92c9b9e14ed834cee7fde80da6826e5e2262a062b7
+    encoding: cp949
+    rows: 201
     notes: null
   - quarter: 2015Q4
     requested_date: 2015-12-31
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
-    notes: null
+    actual_reference_date: 2015-12-30
+    filename: kospi200_2015Q4_20151230.csv
+    downloaded_at: 2026-05-18
+    sha256: 05b3a155cebf0a0320741d3acfc929e4aca85fc045fec99fc5c11bf37ef59db6
+    encoding: cp949
+    rows: 201
+    notes: "requested 2015-12-31 was closed (year-end); used 2015-12-30 (Wed)"
   - quarter: 2016Q1
     requested_date: 2016-03-31
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
+    actual_reference_date: 2016-03-31
+    filename: kospi200_2016Q1_20160331.csv
+    downloaded_at: 2026-05-18
+    sha256: cb5a8ebd40d7ed26e0b218ea34602db8417fc282edfa1e1ad200023ea2cfda91
+    encoding: cp949
+    rows: 201
     notes: null
   - quarter: 2016Q2
     requested_date: 2016-06-30
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
+    actual_reference_date: 2016-06-30
+    filename: kospi200_2016Q2_20160630.csv
+    downloaded_at: 2026-05-18
+    sha256: 483deb3ee23bb59e23962dc188d5d6d0dcfc55052018a48992811c68fed125f9
+    encoding: cp949
+    rows: 201
     notes: null
   - quarter: 2016Q3
     requested_date: 2016-09-30
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
+    actual_reference_date: 2016-09-30
+    filename: kospi200_2016Q3_20160930.csv
+    downloaded_at: 2026-05-18
+    sha256: a5618468a758c21af8a8b6e602488f5a624204d871be30f6710aaec5ee0b460a
+    encoding: cp949
+    rows: 201
     notes: null
   - quarter: 2016Q4
     requested_date: 2016-12-31
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
-    notes: null
+    actual_reference_date: 2016-12-29
+    filename: kospi200_2016Q4_20161229.csv
+    downloaded_at: 2026-05-18
+    sha256: 069e27b6ec870c6d4d183a4e9068c0b7270fb9bb576b5782844448ec5760cfc1
+    encoding: cp949
+    rows: 201
+    notes: "requested 2016-12-31 (Sat); used 2016-12-29 (Thu)"
   - quarter: 2017Q1
     requested_date: 2017-03-31
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
+    actual_reference_date: 2017-03-31
+    filename: kospi200_2017Q1_20170331.csv
+    downloaded_at: 2026-05-18
+    sha256: 5ccddae59c855aae93e7561ea3fb9e57be4d884f511075308912a7f0ce858b25
+    encoding: cp949
+    rows: 201
     notes: null
   - quarter: 2017Q2
     requested_date: 2017-06-30
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
+    actual_reference_date: 2017-06-30
+    filename: kospi200_2017Q2_20170630.csv
+    downloaded_at: 2026-05-18
+    sha256: e292e6e2b66d6c7644e7cfeb3ad71507bd8c27273368ca110e4a203d94d074bc
+    encoding: cp949
+    rows: 201
     notes: null
   - quarter: 2017Q3
     requested_date: 2017-09-30
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
-    notes: null
+    actual_reference_date: 2017-09-29
+    filename: kospi200_2017Q3_20170929.csv
+    downloaded_at: 2026-05-18
+    sha256: 63565bb10539c0d3c9ab70905ea5a7b051bb863594a765247070bdfc93ec2258
+    encoding: cp949
+    rows: 201
+    notes: "requested 2017-09-30 (Sat); used 2017-09-29 (Fri)"
   - quarter: 2017Q4
     requested_date: 2017-12-31
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
-    notes: null
+    actual_reference_date: 2017-12-28
+    filename: kospi200_2017Q4_20171228.csv
+    downloaded_at: 2026-05-18
+    sha256: fefb171905c1358f0b255fd878276252ba3a7ed60510019a9d360301dbfc9358
+    encoding: cp949
+    rows: 201
+    notes: "requested 2017-12-31 (Sun); used 2017-12-28 (Thu, Korea year-end closure)"
   - quarter: 2018Q1
     requested_date: 2018-03-31
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
-    notes: null
+    actual_reference_date: 2018-03-30
+    filename: kospi200_2018Q1_20180330.csv
+    downloaded_at: 2026-05-18
+    sha256: dbafdc2ac9a36a0d51fb4fb0e89f30adcdcc5883701fe59b913d48ef12631f75
+    encoding: cp949
+    rows: 202
+    notes: "requested 2018-03-31 (Sat); used 2018-03-30 (Fri)"
   - quarter: 2018Q2
     requested_date: 2018-06-30
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
-    notes: null
+    actual_reference_date: 2018-06-29
+    filename: kospi200_2018Q2_20180629.csv
+    downloaded_at: 2026-05-18
+    sha256: bc4ad23389653c308b7f600869c52d9445ee82ed49dfaf6b0a05e4d5ecdd9a68
+    encoding: cp949
+    rows: 202
+    notes: "requested 2018-06-30 (Sat); used 2018-06-29 (Fri)"
   - quarter: 2018Q3
     requested_date: 2018-09-30
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
-    notes: null
+    actual_reference_date: 2018-09-28
+    filename: kospi200_2018Q3_20180928.csv
+    downloaded_at: 2026-05-18
+    sha256: 3672d381f6d3b70ab1790ff48e24a8526e22581579fcd58d50810c8dac57419b
+    encoding: cp949
+    rows: 203
+    notes: "requested 2018-09-30 (Sun); used 2018-09-28 (Fri)"
   - quarter: 2018Q4
     requested_date: 2018-12-31
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
-    notes: null
+    actual_reference_date: 2018-12-28
+    filename: kospi200_2018Q4_20181228.csv
+    downloaded_at: 2026-05-18
+    sha256: 8a4a26630036f6cf495d40aecff2bc76b2ed7abd1c09b39d1dd07e0b0894aa96
+    encoding: cp949
+    rows: 202
+    notes: "requested 2018-12-31 (Mon, Korea year-end closure); used 2018-12-28 (Fri)"
   - quarter: 2019Q1
     requested_date: 2019-03-31
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
-    notes: null
+    actual_reference_date: 2019-03-29
+    filename: kospi200_2019Q1_20190329.csv
+    downloaded_at: 2026-05-18
+    sha256: b1d9b90f5bbd4fa9da08f01a8d02c053214876d147be7917feb9bacd2687fdb0
+    encoding: cp949
+    rows: 202
+    notes: "requested 2019-03-31 (Sun); used 2019-03-29 (Fri)"
   - quarter: 2019Q2
     requested_date: 2019-06-30
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
-    notes: null
+    actual_reference_date: 2019-06-28
+    filename: kospi200_2019Q2_20190628.csv
+    downloaded_at: 2026-05-18
+    sha256: fcf840be392a9012f0f072ddf22460871b2e00ecfd93ea2fd5ddafd8d56835ea
+    encoding: cp949
+    rows: 201
+    notes: "requested 2019-06-30 (Sun); used 2019-06-28 (Fri)"
   - quarter: 2019Q3
     requested_date: 2019-09-30
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
+    actual_reference_date: 2019-09-30
+    filename: kospi200_2019Q3_20190930.csv
+    downloaded_at: 2026-05-18
+    sha256: e663ea927b99b9c6d12f5d1edaf06094da73331984d6c45e5f3199c5b35a6ad3
+    encoding: cp949
+    rows: 201
     notes: null
   - quarter: 2019Q4
     requested_date: 2019-12-31
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
-    notes: null
+    actual_reference_date: 2019-12-30
+    filename: kospi200_2019Q4_20191230.csv
+    downloaded_at: 2026-05-18
+    sha256: 8ad233585f239fd042f599d787395f23b2ee330084171f3ecd177a5701ee7392
+    encoding: cp949
+    rows: 201
+    notes: "requested 2019-12-31 (Tue, Korea year-end closure); used 2019-12-30 (Mon)"
   - quarter: 2020Q1
     requested_date: 2020-03-31
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
+    actual_reference_date: 2020-03-31
+    filename: kospi200_2020Q1_20200331.csv
+    downloaded_at: 2026-05-18
+    sha256: 5deccdc9312076fde61148b3fcf982d84f55499642cb35ea4e2bf500549a65e1
+    encoding: cp949
+    rows: 201
     notes: null
   - quarter: 2020Q2
     requested_date: 2020-06-30
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
+    actual_reference_date: 2020-06-30
+    filename: kospi200_2020Q2_20200630.csv
+    downloaded_at: 2026-05-18
+    sha256: 4274888c51ecfc6aecda987bcd0349c1f72bd431bf0c00b49c855d383bcca173
+    encoding: cp949
+    rows: 201
     notes: null
   - quarter: 2020Q3
     requested_date: 2020-09-30
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
-    notes: null
+    actual_reference_date: 2020-09-29
+    filename: kospi200_2020Q3_20200929.csv
+    downloaded_at: 2026-05-18
+    sha256: 6635a10cda8a340e80bb12125ac6d71fac5ab50ea078efda792f628f0911d421
+    encoding: cp949
+    rows: 201
+    notes: "requested 2020-09-30 (Wed, start of Chuseok holiday); used 2020-09-29 (Tue)"
   - quarter: 2020Q4
     requested_date: 2020-12-31
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
-    notes: null
+    actual_reference_date: 2020-12-30
+    filename: kospi200_2020Q4_20201230.csv
+    downloaded_at: 2026-05-18
+    sha256: 7363f793ea9d70558232642ac5478e0483c0ee1ddfd697e17b586737e9f218a6
+    encoding: cp949
+    rows: 201
+    notes: "requested 2020-12-31 (Thu, Korea year-end closure); used 2020-12-30 (Wed)"
   - quarter: 2021Q1
     requested_date: 2021-03-31
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
+    actual_reference_date: 2021-03-31
+    filename: kospi200_2021Q1_20210331.csv
+    downloaded_at: 2026-05-18
+    sha256: 638918a6fff3c06077f5b4746aece1b3aa56bd550b17dd445abb400195a3786d
+    encoding: cp949
+    rows: 202
     notes: null
   - quarter: 2021Q2
     requested_date: 2021-06-30
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
+    actual_reference_date: 2021-06-30
+    filename: kospi200_2021Q2_20210630.csv
+    downloaded_at: 2026-05-18
+    sha256: e65d0117e118dd688c52674f17833a10a370303485340bddc25e8bcfeccd185d
+    encoding: cp949
+    rows: 201
     notes: null
   - quarter: 2021Q3
     requested_date: 2021-09-30
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
+    actual_reference_date: 2021-09-30
+    filename: kospi200_2021Q3_20210930.csv
+    downloaded_at: 2026-05-18
+    sha256: 1687c5dcc05b128ca9e6b1d173d2be55354e81b1a70e00571d206b57a34e372a
+    encoding: cp949
+    rows: 201
     notes: null
   - quarter: 2021Q4
     requested_date: 2021-12-31
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
-    notes: null
+    actual_reference_date: 2021-12-30
+    filename: kospi200_2021Q4_20211230.csv
+    downloaded_at: 2026-05-18
+    sha256: 51505ef8f98c39e916d1dab329b1bcdecda31a2407531ec7aa108b43e8374d26
+    encoding: cp949
+    rows: 201
+    notes: "requested 2021-12-31 (Fri, Korea year-end closure); used 2021-12-30 (Thu)"
   - quarter: 2022Q1
     requested_date: 2022-03-31
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
+    actual_reference_date: 2022-03-31
+    filename: kospi200_2022Q1_20220331.csv
+    downloaded_at: 2026-05-18
+    sha256: 6208878ce4818133851d7adc32a44172e592aa3329cf80320ee98fd124006d80
+    encoding: cp949
+    rows: 201
     notes: null
   - quarter: 2022Q2
     requested_date: 2022-06-30
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
+    actual_reference_date: 2022-06-30
+    filename: kospi200_2022Q2_20220630.csv
+    downloaded_at: 2026-05-18
+    sha256: ef02ce6a37c54bc16ac2f8f355389a6157b709cefa573b90fb36847a0e0b3b3c
+    encoding: cp949
+    rows: 201
     notes: null
   - quarter: 2022Q3
     requested_date: 2022-09-30
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
+    actual_reference_date: 2022-09-30
+    filename: kospi200_2022Q3_20220930.csv
+    downloaded_at: 2026-05-18
+    sha256: e072cfd0281e6812d347cb352b8f881e85a2ed40c658cf0d7921ba1d69368857
+    encoding: cp949
+    rows: 201
     notes: null
   - quarter: 2022Q4
     requested_date: 2022-12-31
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
-    notes: null
+    actual_reference_date: 2022-12-29
+    filename: kospi200_2022Q4_20221229.csv
+    downloaded_at: 2026-05-18
+    sha256: 15c395e19d64a83280f8aff0015cdbde275b76fe565260f7970695d5a743bb64
+    encoding: cp949
+    rows: 201
+    notes: "requested 2022-12-31 (Sat); used 2022-12-29 (Thu)"
   - quarter: 2023Q1
     requested_date: 2023-03-31
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
+    actual_reference_date: 2023-03-31
+    filename: kospi200_2023Q1_20230331.csv
+    downloaded_at: 2026-05-18
+    sha256: 3a3db38402c3646e0965c9c55941e193e1d84b1c25d2aa816e53ee4af9e467c1
+    encoding: cp949
+    rows: 201
     notes: null
   - quarter: 2023Q2
     requested_date: 2023-06-30
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
+    actual_reference_date: 2023-06-30
+    filename: kospi200_2023Q2_20230630.csv
+    downloaded_at: 2026-05-18
+    sha256: e939cd5cc445f446726b867693b1d56365a08037bfbab67141eca7451fb1e936
+    encoding: cp949
+    rows: 201
     notes: null
   - quarter: 2023Q3
     requested_date: 2023-09-30
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
-    notes: null
+    actual_reference_date: 2023-09-27
+    filename: kospi200_2023Q3_20230927.csv
+    downloaded_at: 2026-05-18
+    sha256: b29cb503403d15a0d092f62cf90b3c48321aa82d0f52828dc462f7ebdec22d7c
+    encoding: cp949
+    rows: 201
+    notes: "requested 2023-09-30 (Sat) and Chuseok holiday (9/28-30, 10/2-3); used 2023-09-27 (Wed)"
   - quarter: 2023Q4
     requested_date: 2023-12-31
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
-    notes: null
+    actual_reference_date: 2023-12-28
+    filename: kospi200_2023Q4_20231228.csv
+    downloaded_at: 2026-05-18
+    sha256: e66e6a6e10be06ac2fdd8f304406685e085299bd2f607f0f17fe35eb0fec710f
+    encoding: cp949
+    rows: 201
+    notes: "requested 2023-12-31 (Sun, Korea year-end closure); used 2023-12-28 (Thu)"
   - quarter: 2024Q1
     requested_date: 2024-03-31
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
-    notes: null
+    actual_reference_date: 2024-03-29
+    filename: kospi200_2024Q1_20240329.csv
+    downloaded_at: 2026-05-18
+    sha256: 6553f0b73704fccb1a9c3c43f3812552de778d08ebe19d71384c1079126000f1
+    encoding: cp949
+    rows: 201
+    notes: "requested 2024-03-31 (Sun); used 2024-03-29 (Fri)"
   - quarter: 2024Q2
     requested_date: 2024-06-30
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
-    notes: null
+    actual_reference_date: 2024-06-28
+    filename: kospi200_2024Q2_20240628.csv
+    downloaded_at: 2026-05-18
+    sha256: eeae10874e22cfce1d3d3524e0736225067cc12fdde6357a125a314087cae354
+    encoding: cp949
+    rows: 201
+    notes: "requested 2024-06-30 (Sun); used 2024-06-28 (Fri)"
   - quarter: 2024Q3
     requested_date: 2024-09-30
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
+    actual_reference_date: 2024-09-30
+    filename: kospi200_2024Q3_20240930.csv
+    downloaded_at: 2026-05-18
+    sha256: a5c9d194012a09ff433f4bbe8817ede676a0b110f50784623828e554d137014c
+    encoding: cp949
+    rows: 202
     notes: null
   - quarter: 2024Q4
     requested_date: 2024-12-31
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
-    notes: null
+    actual_reference_date: 2024-12-30
+    filename: kospi200_2024Q4_20241230.csv
+    downloaded_at: 2026-05-18
+    sha256: 6b75e5a4adfd10f76f0887ebc21fd0240f4a9146f631ce4504f6049c6018dee4
+    encoding: cp949
+    rows: 201
+    notes: "requested 2024-12-31 (Tue, Korea year-end closure); used 2024-12-30 (Mon)"

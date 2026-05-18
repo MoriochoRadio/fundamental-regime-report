@@ -41,21 +41,59 @@ def test_2015q1_is_available(loader: KOSPI200QuarterlyLoader) -> None:
     assert "2015Q1" in loader.available_quarters()
 
 
-def test_unfilled_quarters_are_hidden(loader: KOSPI200QuarterlyLoader) -> None:
-    """매니페스트에 40분기가 있지만 채워진 건 1개뿐 — 그 1개만 노출되어야."""
+def test_unfilled_quarters_are_hidden(tmp_path: Path) -> None:
+    """매니페스트에 빈 엔트리가 있으면 그 분기는 available에서 자동 제외.
+
+    실제 매니페스트의 채움 상태에 의존하지 않도록 tmp_path 격리.
+    합성 매니페스트: 채워진 1분기 + 비어 있는 1분기.
+    """
+    # 실제 2015Q1 파일과 매니페스트 엔트리를 복사해 격리 환경 구성
+    src_dir = PROJECT_ROOT / "data" / "external" / "kospi200_quarterly"
+    dst_dir = tmp_path / "data" / "external" / "kospi200_quarterly"
+    dst_dir.mkdir(parents=True)
+    csv_name = "kospi200_2015Q1_20150331.csv"
+    (dst_dir / csv_name).write_bytes((src_dir / csv_name).read_bytes())
+
+    # 실제 매니페스트에서 2015Q1 엔트리만 추출해 합성 매니페스트 구성
+    import yaml
+
+    real = yaml.safe_load((src_dir / "MANIFEST.yaml").read_text(encoding="utf-8"))
+    q1_entry = next(q for q in real["quarters"] if q["quarter"] == "2015Q1")
+    empty_entry = {
+        "quarter": "2015Q2",
+        "requested_date": "2015-06-30",
+        "actual_reference_date": None,
+        "filename": None,
+        "downloaded_at": None,
+        "sha256": None,
+        "encoding": None,
+        "notes": None,
+    }
+    synthetic = {
+        "source_system": real.get("source_system"),
+        "index_code": real.get("index_code"),
+        "quarters": [q1_entry, empty_entry],
+    }
+    (dst_dir / "MANIFEST.yaml").write_text(yaml.safe_dump(synthetic), encoding="utf-8")
+
+    loader = KOSPI200QuarterlyLoader.from_default(project_root=tmp_path)
     available = loader.available_quarters()
-    # 최소 2015Q1은 있어야 하고, 사용자가 더 다운로드하지 않은 분기는 제외됨
     assert "2015Q1" in available
-    # 채워지지 않은 임의의 분기는 노출되면 안 됨
-    assert "2024Q4" not in available  # 아직 다운로드 X
+    assert "2015Q2" not in available  # 비어 있어 hidden
 
 
 # ---- CSV 파싱 / dtype 보존 ------------------------------------------------
 
 
-def test_composition_2015q1_has_200_rows(loader: KOSPI200QuarterlyLoader) -> None:
+def test_composition_2015q1_row_count_within_bounds(loader: KOSPI200QuarterlyLoader) -> None:
+    """KOSPI200은 *목표 200종목*이지만 리밸런싱 직후 일시 201/202종목 가능.
+
+    사용자 보고(2026-05-18): 실제 다운로드 결과 데이터 행 수가 200~202의
+    범위를 가지며, 인덱스 리밸런싱 시점 직후 일시적으로 증가하는 양상.
+    따라서 정확히 200이 아니라 [200, 202] 범위로 검증.
+    """
     df = loader.composition("2015Q1")
-    assert len(df) == 200, f"KOSPI200은 200종목, 실제 {len(df)}"
+    assert 200 <= len(df) <= 202, f"KOSPI200 행 수 범위 [200,202] 밖: {len(df)}"
 
 
 def test_ticker_keeps_leading_zeros(loader: KOSPI200QuarterlyLoader) -> None:
@@ -137,7 +175,34 @@ def test_unknown_quarter_raises_keyerror(loader: KOSPI200QuarterlyLoader) -> Non
         loader.composition("1999Q1")
 
 
-def test_unverified_quarter_raises_manifest_error(loader: KOSPI200QuarterlyLoader) -> None:
-    """매니페스트에는 있으나 다운로드되지 않은 분기 직접 호출 시 명확한 에러."""
+def test_unverified_quarter_raises_manifest_error(tmp_path: Path) -> None:
+    """매니페스트에는 있으나 채워지지 않은 분기를 직접 호출하면 명확한 에러.
+
+    실제 매니페스트가 모두 채워진 상태에서도 동작하도록 tmp_path 격리.
+    """
+    dst_dir = tmp_path / "data" / "external" / "kospi200_quarterly"
+    dst_dir.mkdir(parents=True)
+    # 빈 엔트리 하나만 있는 합성 매니페스트
+    import yaml
+
+    synthetic = {
+        "source_system": "synthetic",
+        "index_code": "1028",
+        "quarters": [
+            {
+                "quarter": "2099Q4",
+                "requested_date": "2099-12-31",
+                "actual_reference_date": None,
+                "filename": None,
+                "downloaded_at": None,
+                "sha256": None,
+                "encoding": None,
+                "notes": None,
+            },
+        ],
+    }
+    (dst_dir / "MANIFEST.yaml").write_text(yaml.safe_dump(synthetic), encoding="utf-8")
+
+    loader = KOSPI200QuarterlyLoader.from_default(project_root=tmp_path)
     with pytest.raises(ManifestError):
-        loader.composition("2024Q4")
+        loader.composition("2099Q4")

@@ -3,17 +3,16 @@
 이 문서는 본 프로젝트의 **변하는 상태**를 추적한다.
 변하지 않는 사실·규칙·방향은 `CLAUDE.md` 에 있다.
 
-**마지막 갱신**: 2026-05-18 (universe_loader v1 + 12 테스트 통과)
+**마지막 갱신**: 2026-05-18 (40/40 분기 다운로드 + calendars.py + 32 테스트 통과)
 
 ---
 
 ## 1. 현재 상태 (Current Status)
 
-- **단계**: **1 — 데이터 셋업** (데이터 소스·다운로드 절차 확정, 사용자 다운로드 작업 대기)
-- **요약**: 환경 셋업·가용성 검증·데이터 소스 다층화 결정 완료.
-  KOSPI200 분기 CSV는 사용자 수동 다운로드 단계.
-  `docs/data_sources.md` + `data/external/kospi200_quarterly/MANIFEST.yaml`
-  (40분기 사전 작성) 준비 완료.
+- **단계**: **1 — 데이터 셋업** (유니버스 인프라 완성, 시세·재무 어댑터 단계)
+- **요약**: 환경·가용성·데이터 소스 결정·40/40 CSV 다운로드·universe_loader·
+  calendars 모두 완료. 32 테스트 전부 통과. 다음은 DART/FDR/pykrx 어댑터
+  + configs/data.yaml + 룩어헤드 통합 테스트 + CI.
 - **원격**: https://github.com/MoriochoRadio/fundamental-regime-report (Public, MIT)
 
 ---
@@ -40,7 +39,14 @@
 - [x] **데이터 소스 문서 + 매니페스트 양식 작성** — `docs/data_sources.md` (출처·메뉴 경로·파일명 규칙·40분기 일자표·해시 계산법), `data/external/kospi200_quarterly/MANIFEST.yaml` (40분기 사전 항목 + 채울 필드 명시), `.gitignore` 갱신(`data/external/` 추적 허용)
 - [x] **KOSPI200 1차 다운로드 (2015Q1) + 스키마 확정** — 사용자 다운로드 → sha256 검증 통과 → 200행·6컬럼·cp949·종목코드 6자리 str·등락률 percent·상장시가총액 과학표기법 확인. 카프로(006380, 2017 상폐) 포함 확인 → point-in-time 정확성 검증. CSV 스키마를 `docs/data_sources.md §3.4` + `MANIFEST.yaml` 상단 `csv_schema` 양쪽에 박제. 메뉴 번호 [11005]→[11006] 정정. 비영업일 처리 합의안(actual_reference_date 비우면 로더가 직전 영업일로 자동 채움) 문서화.
 - [x] **`src/frr/data/universe_loader.py` v1 작성** — 매니페스트 파싱, 완전 검증된 분기만 노출, sha256 무결성 검증, 종목코드 dtype 보존, `as_of(t)` 룩어헤드 차단. 점진 다운로드 친화(미완 분기 자동 skip).
-- [x] **`tests/test_universe_loader.py` 12개 테스트 통과** — 매니페스트 노출 룰, dtype 보존, 카프로 포함 (point-in-time), `as_of` 룩어헤드 차단, sha256 변조 탐지(tmp_path 격리), 미검증 분기 명확 에러. **단계 1의 첫 ✅ 단위 테스트.** ruff 통과.
+- [x] **`tests/test_universe_loader.py` 12개 테스트 통과** — 매니페스트 노출 룰, dtype 보존, 카프로 포함 (point-in-time), `as_of` 룩어헤드 차단, sha256 변조 탐지(tmp_path 격리), 미검증 분기 명확 에러. ruff 통과.
+- [x] **KOSPI200 분기 CSV 다운로드 40/40 완료** — 사용자가 모든 분기 수동 다운로드·매니페스트 작성. 발견 사항 반영:
+  - 행 수 *200~202*: 인덱스 리밸런싱 직후 일시 증가 → `docs/data_sources.md` + 테스트 범위 [200,202]로 갱신
+  - *13/40 분기 비영업일 fallback*: KRX가 비영업일 입력 시 *직전 영업일로 자동 처리 안 함* — 사용자가 수동으로 직전 영업일 적용해 `actual_reference_date`에 기록
+  - 매니페스트 헤더에 *전체 다운로드 일괄 보고* 추가 (스키마 메모 + holiday_fallback 카운트)
+- [x] **`src/frr/data/calendars.py` v1 작성** — `KRXBusinessCalendar`: FDR KS200 index 기반 영업일 집합, `is_business_day` / `previous_business_day` / `next_business_day` / `floor` / `ceil` / `add_business_days(d, n)` / `business_days_between`. parquet 캐시 자동 생성. D7(rcept_dt+1) 적용 인프라.
+- [x] **`tests/test_calendars.py` 20개 테스트 통과** — 합성 캘린더(외부 의존성 0) 19개 + 실제 FDR fetch 1개. 룩어헤드 차단 정신(`floor`는 항상 *입력 이하*) 검증.
+- [x] **전체 테스트 32/32 통과** (1.4초). ruff clean.
 
 ---
 
@@ -56,21 +62,20 @@
    2. ~~`pyproject.toml` + `uv sync`~~ ✅ 완료
    3. ~~유니버스 가용성 사전 확인~~ ✅ 완료
    4. ~~KOSPI200 분기 CSV 수동 다운로드 절차 작성~~ ✅
-   5. **★ 분기 CSV 추가 다운로드** ← **사용자 작업 (병렬 진행)**
-      - 1/40 완료. 39개 남음. 페이스 자유.
-      - 매 분기 추가될 때 매니페스트만 채우면 `universe_loader`가 즉시 인식.
-   6. ~~`universe_loader.py`~~ ✅ v1 완료
-   7. **`src/frr/data/calendars.py`** ← **다음 (제가 작성)**
-      - KRX 영업일 캘린더 (pykrx 또는 한국 공휴일 라이브러리 활용)
-      - `previous_business_day(d)` / `is_business_day(d)`
-      - universe_loader가 비영업일 분기말 처리에 사용
-   8. `src/frr/data/{dart, fdr, krx}.py` 어댑터
-      - pykrx: 단일 종목 OHLCV만
-      - FDR: 전종목 리스트·상장폐지 데이터
-      - DART: 재무제표 (rcept_dt 기반 lag 적용)
-   9. `configs/data.yaml` (분석 기간·캐시 경로·lag 등)
-   10. `scripts/collect_data.py` + 룩어헤드 차단 테스트 (배치 수집 진입점)
-   11. CI 워크플로(lint+test) 추가
+   5. ~~분기 CSV 다운로드~~ ✅ 40/40 완료
+   6. ~~`universe_loader.py`~~ ✅ v1 + 12 테스트
+   7. ~~`src/frr/data/calendars.py`~~ ✅ v1 + 20 테스트
+   8. **`src/frr/data/fdr.py`** ← **다음 (제가 작성)**
+      - 현 시점 KOSPI 전종목 (Marcap 포함)
+      - 상장폐지 데이터(ListingDate/DelistingDate/Reason)
+      - parquet 캐시
+   9. **`src/frr/data/krx.py`** — pykrx 단일 종목 OHLCV 래퍼 (캐시)
+   10. **`src/frr/data/dart.py`** — DART 재무제표 + rcept_dt 기반 lag 적용
+      (`calendars.add_business_days(rcept_dt, +1)`)
+   11. `configs/data.yaml` (분석 기간·캐시 경로·lag·유니버스 매니페스트 경로)
+   12. `scripts/collect_data.py` (배치 수집 진입점)
+   13. `tests/test_time_align.py` — D7 lag 적용 + 룩어헤드 차단 통합 테스트
+   14. GitHub Actions CI (`.github/workflows/ci.yml`) — lint + pytest
 
 ### 단계 2 진입 시 추가될 DoD (사전 메모)
 
@@ -107,6 +112,17 @@
 
 > 확정되면 시간 역순으로 누적. 동시에 CLAUDE.md에도 반영한다.
 
+- **2026-05-18** — 40/40 KOSPI200 분기 다운로드 완료 + 행 수 사실 발견:
+  - 사용자가 전 분기(2015Q1~2024Q4) 수동 다운로드·매니페스트 작성 완료.
+  - **새 사실 ①**: KOSPI200이 *목표 200종목*이지만 인덱스 리밸런싱 직후
+    며칠 동안 신규 편입 종목이 임시 추가되어 *행 수 200~202* 가능.
+    `docs/data_sources.md` §3.4 + 테스트 범위 [200,202] 갱신.
+  - **새 사실 ②**: 13/40 분기가 *비영업일 fallback* 필요. KRX는 비영업일
+    입력 시 *데이터 없음* 응답(자동 매핑 안 함). 사용자가 직전 영업일로
+    수동 보정해 매니페스트의 `actual_reference_date` 에 기록.
+- **2026-05-18** — `calendars.py` 작성: KRXBusinessCalendar (FDR KS200 기반).
+  `is_business_day` / previous/next / floor/ceil / `add_business_days(d, n)`.
+  D7(rcept_dt+1) 적용 인프라. parquet 캐시 자동.
 - **2026-05-18** — KOSPI200 1차 다운로드(2015Q1)·CSV 스키마 확정·비영업일 처리 합의:
   - KRX 메뉴 번호 [11005]→[11006] (메뉴 이름 동일)
   - CSV 스키마: cp949·6컬럼·200행. 종목코드는 *반드시 str*, 상장시가총액은
