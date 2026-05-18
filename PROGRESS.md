@@ -3,7 +3,7 @@
 이 문서는 본 프로젝트의 **변하는 상태**를 추적한다.
 변하지 않는 사실·규칙·방향은 `CLAUDE.md` 에 있다.
 
-**마지막 갱신**: 2026-05-18 (KOSPI200 CSV 1차 다운로드·스키마 확정)
+**마지막 갱신**: 2026-05-18 (universe_loader v1 + 12 테스트 통과)
 
 ---
 
@@ -39,6 +39,8 @@
   - KOSPI200 시점별 구성은 어떤 라이브러리도 직접 제공 안 함 → 수동 CSV 다운로드 필요
 - [x] **데이터 소스 문서 + 매니페스트 양식 작성** — `docs/data_sources.md` (출처·메뉴 경로·파일명 규칙·40분기 일자표·해시 계산법), `data/external/kospi200_quarterly/MANIFEST.yaml` (40분기 사전 항목 + 채울 필드 명시), `.gitignore` 갱신(`data/external/` 추적 허용)
 - [x] **KOSPI200 1차 다운로드 (2015Q1) + 스키마 확정** — 사용자 다운로드 → sha256 검증 통과 → 200행·6컬럼·cp949·종목코드 6자리 str·등락률 percent·상장시가총액 과학표기법 확인. 카프로(006380, 2017 상폐) 포함 확인 → point-in-time 정확성 검증. CSV 스키마를 `docs/data_sources.md §3.4` + `MANIFEST.yaml` 상단 `csv_schema` 양쪽에 박제. 메뉴 번호 [11005]→[11006] 정정. 비영업일 처리 합의안(actual_reference_date 비우면 로더가 직전 영업일로 자동 채움) 문서화.
+- [x] **`src/frr/data/universe_loader.py` v1 작성** — 매니페스트 파싱, 완전 검증된 분기만 노출, sha256 무결성 검증, 종목코드 dtype 보존, `as_of(t)` 룩어헤드 차단. 점진 다운로드 친화(미완 분기 자동 skip).
+- [x] **`tests/test_universe_loader.py` 12개 테스트 통과** — 매니페스트 노출 룰, dtype 보존, 카프로 포함 (point-in-time), `as_of` 룩어헤드 차단, sha256 변조 탐지(tmp_path 격리), 미검증 분기 명확 에러. **단계 1의 첫 ✅ 단위 테스트.** ruff 통과.
 
 ---
 
@@ -54,18 +56,21 @@
    2. ~~`pyproject.toml` + `uv sync`~~ ✅ 완료
    3. ~~유니버스 가용성 사전 확인~~ ✅ 완료
    4. ~~KOSPI200 분기 CSV 수동 다운로드 절차 작성~~ ✅
-   5. **★ 분기 CSV 40개 수동 다운로드** ← **사용자 작업 대기**
-      - 절차: `docs/data_sources.md` §3
-      - 매니페스트: `data/external/kospi200_quarterly/MANIFEST.yaml`
-      - 다운로드 페이스는 자유 (한 번에 다 받아도 / 나눠서 받아도 OK)
-   6. `configs/data.yaml` 작성
-   7. `src/frr/data/{dart, krx, fdr, calendars, cache, universe_loader}.py` 작성
+   5. **★ 분기 CSV 추가 다운로드** ← **사용자 작업 (병렬 진행)**
+      - 1/40 완료. 39개 남음. 페이스 자유.
+      - 매 분기 추가될 때 매니페스트만 채우면 `universe_loader`가 즉시 인식.
+   6. ~~`universe_loader.py`~~ ✅ v1 완료
+   7. **`src/frr/data/calendars.py`** ← **다음 (제가 작성)**
+      - KRX 영업일 캘린더 (pykrx 또는 한국 공휴일 라이브러리 활용)
+      - `previous_business_day(d)` / `is_business_day(d)`
+      - universe_loader가 비영업일 분기말 처리에 사용
+   8. `src/frr/data/{dart, fdr, krx}.py` 어댑터
       - pykrx: 단일 종목 OHLCV만
       - FDR: 전종목 리스트·상장폐지 데이터
-      - DART: 재무제표
-      - universe_loader: MANIFEST.yaml 읽어 시점별 KOSPI200 구성 제공
-   8. `scripts/collect_data.py` + 룩어헤드 차단 테스트 작성
-   9. CI 워크플로(lint+test) 추가
+      - DART: 재무제표 (rcept_dt 기반 lag 적용)
+   9. `configs/data.yaml` (분석 기간·캐시 경로·lag 등)
+   10. `scripts/collect_data.py` + 룩어헤드 차단 테스트 (배치 수집 진입점)
+   11. CI 워크플로(lint+test) 추가
 
 ### 단계 2 진입 시 추가될 DoD (사전 메모)
 

@@ -13,16 +13,15 @@
 
 from __future__ import annotations
 
+import contextlib
 import sys
 from collections.abc import Iterable
 
 from pykrx import stock
 
 # Windows PowerShell cp949에서도 한글이 깨지지 않도록 utf-8 강제.
-try:
+with contextlib.suppress(AttributeError, OSError):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-except (AttributeError, OSError):
-    pass
 
 KOSPI200_INDEX = "1028"  # 한국거래소 인덱스 코드 (KOSPI 200)
 
@@ -130,8 +129,10 @@ def main() -> int:
     try:
         df = stock.get_index_ohlcv_by_ticker("20100104", "20241230", KOSPI200_INDEX)
         if df is not None and len(df) > 0:
-            print(f"  OK  KOSPI200 지수 시계열: {len(df):5d}행, "
-                  f"기간 {df.index.min().date()} ~ {df.index.max().date()}")
+            print(
+                f"  OK  KOSPI200 지수 시계열: {len(df):5d}행, "
+                f"기간 {df.index.min().date()} ~ {df.index.max().date()}"
+            )
             print(f"  컬럼: {list(df.columns)}")
         else:
             print("  FAIL 빈 결과")
@@ -158,8 +159,10 @@ def main() -> int:
         for args in [("20240101", "20241231"), ("20240101",)]:
             try:
                 result = fn(*args)
-                print(f"  call args={args} -> type={type(result).__name__}, "
-                      f"len={len(result) if hasattr(result, '__len__') else '?'}")
+                print(
+                    f"  call args={args} -> type={type(result).__name__}, "
+                    f"len={len(result) if hasattr(result, '__len__') else '?'}"
+                )
                 if hasattr(result, "head"):
                     print(result.head(3).to_string())
                 break
