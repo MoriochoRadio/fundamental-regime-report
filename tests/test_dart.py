@@ -243,6 +243,103 @@ def test_latest_available_returns_none_when_no_data(
 # ---- 통합 (실 DART API 사용 — DART_API_KEY 환경변수 필요) ---------------
 
 
+def test_fs_div_cfs_recorded_in_meta(
+    tmp_path: Path, calendar_2020_2022: KRXBusinessCalendar
+) -> None:
+    """D10: fetcher 가 `_fs_div_used='CFS'` 주입 → ref.fs_div='CFS' + yaml 기록."""
+
+    def stub_cfs(ticker: str, year: int, reprt_code: str) -> pd.DataFrame:
+        df = _fake_finstate()
+        df = df.copy()
+        df["_fs_div_used"] = "CFS"
+        return df
+
+    rep = DARTReporter(
+        calendar=calendar_2020_2022, project_root=tmp_path, fetcher=stub_cfs
+    )
+    result = rep.fetch_report("005930", 2020, "FY")
+
+    assert result.ref.status == "ok"
+    assert result.ref.fs_div == "CFS"
+    # 본문 parquet 에는 _fs_div_used 컬럼이 *없어야* (drop 됨)
+    assert "_fs_div_used" not in result.df.columns
+    # 메타 yaml 에 fs_div 기록
+    import yaml as _yaml
+
+    meta = _yaml.safe_load(
+        (tmp_path / "data/raw/dart/005930/2020_FY.meta.yaml").read_text("utf-8")
+    )
+    assert meta.get("fs_div") == "CFS"
+
+
+def test_fs_div_ofs_fallback_recorded(
+    tmp_path: Path, calendar_2020_2022: KRXBusinessCalendar
+) -> None:
+    """D10: fetcher 가 OFS 만 반환 (CFS 빈 모방)."""
+
+    def stub_ofs(ticker: str, year: int, reprt_code: str) -> pd.DataFrame:
+        df = _fake_finstate()
+        df = df.copy()
+        df["_fs_div_used"] = "OFS"
+        return df
+
+    rep = DARTReporter(
+        calendar=calendar_2020_2022, project_root=tmp_path, fetcher=stub_ofs
+    )
+    result = rep.fetch_report("999999", 2020, "FY")
+
+    assert result.ref.status == "ok"
+    assert result.ref.fs_div == "OFS"
+
+
+def test_fs_div_notfound_has_none(
+    tmp_path: Path, calendar_2020_2022: KRXBusinessCalendar
+) -> None:
+    """D10: 빈 응답 (CFS·OFS 둘 다 빈) → fs_div=None."""
+
+    def stub_empty(ticker: str, year: int, reprt_code: str) -> pd.DataFrame:
+        return pd.DataFrame()
+
+    rep = DARTReporter(
+        calendar=calendar_2020_2022, project_root=tmp_path, fetcher=stub_empty
+    )
+    result = rep.fetch_report("999999", 2020, "FY")
+
+    assert result.ref.status == "notfound"
+    assert result.ref.fs_div is None
+
+
+def test_legacy_meta_without_fs_div_loads_as_none(
+    tmp_path: Path, calendar_2020_2022: KRXBusinessCalendar
+) -> None:
+    """D10: 기존 캐시 (fs_div 키 부재) 로드 시 None 으로 처리 (호환성)."""
+    # 합성 레거시 캐시 — 파일 직접 작성
+    cache_dir = tmp_path / "data" / "raw" / "dart" / "005930"
+    cache_dir.mkdir(parents=True)
+    legacy_meta = {
+        "ticker": "005930",
+        "year": 2020,
+        "period": "FY",
+        "status": "ok",
+        "rcept_dt": "2021-03-09",
+        "available_from": "2021-03-10",
+        "fetched_at": "2025-01-01",
+        # fs_div 키 부재 — 레거시
+    }
+    import yaml as _yaml
+
+    (cache_dir / "2020_FY.meta.yaml").write_text(_yaml.safe_dump(legacy_meta), "utf-8")
+    _fake_finstate().to_parquet(cache_dir / "2020_FY.parquet")
+
+    rep = DARTReporter(
+        calendar=calendar_2020_2022, project_root=tmp_path, fetcher=lambda *a: pd.DataFrame()
+    )
+    result = rep.fetch_report("005930", 2020, "FY")
+
+    assert result.ref.status == "ok"
+    assert result.ref.fs_div is None  # 레거시 호환
+
+
 @pytest.mark.integration
 def test_fetch_samsung_2020_fy_real(tmp_path: Path) -> None:
     """실 DART API로 005930 2020 사업보고서 페치."""

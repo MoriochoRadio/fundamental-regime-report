@@ -58,7 +58,13 @@ REPORT_CODES: dict[str, str] = {
 
 @dataclass(frozen=True)
 class ReportRef:
-    """보고서 메타 (페치 본문 없이 룩어헤드 결정용)."""
+    """보고서 메타 (페치 본문 없이 룩어헤드 결정용).
+
+    `fs_div` (2026-05-19 D10 추가):
+    - "CFS": 연결재무제표 (1순위)
+    - "OFS": 별도재무제표 (CFS 미작성 시 fallback)
+    - None: 기존 캐시 (fs_div 부재) 또는 notfound. 로더는 None 을 CFS 로 간주.
+    """
 
     ticker: str
     year: int
@@ -66,6 +72,7 @@ class ReportRef:
     rcept_dt: date | None
     available_from: date | None
     status: str  # "ok" or "notfound"
+    fs_div: str | None = None  # "CFS" / "OFS" / None
 
 
 @dataclass(frozen=True)
@@ -205,6 +212,7 @@ class DARTReporter:
                 rcept_dt=None,
                 available_from=None,
                 status="notfound",
+                fs_div=None,
             )
             self._write_meta(meta_path, ref)
             logger.info("dart notfound %s/%d/%s", ticker, year, period)
@@ -214,6 +222,16 @@ class DARTReporter:
         rcept_dt = _rcept_no_to_date(rcept_no)
         available_from = self._calendar.add_business_days(rcept_dt, 1)
 
+        # fs_div 추출 — 1) fetcher 가 주입한 `_fs_div_used` 우선,
+        #               2) 없으면 응답의 `fs_div` 컬럼,
+        #               3) 둘 다 없으면 None (호환성).
+        fs_div: str | None = None
+        if "_fs_div_used" in df.columns:
+            fs_div = str(df["_fs_div_used"].iloc[0])
+            df = df.drop(columns=["_fs_div_used"])
+        elif "fs_div" in df.columns:
+            fs_div = str(df["fs_div"].iloc[0])
+
         df.to_parquet(cache)
         ref = ReportRef(
             ticker=ticker,
@@ -222,6 +240,7 @@ class DARTReporter:
             rcept_dt=rcept_dt,
             available_from=available_from,
             status="ok",
+            fs_div=fs_div,
         )
         self._write_meta(meta_path, ref)
         logger.info(
@@ -242,6 +261,7 @@ class DARTReporter:
             "status": ref.status,
             "rcept_dt": ref.rcept_dt.isoformat() if ref.rcept_dt else None,
             "available_from": (ref.available_from.isoformat() if ref.available_from else None),
+            "fs_div": ref.fs_div,  # 2026-05-19 D10
             "fetched_at": date.today().isoformat(),
         }
         path.write_text(yaml.safe_dump(data, allow_unicode=True), encoding="utf-8")
@@ -257,6 +277,7 @@ class DARTReporter:
                 date.fromisoformat(data["available_from"]) if data.get("available_from") else None
             ),
             status=str(data.get("status", "ok")),
+            fs_div=data.get("fs_div"),  # 기존 캐시 (None) 호환
         )
 
 
@@ -274,7 +295,12 @@ def _rcept_no_to_date(rcept_no: str) -> date:
 
 
 def _make_default_fetcher(api_key: str | None) -> Fetcher:
-    """OpenDartReader 기반 기본 fetcher. 키 미지정 시 환경변수에서."""
+    """OpenDartReader 기반 기본 fetcher (D10: CFS 우선 + OFS fallback).
+
+    `finstate_all(corp, year, reprt_code, fs_div)` 사용 — fs_div 명시.
+    CFS 빈 응답이면 OFS 재시도. 결과 DataFrame 에 `_fs_div_used` 컬럼
+    주입해 `_fetch_and_write` 가 ReportRef.fs_div 에 기록.
+    """
     key = api_key or os.environ.get("DART_API_KEY")
     if not key:
         raise RuntimeError(
@@ -287,13 +313,21 @@ def _make_default_fetcher(api_key: str | None) -> Fetcher:
     odr = opendartreader.OpenDartReader(key)
 
     def _fetch(ticker: str, year: int, reprt_code: str) -> pd.DataFrame:
-        try:
-            df = odr.finstate(ticker, year, reprt_code=reprt_code)
-        except Exception as e:
-            logger.warning("OpenDartReader finstate 예외 %s/%d/%s: %s", ticker, year, reprt_code, e)
-            return pd.DataFrame()
-        if df is None:
-            return pd.DataFrame()
-        return df
+        for fs_div in ("CFS", "OFS"):
+            try:
+                df = odr.finstate_all(
+                    ticker, year, reprt_code=reprt_code, fs_div=fs_div
+                )
+            except Exception as e:
+                logger.warning(
+                    "OpenDartReader finstate_all 예외 %s/%d/%s/%s: %s",
+                    ticker, year, reprt_code, fs_div, e,
+                )
+                continue
+            if df is not None and len(df) > 0:
+                df = df.copy()
+                df["_fs_div_used"] = fs_div
+                return df
+        return pd.DataFrame()
 
     return _fetch
