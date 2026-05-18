@@ -96,6 +96,7 @@ def test_delisting_uses_cache_when_present(tmp_path: Path) -> None:
 # ---- 통합 테스트 (실제 FDR fetch, 네트워크 필요) -------------------------
 
 
+@pytest.mark.integration
 def test_listing_fetch_real(tmp_path: Path) -> None:
     """실제 FDR로 KOSPI 전종목을 받아 dtype 정규화 결과를 확인."""
     src = FDRDataSource(project_root=tmp_path)
@@ -107,6 +108,7 @@ def test_listing_fetch_real(tmp_path: Path) -> None:
     assert isinstance(sample, str) and len(sample) == 6
 
 
+@pytest.mark.integration
 def test_delisting_fetch_real_has_kospi_ordinary_2015_2024(tmp_path: Path) -> None:
     """실제 FDR 상폐 데이터에 *KOSPI 일반 종목(6자리)* 2015-2024 폐지가 다수 존재.
 
@@ -130,6 +132,7 @@ def test_delisting_fetch_real_has_kospi_ordinary_2015_2024(tmp_path: Path) -> No
     )
 
 
+@pytest.mark.integration
 def test_listing_writes_cache(tmp_path: Path) -> None:
     """첫 fetch 후 캐시 파일이 생성되어야."""
     src = FDRDataSource(project_root=tmp_path)

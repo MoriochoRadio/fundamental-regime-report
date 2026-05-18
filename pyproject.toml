@@ -47,6 +47,9 @@ quote-style = "double"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra --strict-markers"
+markers = [
+    "integration: 외부 API/네트워크 의존 통합 테스트 (CI 기본 제외 — `pytest -m \"not integration\"`).",
+]
 
 [build-system]
 requires = ["hatchling"]

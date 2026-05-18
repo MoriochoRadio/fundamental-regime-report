@@ -243,6 +243,7 @@ def test_latest_available_returns_none_when_no_data(
 # ---- 통합 (실 DART API 사용 — DART_API_KEY 환경변수 필요) ---------------
 
 
+@pytest.mark.integration
 def test_fetch_samsung_2020_fy_real(tmp_path: Path) -> None:
     """실 DART API로 005930 2020 사업보고서 페치."""
     import os

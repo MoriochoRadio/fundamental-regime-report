@@ -190,6 +190,7 @@ def test_invalid_range_raises(tmp_path: Path) -> None:
 # ---- 통합: 실제 pykrx --------------------------------------------------
 
 
+@pytest.mark.integration
 def test_fetch_samsung_one_month_real(tmp_path: Path) -> None:
     """실 pykrx로 005930(삼성전자) 2020-01 한 달치 OHLCV."""
     src = KRXSingleTicker(project_root=tmp_path)

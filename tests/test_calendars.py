@@ -162,6 +162,7 @@ def test_business_days_between(cal: KRXBusinessCalendar) -> None:
 # 생성되며 이후 호출은 캐시에서 로딩.
 
 
+@pytest.mark.integration
 def test_fetch_from_fdr_january_2018() -> None:
     """실제 KRX 2018년 1월 영업일을 받아 알려진 휴장일·영업일을 확인."""
     cal = KRXBusinessCalendar.fetch_from_fdr(date(2018, 1, 1), date(2018, 1, 31))

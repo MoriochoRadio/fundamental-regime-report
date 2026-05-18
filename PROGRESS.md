@@ -3,7 +3,7 @@
 이 문서는 본 프로젝트의 **변하는 상태**를 추적한다.
 변하지 않는 사실·규칙·방향은 `CLAUDE.md` 에 있다.
 
-**마지막 갱신**: 2026-05-18 (test_time_align + 86 테스트 통과, 사용자 전체 수집 진행 중)
+**마지막 갱신**: 2026-05-18 (단계 1 코드 완료 — CI + integration marker)
 
 ---
 
@@ -65,6 +65,7 @@
 - [x] **캘린더 padding (v1.3 fix)** — 2차 `--limit 3` 점검: DART 120 중 45 ok·71 notfound·**4 구조적 실패** (`2024-12-30 이후 영업일이 캘린더 범위 밖`). 원인: DART 보고서 `rcept_dt` 가 analysis_end(2024-12-31) *이후*에 접수됨 (사업보고서 +90일). 수정: `collect_universe()` 의 캘린더 fetch end 를 `analysis.end + 365일`로 확장 (`CALENDAR_END_PADDING_DAYS=365`). 캐시 fetch 비용 거의 0.
 - [x] **사용자 `--limit 3` 점검 통과** — 3차 실행: 3종목 / KRX 3 / FDR OK / **DART 49 ok + 71 notfound + 0 failures**. 구조적 실패 0. 71 notfound 는 *도메인 사실* (000030 우리은행 2017 합병 폐지 → 2018+ 보고서 미존재 ≈ 28건 + 분기보고서 부분 미제출). **사용자 전체 수집 시작** (~250 종목, 예상 1~2시간).
 - [x] **`tests/test_time_align.py` 4 테스트 통과** — 단계 1 룩어헤드 차단 통합 시나리오 (universe.as_of + dart.available_at 동시·available_from↔캘린더 일치·분기 경계·연 경계). 격리 두 항목(유니버스 변수·상폐 메타)은 *단계 2 진입 시* 추가 — module docstring 에 placeholder 명시. 전체 86 + 1 skip (6.56s).
+- [x] **`.github/workflows/ci.yml` 작성 + integration marker 분리** — pyproject 에 `integration` marker 등록, 외부 API 의존 6 테스트(FDR/pykrx/DART)에 `@pytest.mark.integration` 부여. CI 워크플로: actions/checkout@v4 → setup-uv@v5 → Python 3.13 → `uv sync --frozen` → ruff check → ruff format --check → `pytest -m "not integration"`. **CI 단위 80 + 1 skip (2.29s, 네트워크·키 0)**. 로컬 통합 6 (3.54s). 전체 86 + 1 skip (5.06s).
 
 ---
 
@@ -91,7 +92,9 @@
    13. **사용자 점검 실행** (`--limit 3` → 전체 수집) ← **다음 (사용자)**
        - ~~소단계 v1.1: 최종 요약 파일 저장~~ ✅ 완료. summary YAML 자동 생성.
    14. ~~`tests/test_time_align.py`~~ ✅ 4 통합 테스트 (격리 두 항목은 단계 2 placeholder)
-   15. **GitHub Actions CI (`.github/workflows/ci.yml`)** ← **다음** — lint + pytest
+   15. ~~GitHub Actions CI~~ ✅ — lint + format + 단위 pytest (-m "not integration")
+
+**→ 단계 1 코드 작업 완료. 다음: 사용자 전체 수집 완료 보고 + 단계 2 진입 전 D2/D8/D9/D10 결정.**
 
 ### 단계 2 진입 시 추가될 DoD (사전 메모)
 
