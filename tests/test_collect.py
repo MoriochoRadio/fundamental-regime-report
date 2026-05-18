@@ -11,12 +11,15 @@ from datetime import date
 from pathlib import Path
 
 import pandas as pd
+import yaml
 
 from frr.data.collect import (
+    CollectionFailure,
     CollectionSummary,
     build_universe_union,
     collect_one_ticker,
     collect_universe,
+    write_summary,
 )
 from frr.data.dart import ReportRef, ReportResult
 
@@ -322,3 +325,116 @@ def test_collect_universe_fdr_failure_recorded(tmp_path: Path) -> None:
     assert any(f.stage == "fdr_listing" for f in summary.failures)
     # FDR 실패에도 종목 수집은 계속
     assert summary.n_krx_ok == 1
+
+
+# ---- write_summary 단위 + collect_universe 통합 ------------------------
+
+
+def test_write_summary_creates_yaml(tmp_path: Path) -> None:
+    """합성 summary 를 yaml 로 직렬화한 결과 파일 + 내용 검증."""
+    summary = CollectionSummary(
+        n_tickers=2,
+        n_krx_ok=2,
+        n_dart_ok=1,
+        n_dart_notfound=1,
+        fdr_listing_ok=True,
+        fdr_delisting_ok=True,
+        failures=[
+            CollectionFailure(ticker="999999", stage="krx", detail="some error"),
+        ],
+    )
+    out = tmp_path / "out" / "summary.yaml"
+    latest, backup = write_summary(
+        summary,
+        config_path=Path("configs/data.yaml"),
+        analysis_start=date(2020, 1, 1),
+        analysis_end=date(2020, 12, 31),
+        summary_path=out,
+    )
+
+    assert latest == out
+    assert latest.exists()
+    assert backup is not None and backup.exists()
+
+    payload = yaml.safe_load(latest.read_text(encoding="utf-8"))
+    assert payload["counts"]["n_tickers"] == 2
+    assert payload["counts"]["n_krx_ok"] == 2
+    assert payload["analysis_window"]["start"] == "2020-01-01"
+    assert payload["failures"]["count"] == 1
+    assert payload["failures"]["by_stage"] == {"krx": 1}
+    assert payload["failures"]["items"][0]["ticker"] == "999999"
+
+
+def test_write_summary_can_skip_backup(tmp_path: Path) -> None:
+    summary = CollectionSummary(n_tickers=0)
+    out = tmp_path / "s.yaml"
+    latest, backup = write_summary(
+        summary,
+        config_path=Path("c.yaml"),
+        analysis_start=date(2020, 1, 1),
+        analysis_end=date(2020, 12, 31),
+        summary_path=out,
+        backup_with_timestamp=False,
+    )
+    assert latest.exists()
+    assert backup is None
+
+
+def test_collect_universe_writes_summary_by_default(tmp_path: Path) -> None:
+    cfg_yaml = _make_config_yaml(tmp_path)
+    loader = StubLoader({"2020Q1": ["005930"]})
+
+    collect_universe(
+        config_path=cfg_yaml,
+        project_root=tmp_path,
+        loader=loader,  # type: ignore[arg-type]
+        fdr=StubFDR(),  # type: ignore[arg-type]
+        krx=StubKRX(),  # type: ignore[arg-type]
+        dart=StubDART(),  # type: ignore[arg-type]
+        calendar=object(),  # type: ignore[arg-type]
+    )
+
+    default_path = tmp_path / "data" / "raw" / "collect_summary.yaml"
+    assert default_path.exists()
+    payload = yaml.safe_load(default_path.read_text(encoding="utf-8"))
+    assert payload["counts"]["n_tickers"] == 1
+
+
+def test_collect_universe_no_summary_when_disabled(tmp_path: Path) -> None:
+    cfg_yaml = _make_config_yaml(tmp_path)
+    loader = StubLoader({"2020Q1": ["005930"]})
+
+    collect_universe(
+        config_path=cfg_yaml,
+        project_root=tmp_path,
+        loader=loader,  # type: ignore[arg-type]
+        fdr=StubFDR(),  # type: ignore[arg-type]
+        krx=StubKRX(),  # type: ignore[arg-type]
+        dart=StubDART(),  # type: ignore[arg-type]
+        calendar=object(),  # type: ignore[arg-type]
+        write_summary_file=False,
+    )
+
+    default_path = tmp_path / "data" / "raw" / "collect_summary.yaml"
+    assert not default_path.exists()
+
+
+def test_collect_universe_custom_summary_path(tmp_path: Path) -> None:
+    cfg_yaml = _make_config_yaml(tmp_path)
+    loader = StubLoader({"2020Q1": ["005930"]})
+    custom = tmp_path / "logs" / "custom.yaml"
+
+    collect_universe(
+        config_path=cfg_yaml,
+        project_root=tmp_path,
+        loader=loader,  # type: ignore[arg-type]
+        fdr=StubFDR(),  # type: ignore[arg-type]
+        krx=StubKRX(),  # type: ignore[arg-type]
+        dart=StubDART(),  # type: ignore[arg-type]
+        calendar=object(),  # type: ignore[arg-type]
+        summary_path=custom,
+    )
+
+    assert custom.exists()
+    # default 경로는 사용되지 않음
+    assert not (tmp_path / "data" / "raw" / "collect_summary.yaml").exists()

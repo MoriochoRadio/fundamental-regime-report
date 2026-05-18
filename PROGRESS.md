@@ -3,7 +3,7 @@
 이 문서는 본 프로젝트의 **변하는 상태**를 추적한다.
 변하지 않는 사실·규칙·방향은 `CLAUDE.md` 에 있다.
 
-**마지막 갱신**: 2026-05-18 (collect.py + 77 테스트 통과)
+**마지막 갱신**: 2026-05-18 (collect summary 파일 출력 + 82 테스트 통과)
 
 ---
 
@@ -60,6 +60,7 @@
 - [x] **`tests/test_config.py` 7 테스트 통과** — 실 yaml 검증 1 + 경계(tmp_path 격리) 6. 전체 68 + 1 skip (4.85s).
 - [x] **`src/frr/data/collect.py` + `scripts/collect_data.py` v1 작성** — 코어/CLI 분리. `collect_universe()` 가 universe_loader → FDR(1회) → 각 종목 KRX+DART. 부분 성공 패턴(종목·보고서 단위 실패 → `CollectionSummary.failures` 누적). 의존성 주입으로 단위 테스트 네트워크 0. CLI 옵션: `--config`/`--limit`/`--tickers`/`--skip-{krx,dart,fdr}`/`-v`.
 - [x] **`tests/test_collect.py` 9 테스트 통과** — stub 주입 8 + 실 universe_loader union 1. 전체 77 + 1 skip (5.58s).
+- [x] **collect summary 파일 출력 (v1.1)** — `write_summary()` 추가. `collect_universe()` 가 종료 시 자동으로 `data/raw/collect_summary.yaml` (덮어쓰기) + `collect_summary_YYYYMMDD_HHMMSS.yaml` (이력) 동시 저장. YAML 페이로드: generated_at + analysis_window + counts + failures(count·by_stage·items). CLI: `--summary-path PATH` override + `--no-summary-file` 비활성. 테스트 5 추가 (총 14). 전체 82 + 1 skip (5.78s).
 
 ---
 
@@ -84,7 +85,7 @@
    11. ~~`configs/data.yaml` + `src/frr/config.py`~~ ✅ + 7 테스트
    12. ~~`scripts/collect_data.py` + `src/frr/data/collect.py`~~ ✅ + 9 테스트
    13. **사용자 점검 실행** (`--limit 3` → 전체 수집) ← **다음 (사용자)**
-       - 사용자 추가 요청: collect 실행 시 최종 요약을 파일로 저장 (소단계 v1.1).
+       - ~~소단계 v1.1: 최종 요약 파일 저장~~ ✅ 완료. summary YAML 자동 생성.
    14. `tests/test_time_align.py` — D7 lag 적용 + 룩어헤드 차단 통합 테스트 (격리 두 항목은 단계 2)
    15. GitHub Actions CI (`.github/workflows/ci.yml`) — lint + pytest
 

@@ -55,6 +55,17 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--skip-krx", action="store_true", help="pykrx OHLCV 건너뛰기")
     p.add_argument("--skip-dart", action="store_true", help="DART 정기보고서 건너뛰기")
     p.add_argument("--skip-fdr", action="store_true", help="FDR listing/delisting 건너뛰기")
+    p.add_argument(
+        "--summary-path",
+        type=Path,
+        default=None,
+        help="요약 yaml 저장 경로 (기본: data/raw/collect_summary.yaml + 타임스탬프 백업)",
+    )
+    p.add_argument(
+        "--no-summary-file",
+        action="store_true",
+        help="요약 파일 저장 비활성 (콘솔 출력만)",
+    )
     p.add_argument("--verbose", "-v", action="store_true", help="로그 레벨 INFO → DEBUG")
     return p.parse_args(argv)
 
@@ -77,6 +88,8 @@ def main(argv: list[str] | None = None) -> int:
         skip_krx=args.skip_krx,
         skip_dart=args.skip_dart,
         skip_fdr=args.skip_fdr,
+        summary_path=args.summary_path,
+        write_summary_file=not args.no_summary_file,
     )
 
     print()

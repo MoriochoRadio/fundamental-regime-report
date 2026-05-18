@@ -25,7 +25,10 @@ from __future__ import annotations
 import logging
 from collections.abc import Iterable
 from dataclasses import dataclass, field
+from datetime import date, datetime
 from pathlib import Path
+
+import yaml
 
 from frr.config import DataConfig, load_data_config
 from frr.data.calendars import KRXBusinessCalendar
@@ -35,6 +38,8 @@ from frr.data.krx import KRXSingleTicker
 from frr.data.universe_loader import KOSPI200QuarterlyLoader
 
 logger = logging.getLogger(__name__)
+
+DEFAULT_SUMMARY_REL = Path("data/raw/collect_summary.yaml")
 
 
 @dataclass
@@ -60,6 +65,68 @@ class CollectionSummary:
 
     def add_failure(self, ticker: str, stage: str, detail: str) -> None:
         self.failures.append(CollectionFailure(ticker, stage, detail))
+
+
+# ---- summary 직렬화 ----------------------------------------------------
+
+
+def write_summary(
+    summary: CollectionSummary,
+    *,
+    config_path: Path,
+    analysis_start: date,
+    analysis_end: date,
+    summary_path: Path,
+    backup_with_timestamp: bool = True,
+) -> tuple[Path, Path | None]:
+    """`CollectionSummary` 를 YAML 로 직렬화해 두 곳에 저장.
+
+    - `summary_path` (덮어쓰기 — 최신 결과)
+    - 같은 디렉터리에 `{stem}_{YYYYMMDD_HHMMSS}.yaml` (이력 백업, 옵션)
+
+    반환: `(latest_path, backup_path_or_None)`.
+    """
+    by_stage: dict[str, int] = {}
+    for f in summary.failures:
+        by_stage[f.stage] = by_stage.get(f.stage, 0) + 1
+
+    payload: dict[str, object] = {
+        "generated_at": datetime.now().isoformat(timespec="seconds"),
+        "config_path": str(config_path),
+        "analysis_window": {
+            "start": analysis_start.isoformat(),
+            "end": analysis_end.isoformat(),
+        },
+        "counts": {
+            "n_tickers": summary.n_tickers,
+            "n_krx_ok": summary.n_krx_ok,
+            "n_dart_ok": summary.n_dart_ok,
+            "n_dart_notfound": summary.n_dart_notfound,
+            "fdr_listing_ok": summary.fdr_listing_ok,
+            "fdr_delisting_ok": summary.fdr_delisting_ok,
+        },
+        "failures": {
+            "count": len(summary.failures),
+            "by_stage": dict(sorted(by_stage.items())),
+            "items": [
+                {"ticker": f.ticker, "stage": f.stage, "detail": f.detail} for f in summary.failures
+            ],
+        },
+    }
+
+    text = yaml.safe_dump(payload, allow_unicode=True, sort_keys=False)
+    summary_path.parent.mkdir(parents=True, exist_ok=True)
+    summary_path.write_text(text, encoding="utf-8")
+    logger.info("collect summary written: %s", summary_path)
+
+    backup: Path | None = None
+    if backup_with_timestamp:
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup = summary_path.with_name(f"{summary_path.stem}_{ts}.yaml")
+        backup.write_text(text, encoding="utf-8")
+        logger.info("collect summary backup: %s", backup)
+
+    return summary_path, backup
 
 
 # ---- 유니버스 union ------------------------------------------------------
@@ -126,6 +193,8 @@ def collect_universe(
     skip_krx: bool = False,
     skip_dart: bool = False,
     skip_fdr: bool = False,
+    summary_path: Path | None = None,
+    write_summary_file: bool = True,
     # 의존성 주입 (단위 테스트용 — 모두 None 이면 default 생성)
     calendar: KRXBusinessCalendar | None = None,
     loader: KOSPI200QuarterlyLoader | None = None,
@@ -204,4 +273,15 @@ def collect_universe(
         summary.n_dart_notfound,
         len(summary.failures),
     )
+
+    if write_summary_file:
+        path = summary_path if summary_path is not None else root / DEFAULT_SUMMARY_REL
+        write_summary(
+            summary,
+            config_path=config_path,
+            analysis_start=config.analysis.start,
+            analysis_end=config.analysis.end,
+            summary_path=path,
+        )
+
     return summary
