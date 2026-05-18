@@ -8,10 +8,25 @@
 # 이 매니페스트를 읽고 *완전히 채워진 항목*만 유니버스 구성에 사용한다.
 
 source_system: "KRX 정보데이터시스템 (http://data.krx.co.kr)"
-menu_path: "통계 > 기본통계 > 지수 > 주가지수 > [11005] 지수구성종목"
+menu_path: "통계 > 기본통계 > 지수 > 주가지수 > [11006] 지수구성종목"
 index_code: "1028"
 index_name_kr: "코스피 200"
 index_name_en: "KOSPI 200"
+
+# 응답 CSV 공통 스키마 (2026-05-18 첫 다운로드로 확인).
+# 새 분기에서 컬럼이 달라지면 해당 분기 entry의 notes에 기록하고
+# 본 스키마를 갱신한다.
+csv_schema:
+  encoding: cp949   # BOM 없음
+  has_header: true
+  expected_row_count: 200
+  columns:
+    - { name: "종목코드",   dtype: "str",   note: "6자리 문자열, 앞 0 보존" }
+    - { name: "종목명",     dtype: "str",   note: "UTF-8 한국어" }
+    - { name: "종가",       dtype: "float", note: "분기말 영업일 종가 (KRW)" }
+    - { name: "대비",       dtype: "float", note: "전일 대비, 음수 가능" }
+    - { name: "등락률",     dtype: "float", note: "퍼센트 값 (예: 0.91 = 0.91%)" }
+    - { name: "상장시가총액", dtype: "float", note: "과학표기법 가능, 단위 KRW" }
 
 # 각 분기 엔트리.
 # - requested_date    : 분기말 calendar 일자 (입력 일자)
@@ -25,12 +40,12 @@ index_name_en: "KOSPI 200"
 quarters:
   - quarter: 2015Q1
     requested_date: 2015-03-31
-    actual_reference_date: null
-    filename: null
-    downloaded_at: null
-    sha256: null
-    encoding: null
-    notes: null
+    actual_reference_date: 2015-03-31
+    filename: kospi200_2015Q1_20150331.csv
+    downloaded_at: 2026-05-18
+    sha256: 4307c9cb8251c28801c374f1ca0079a91009939b93f0e79260c979e1a3de0a7c
+    encoding: cp949
+    notes: "200 rows; KRX [11006] 지수구성종목 (메뉴번호는 docs §3.1의 11005가 아닌 11006으로 변경됨). CSV 응답에 기준일 표기 없어 입력 일자(영업일) 그대로 actual_reference_date에 기록."
   - quarter: 2015Q2
     requested_date: 2015-06-30
     actual_reference_date: null
