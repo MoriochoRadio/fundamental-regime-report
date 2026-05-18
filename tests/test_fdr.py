@@ -121,10 +121,7 @@ def test_delisting_fetch_real_has_kospi_ordinary_2015_2024(tmp_path: Path) -> No
     """
     src = FDRDataSource(project_root=tmp_path)
     df = src.delisting()
-    is_kospi_ordinary = (
-        (df["Market"] == "KOSPI")
-        & (df["Symbol"].astype(str).str.len() == 6)
-    )
+    is_kospi_ordinary = (df["Market"] == "KOSPI") & (df["Symbol"].astype(str).str.len() == 6)
     years = df["DelistingDate"].dt.year
     is_in_range = (years >= 2015) & (years <= 2024)
     candidates = df[is_kospi_ordinary & is_in_range]

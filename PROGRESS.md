@@ -3,7 +3,7 @@
 이 문서는 본 프로젝트의 **변하는 상태**를 추적한다.
 변하지 않는 사실·규칙·방향은 `CLAUDE.md` 에 있다.
 
-**마지막 갱신**: 2026-05-18 (fdr.py + 42 테스트 통과, FDR 상폐 한계 발견)
+**마지막 갱신**: 2026-05-18 (krx.py + 50 테스트 통과, 상장일 이전 캐시 혼입 이슈 기록)
 
 ---
 
@@ -51,6 +51,8 @@
 - [x] **`tests/test_fdr.py` 10 + 1 skip 통과** — 단위 5(dtype 정규화 + 캐시 hit) + 통합 3(실 fetch). FDR 상폐의 *KOSPI 일반 종목 2015-2024 후보 ≥30건* 검증.
 - [x] **FDR 상폐 데이터 한계 발견** — *4128건 중 상당수가 신주인수권/우선주 부산물 종목* (8자리 코드·"...2R"), *진짜 부실 상폐(카프로 006380 등) 일부 누락*. D2 라벨 정의 시 별도 출처 보강 필요 (아래 결정 로그).
 - [x] **전체 42 통과 + 1 skip** (3.17초). ruff clean.
+- [x] **`src/frr/data/krx.py` v1 작성** — `KRXSingleTicker.fetch_ohlcv(ticker, start, end, refresh)`. 캐시 정책: *요청 ⊆ 캐시 → 슬라이스 hit (네트워크 0)*, *그 외 → 합집합 범위 재페치 (캐시 점진 확장)*. 의존성 주입(`fetcher` 인자)으로 단위 테스트 네트워크 0회.
+- [x] **`tests/test_krx.py` 8 테스트 통과** — 캐시 정책 6경로(없음/⊆/왼쪽/오른쪽/gap/refresh) + 잘못된 범위 + pykrx 실호출 통합. 전체 50 + 1 skip (3.05s).
 
 ---
 
@@ -70,7 +72,7 @@
    6. ~~`universe_loader.py`~~ ✅ v1 + 12 테스트
    7. ~~`src/frr/data/calendars.py`~~ ✅ v1 + 20 테스트
    8. ~~`src/frr/data/fdr.py`~~ ✅ v1 + 10 테스트 (FDR 상폐 한계 발견)
-   9. **`src/frr/data/krx.py`** ← **다음** — pykrx 단일 종목 OHLCV 래퍼 (캐시)
+   9. ~~`src/frr/data/krx.py`~~ ✅ v1 + 8 테스트 (확장 가능 캐시)
    10. **`src/frr/data/dart.py`** — DART 재무제표 + rcept_dt 기반 lag 적용
       (`calendars.add_business_days(rcept_dt, +1)`)
    11. `configs/data.yaml` (분석 기간·캐시 경로·lag·유니버스 매니페스트 경로)
@@ -95,6 +97,23 @@
   (c) `universe_loader` 의 분기 변화에서 *KOSPI200 → 누락* 종목을 직접
       추출해 라벨 후보로 (인덱스 편출 ≠ 상폐, 분리 필요)
   단계 2 진입 시 사용자와 합의.
+
+---
+
+## 4-pre. 미해결 이슈 — 코드 (Open Issues)
+
+> 결정이 아니라 *코드 차원에서 점검 예정* 항목.
+
+- **★ KRX OHLCV 합집합 페치 시 상장일 이전 구간 처리** (2026-05-18 기록):
+  `KRXSingleTicker.fetch_ohlcv` 의 gap·확장 케이스에서 *합집합 범위* 전체를
+  페치하는데, 종목의 *상장일* 이전 구간이 합집합에 포함되면 pykrx 는
+  *빈/결측 응답*을 줄 수 있고 그 결과가 캐시에 그대로 섞일 수 있다.
+  - 지금은 처리하지 않는다 (회귀 발견 안 됨).
+  - 점검 시점: 종목별 **상장일 메타**를 다루는 시점에 함께 — `fdr.listing()`
+    또는 `fdr.delisting()` 의 `ListingDate` 또는 `universe_loader` 연계에서.
+  - 점검 방향: (a) 합집합 페치 시 *상장일 이후* 로 시작점 클립, 또는
+    (b) 캐시에 *비어 있는 구간 마스크* 를 함께 저장, 또는
+    (c) 결측 응답은 *조용히 빈 DataFrame* 으로 캐시.
 
 ---
 
