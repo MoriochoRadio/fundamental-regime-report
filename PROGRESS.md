@@ -3,7 +3,7 @@
 이 문서는 본 프로젝트의 **변하는 상태**를 추적한다.
 변하지 않는 사실·규칙·방향은 `CLAUDE.md` 에 있다.
 
-**마지막 갱신**: 2026-05-18 (단계 1 환경 셋업 완료)
+**마지막 갱신**: 2026-05-18 (단계 1 가용성 검증 완료, 데이터 소스 확정)
 
 ---
 
@@ -31,6 +31,11 @@
 - [x] 단계별 진행 계획 확정 — 5단계 7.5~11주, 각 단계의 산출물·DoD·결정 시점 명시
 - [x] D1/D7/분석 기간 확정 (point-in-time KOSPI200 + 상폐 / rcept_dt+1영업일 / 2010-2024)
 - [x] **단계 1 환경 셋업 완료** — uv 설치, Python 3.13, `pyproject.toml`, `uv.lock`, `src/frr/` 패키지 스켈레톤, 모든 핵심 패키지 import 검증
+- [x] **단계 1 유니버스 가용성 사전 확인 완료** — `scripts/check_universe_availability.py`, `scripts/check_pykrx_health.py` 작성·실행, 다음 사실 확인:
+  - KRX는 2014-05-01 이전 데이터 미제공 → 분석 기간 단축 필요
+  - pykrx의 *전종목/인덱스 API*는 KRX 변경으로 망가짐 (단일 종목 OHLCV만 작동)
+  - FDR로 상장폐지 데이터 풍부 (4,128건, DelistingDate/Reason 포함)
+  - KOSPI200 시점별 구성은 어떤 라이브러리도 직접 제공 안 함 → 수동 CSV 다운로드 필요
 
 ---
 
@@ -44,21 +49,29 @@
 4. **단계 1 진입** — 다음 작업:
    1. ~~D1·D7·분석 기간 결정~~ ✅
    2. ~~`pyproject.toml` + `uv sync`~~ ✅ 완료
-   3. **★ 유니버스 가용성 사전 확인** ← **다음 (사용자 조건 3)**
-      - pykrx로 15년치 분기별 KOSPI200 구성 조회 가능 여부
-      - 상장폐지/관리종목 정보 조회 가능 여부
-      - 가능한 시작일자, 분기 그라뉼래리티 한계 확인
-      - 결과에 따라 D1을 조정할 수도 있음
-   4. `configs/data.yaml` 작성
-   5. `src/frr/data/{dart, krx, calendars, cache}.py` 작성
-   6. `scripts/collect_data.py` + 룩어헤드 차단 테스트 작성
-   7. CI 워크플로(lint+test) 추가
+   3. ~~유니버스 가용성 사전 확인~~ ✅ 완료
+   4. **★ KOSPI200 분기 CSV 수동 다운로드 절차 작성** ← **다음**
+      - `docs/data_sources.md` 작성 (출처·URL·메뉴 경로·기준일·다운로드 절차)
+      - `data/external/kospi200_quarterly/MANIFEST.yaml` 양식 정의
+      - 분기 40개 기준일 리스트 (2015 Q1 ~ 2024 Q4)
+   5. **분기 CSV 40개 수동 다운로드** (사용자 작업)
+   6. `configs/data.yaml` 작성
+   7. `src/frr/data/{dart, krx, fdr, calendars, cache, universe_loader}.py` 작성
+      - pykrx: 단일 종목 OHLCV만
+      - FDR: 전종목 리스트·상장폐지 데이터
+      - DART: 재무제표
+   8. `scripts/collect_data.py` + 룩어헤드 차단 테스트 작성
+   9. CI 워크플로(lint+test) 추가
 
 ### 단계 2 진입 시 추가될 DoD (사전 메모)
 
 - [ ] **유니버스 변수 격리 검증 테스트**: 펀더멘털 모델의 피처 어디에도
   KOSPI200 편입/편출 이벤트·시총 순위·인덱스 비중이 포함되지 않음을
-  단위 테스트로 증명 (CLAUDE.md §5 마지막 조항 근거).
+  단위 테스트로 증명 (CLAUDE.md §5).
+- [ ] **상장폐지/관리종목 메타데이터 격리 검증 테스트**: 펀더멘털 모델
+  피처에 `DelistingDate`·`Reason`·`ArrantEnforceDate` 등 라벨 함수
+  변수가 포함되지 않음을 단위 테스트로 증명 (CLAUDE.md §5). 라벨에는
+  *사용해도 됨*, 피처로는 *금지*.
 
 ---
 
@@ -75,7 +88,7 @@
 | D5 | 대시보드 프레임워크 | ~~Streamlit / Dash / Next.js + FastAPI~~ | ✅ **Streamlit + plotly** |
 | D6 | LLM 공급자·정책 | ~~Anthropic / OpenAI / 로컬~~ | ✅ **Gemini Free Tier + LLMProvider 추상화 / 빌드타임 배치 1회 / 런타임 0호출** |
 | D7 | 재무 데이터 시점 처리 | ~~lag 값 미정~~ | ✅ **DART 접수일 `rcept_dt` + 1영업일** |
-| - | 분석 기간 | ~~미정~~ | ✅ **2010-01-01 ~ 2024-12-31** |
+| - | 분석 기간 | ~~2010-2024 (가용성 미충족)~~ | ✅ **2015-01-01 ~ 2024-12-31** (가용성 사유) |
 | D8 | 평가 지표 | 부실 분류: AUC/PR-AUC/Brier? 국면: 안정성/지속성/사후해석성? | 미정 |
 | D9 | 모델 카드/리포트 양식 | 출력 스키마(JSON) → LLM 서술화 파이프라인 | 미정 |
 
@@ -85,6 +98,23 @@
 
 > 확정되면 시간 역순으로 누적. 동시에 CLAUDE.md에도 반영한다.
 
+- **2026-05-18** — 단계 1 가용성 검증 결과 + 데이터 소스 다층화:
+  - **분석 기간 2010-2024 → 2015-2024 단축** *(사유: KRX 웹 서버가 2014-05-01
+    이전 데이터를 제공하지 않음을 직접 확인)*.
+  - **pykrx 시점별 전종목/인덱스 API 사용 금지** *(KRX 응답 컬럼 변경으로
+    KeyError·빈 결과)*. pykrx는 *단일 종목 OHLCV·종목명*에만 사용.
+  - **FinanceDataReader(FDR) 채택** — 현재 시점 전종목 리스트(Marcap),
+    상장폐지 데이터(4128건, ListingDate/DelistingDate/Reason 포함),
+    KOSPI200 지수 시계열 용도. `pyproject.toml`에 `finance-datareader>=0.9.94` 추가.
+  - **KOSPI200 시점별 구성 — 옵션 A (수동 다운로드) 채택**:
+    KRX 정보데이터시스템에서 분기 CSV 40개(2015 Q1~2024 Q4)를 *1회성 수동
+    다운로드* → `data/external/kospi200_quarterly/` 에 정적 보관 + git 추적.
+    자동 크롤링은 KRX 페이지 변경 리스크로 비채택 (pykrx 사례).
+  - **데이터 매니페스트 정책** 신설 (CLAUDE.md §8.3) — 외부 파일마다
+    source/reference_date/downloaded_at/path/sha256 기록.
+  - **상장폐지 메타데이터 격리 원칙** 추가 (CLAUDE.md §5) — 폐지일·사유·
+    관리종목 지정일 등을 *라벨 정의에는 사용 가능, 피처로는 금지*.
+    단계 2 DoD에 검증 테스트 추가.
 - **2026-05-18** — 단계 1 환경 셋업 호환성 결정:
   - **Python 3.11 → 3.13** 으로 갱신. *사유*: `opendartreader>=0.3.0` 이
     Python 3.13을 요구. 옛 버전(`<0.2.5`) 사용은 보안·DART API 변경 대응
