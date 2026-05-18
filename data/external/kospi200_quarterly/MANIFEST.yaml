@@ -1,0 +1,345 @@
+# KOSPI200 분기말 구성 종목 CSV 매니페스트.
+#
+# 사용자가 KRX 정보데이터시스템에서 수동 다운로드한 후
+# 각 항목의 `filename`, `actual_reference_date`, `downloaded_at`,
+# `sha256`, `encoding` 을 채운다. 절차는 docs/data_sources.md §3 참조.
+#
+# 로더 코드(src/frr/data/universe_loader.py, 단계 1 후속 작업)는
+# 이 매니페스트를 읽고 *완전히 채워진 항목*만 유니버스 구성에 사용한다.
+
+source_system: "KRX 정보데이터시스템 (http://data.krx.co.kr)"
+menu_path: "통계 > 기본통계 > 지수 > 주가지수 > [11005] 지수구성종목"
+index_code: "1028"
+index_name_kr: "코스피 200"
+index_name_en: "KOSPI 200"
+
+# 각 분기 엔트리.
+# - requested_date    : 분기말 calendar 일자 (입력 일자)
+# - actual_reference_date : KRX 응답이 명시한 실제 기준 영업일 (null이면 미작성)
+# - filename          : data/external/kospi200_quarterly/ 안의 실제 파일명
+# - downloaded_at     : 다운로드 시점 (YYYY-MM-DD), null이면 미작성
+# - sha256            : 파일 sha256 해시, null이면 미작성
+# - encoding          : "utf-8-sig" 또는 "cp949"
+# - notes             : 필요 시 메모
+
+quarters:
+  - quarter: 2015Q1
+    requested_date: 2015-03-31
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2015Q2
+    requested_date: 2015-06-30
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2015Q3
+    requested_date: 2015-09-30
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2015Q4
+    requested_date: 2015-12-31
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2016Q1
+    requested_date: 2016-03-31
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2016Q2
+    requested_date: 2016-06-30
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2016Q3
+    requested_date: 2016-09-30
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2016Q4
+    requested_date: 2016-12-31
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2017Q1
+    requested_date: 2017-03-31
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2017Q2
+    requested_date: 2017-06-30
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2017Q3
+    requested_date: 2017-09-30
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2017Q4
+    requested_date: 2017-12-31
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2018Q1
+    requested_date: 2018-03-31
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2018Q2
+    requested_date: 2018-06-30
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2018Q3
+    requested_date: 2018-09-30
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2018Q4
+    requested_date: 2018-12-31
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2019Q1
+    requested_date: 2019-03-31
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2019Q2
+    requested_date: 2019-06-30
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2019Q3
+    requested_date: 2019-09-30
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2019Q4
+    requested_date: 2019-12-31
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2020Q1
+    requested_date: 2020-03-31
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2020Q2
+    requested_date: 2020-06-30
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2020Q3
+    requested_date: 2020-09-30
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2020Q4
+    requested_date: 2020-12-31
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2021Q1
+    requested_date: 2021-03-31
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2021Q2
+    requested_date: 2021-06-30
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2021Q3
+    requested_date: 2021-09-30
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2021Q4
+    requested_date: 2021-12-31
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2022Q1
+    requested_date: 2022-03-31
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2022Q2
+    requested_date: 2022-06-30
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2022Q3
+    requested_date: 2022-09-30
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2022Q4
+    requested_date: 2022-12-31
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2023Q1
+    requested_date: 2023-03-31
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2023Q2
+    requested_date: 2023-06-30
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2023Q3
+    requested_date: 2023-09-30
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2023Q4
+    requested_date: 2023-12-31
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2024Q1
+    requested_date: 2024-03-31
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2024Q2
+    requested_date: 2024-06-30
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2024Q3
+    requested_date: 2024-09-30
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null
+  - quarter: 2024Q4
+    requested_date: 2024-12-31
+    actual_reference_date: null
+    filename: null
+    downloaded_at: null
+    sha256: null
+    encoding: null
+    notes: null

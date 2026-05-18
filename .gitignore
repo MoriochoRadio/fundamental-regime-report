@@ -35,7 +35,9 @@ data/raw/
 data/interim/
 data/processed/
 data/cache/
-data/external/
+# NOTE: data/external/ 는 *추적*한다. 외부 시스템에서 수동 다운로드한
+#       정적 데이터(KOSPI200 분기 CSV 등) + 매니페스트가 들어가며,
+#       재현성을 위해 git에 보관된다. CLAUDE.md §8.3 참조.
 models/checkpoints/
 models/artifacts/
 *.parquet

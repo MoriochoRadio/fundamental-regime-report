@@ -9,10 +9,11 @@
 
 ## 1. 현재 상태 (Current Status)
 
-- **단계**: **1 — 데이터 셋업** (환경 셋업 완료, 가용성 검증 직전)
-- **요약**: D1/D7/기간 확정 → uv 설치 → Python 3.13 (호환성 사유) →
-  `pyproject.toml` + `uv sync` 완료. 124 패키지 설치, 모든 핵심 모듈
-  import 성공. 다음은 *유니버스 가용성 검증 스크립트* 작성·실행.
+- **단계**: **1 — 데이터 셋업** (데이터 소스·다운로드 절차 확정, 사용자 다운로드 작업 대기)
+- **요약**: 환경 셋업·가용성 검증·데이터 소스 다층화 결정 완료.
+  KOSPI200 분기 CSV는 사용자 수동 다운로드 단계.
+  `docs/data_sources.md` + `data/external/kospi200_quarterly/MANIFEST.yaml`
+  (40분기 사전 작성) 준비 완료.
 - **원격**: https://github.com/MoriochoRadio/fundamental-regime-report (Public, MIT)
 
 ---
@@ -36,6 +37,7 @@
   - pykrx의 *전종목/인덱스 API*는 KRX 변경으로 망가짐 (단일 종목 OHLCV만 작동)
   - FDR로 상장폐지 데이터 풍부 (4,128건, DelistingDate/Reason 포함)
   - KOSPI200 시점별 구성은 어떤 라이브러리도 직접 제공 안 함 → 수동 CSV 다운로드 필요
+- [x] **데이터 소스 문서 + 매니페스트 양식 작성** — `docs/data_sources.md` (출처·메뉴 경로·파일명 규칙·40분기 일자표·해시 계산법), `data/external/kospi200_quarterly/MANIFEST.yaml` (40분기 사전 항목 + 채울 필드 명시), `.gitignore` 갱신(`data/external/` 추적 허용)
 
 ---
 
@@ -50,16 +52,17 @@
    1. ~~D1·D7·분석 기간 결정~~ ✅
    2. ~~`pyproject.toml` + `uv sync`~~ ✅ 완료
    3. ~~유니버스 가용성 사전 확인~~ ✅ 완료
-   4. **★ KOSPI200 분기 CSV 수동 다운로드 절차 작성** ← **다음**
-      - `docs/data_sources.md` 작성 (출처·URL·메뉴 경로·기준일·다운로드 절차)
-      - `data/external/kospi200_quarterly/MANIFEST.yaml` 양식 정의
-      - 분기 40개 기준일 리스트 (2015 Q1 ~ 2024 Q4)
-   5. **분기 CSV 40개 수동 다운로드** (사용자 작업)
+   4. ~~KOSPI200 분기 CSV 수동 다운로드 절차 작성~~ ✅
+   5. **★ 분기 CSV 40개 수동 다운로드** ← **사용자 작업 대기**
+      - 절차: `docs/data_sources.md` §3
+      - 매니페스트: `data/external/kospi200_quarterly/MANIFEST.yaml`
+      - 다운로드 페이스는 자유 (한 번에 다 받아도 / 나눠서 받아도 OK)
    6. `configs/data.yaml` 작성
    7. `src/frr/data/{dart, krx, fdr, calendars, cache, universe_loader}.py` 작성
       - pykrx: 단일 종목 OHLCV만
       - FDR: 전종목 리스트·상장폐지 데이터
       - DART: 재무제표
+      - universe_loader: MANIFEST.yaml 읽어 시점별 KOSPI200 구성 제공
    8. `scripts/collect_data.py` + 룩어헤드 차단 테스트 작성
    9. CI 워크플로(lint+test) 추가
 
