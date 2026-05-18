@@ -3,7 +3,7 @@
 이 문서는 본 프로젝트의 **변하는 상태**를 추적한다.
 변하지 않는 사실·규칙·방향은 `CLAUDE.md` 에 있다.
 
-**마지막 갱신**: 2026-05-18 (configs/data.yaml + config 로더 + 68 테스트 통과)
+**마지막 갱신**: 2026-05-18 (collect.py + 77 테스트 통과)
 
 ---
 
@@ -58,6 +58,8 @@
 - [x] **`tests/test_dart.py` 11 테스트 통과** — 단위 10 + **통합 1 (실 DART API + 실 캘린더 FDR fetch로 005930 2020 사업보고서 페치 + rcept_dt 2021-03-09 + available_from 2021-03-10 검증)**. 전체 61 + 1 skip (4.49s).
 - [x] **`configs/data.yaml` + `src/frr/config.py` 작성** — 분석 기간·유니버스 매니페스트·DART lag·periods·fs_div 의 단일 source of truth. frozen dataclass 4개 + `load_data_config(path)`. pydantic 미도입 (단순성 우선). `fs_div: CFS` 주석에 *D10 결정 대기* 표기.
 - [x] **`tests/test_config.py` 7 테스트 통과** — 실 yaml 검증 1 + 경계(tmp_path 격리) 6. 전체 68 + 1 skip (4.85s).
+- [x] **`src/frr/data/collect.py` + `scripts/collect_data.py` v1 작성** — 코어/CLI 분리. `collect_universe()` 가 universe_loader → FDR(1회) → 각 종목 KRX+DART. 부분 성공 패턴(종목·보고서 단위 실패 → `CollectionSummary.failures` 누적). 의존성 주입으로 단위 테스트 네트워크 0. CLI 옵션: `--config`/`--limit`/`--tickers`/`--skip-{krx,dart,fdr}`/`-v`.
+- [x] **`tests/test_collect.py` 9 테스트 통과** — stub 주입 8 + 실 universe_loader union 1. 전체 77 + 1 skip (5.58s).
 
 ---
 
@@ -80,9 +82,11 @@
    9. ~~`src/frr/data/krx.py`~~ ✅ v1 + 8 테스트
    10. ~~`src/frr/data/dart.py`~~ ✅ v1 + 11 테스트 (D7 룩어헤드 차단 코드 구현체)
    11. ~~`configs/data.yaml` + `src/frr/config.py`~~ ✅ + 7 테스트
-   12. **`scripts/collect_data.py`** ← **다음** — 배치 수집 진입점
-   13. `tests/test_time_align.py` — D7 lag 적용 + 룩어헤드 차단 통합 테스트 (격리 두 항목은 단계 2)
-   14. GitHub Actions CI (`.github/workflows/ci.yml`) — lint + pytest
+   12. ~~`scripts/collect_data.py` + `src/frr/data/collect.py`~~ ✅ + 9 테스트
+   13. **사용자 점검 실행** (`--limit 3` → 전체 수집) ← **다음 (사용자)**
+       - 사용자 추가 요청: collect 실행 시 최종 요약을 파일로 저장 (소단계 v1.1).
+   14. `tests/test_time_align.py` — D7 lag 적용 + 룩어헤드 차단 통합 테스트 (격리 두 항목은 단계 2)
+   15. GitHub Actions CI (`.github/workflows/ci.yml`) — lint + pytest
 
 ### 단계 2 진입 시 추가될 DoD (사전 메모)
 
