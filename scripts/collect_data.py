@@ -27,6 +27,8 @@ import logging
 import sys
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 from frr.data.collect import collect_universe
 
 logger = logging.getLogger(__name__)
@@ -76,6 +78,9 @@ def main(argv: list[str] | None = None) -> int:
         level=logging.DEBUG if args.verbose else logging.INFO,
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     )
+    # 프로젝트 루트의 .env 자동 로딩 (DART_API_KEY 등).
+    # 진입점 책임 패턴 — 어댑터는 os.environ 만 본다.
+    load_dotenv()
 
     ticker_filter = None
     if args.tickers:

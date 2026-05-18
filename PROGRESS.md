@@ -61,6 +61,7 @@
 - [x] **`src/frr/data/collect.py` + `scripts/collect_data.py` v1 작성** — 코어/CLI 분리. `collect_universe()` 가 universe_loader → FDR(1회) → 각 종목 KRX+DART. 부분 성공 패턴(종목·보고서 단위 실패 → `CollectionSummary.failures` 누적). 의존성 주입으로 단위 테스트 네트워크 0. CLI 옵션: `--config`/`--limit`/`--tickers`/`--skip-{krx,dart,fdr}`/`-v`.
 - [x] **`tests/test_collect.py` 9 테스트 통과** — stub 주입 8 + 실 universe_loader union 1. 전체 77 + 1 skip (5.58s).
 - [x] **collect summary 파일 출력 (v1.1)** — `write_summary()` 추가. `collect_universe()` 가 종료 시 자동으로 `data/raw/collect_summary.yaml` (덮어쓰기) + `collect_summary_YYYYMMDD_HHMMSS.yaml` (이력) 동시 저장. YAML 페이로드: generated_at + analysis_window + counts + failures(count·by_stage·items). CLI: `--summary-path PATH` override + `--no-summary-file` 비활성. 테스트 5 추가 (총 14). 전체 82 + 1 skip (5.78s).
+- [x] **CLI `.env` 자동 로딩 (v1.2 fix)** — 사용자 `--limit 3` 점검에서 *DART 0/120 구조적 실패* 발견. 원인: `scripts/collect_data.py` 가 `load_dotenv()` 호출 안 함 → `DART_API_KEY` 미주입. 수정: `main()` 시작부에 `load_dotenv()` 추가 (진입점 책임 패턴, 어댑터는 `os.environ` 그대로). 점검의 가치가 실제 발휘된 사례.
 
 ---
 
