@@ -3,7 +3,7 @@
 이 문서는 본 프로젝트의 **변하는 상태**를 추적한다.
 변하지 않는 사실·규칙·방향은 `CLAUDE.md` 에 있다.
 
-**마지막 갱신**: 2026-05-18 (40/40 분기 다운로드 + calendars.py + 32 테스트 통과)
+**마지막 갱신**: 2026-05-18 (fdr.py + 42 테스트 통과, FDR 상폐 한계 발견)
 
 ---
 
@@ -47,6 +47,10 @@
 - [x] **`src/frr/data/calendars.py` v1 작성** — `KRXBusinessCalendar`: FDR KS200 index 기반 영업일 집합, `is_business_day` / `previous_business_day` / `next_business_day` / `floor` / `ceil` / `add_business_days(d, n)` / `business_days_between`. parquet 캐시 자동 생성. D7(rcept_dt+1) 적용 인프라.
 - [x] **`tests/test_calendars.py` 20개 테스트 통과** — 합성 캘린더(외부 의존성 0) 19개 + 실제 FDR fetch 1개. 룩어헤드 차단 정신(`floor`는 항상 *입력 이하*) 검증.
 - [x] **전체 테스트 32/32 통과** (1.4초). ruff clean.
+- [x] **`src/frr/data/fdr.py` v1 작성** — `FDRDataSource`: `listing()` (현 KOSPI 전종목·Marcap 포함) + `delisting()` (KRX 상폐 4128건). 종목코드 6자리 str 강제·날짜 datetime64 정규화·parquet 캐시. Module docstring에 *상폐 메타데이터 격리 원칙* 박제 (단계 2 격리 테스트로 강제 예정).
+- [x] **`tests/test_fdr.py` 10 + 1 skip 통과** — 단위 5(dtype 정규화 + 캐시 hit) + 통합 3(실 fetch). FDR 상폐의 *KOSPI 일반 종목 2015-2024 후보 ≥30건* 검증.
+- [x] **FDR 상폐 데이터 한계 발견** — *4128건 중 상당수가 신주인수권/우선주 부산물 종목* (8자리 코드·"...2R"), *진짜 부실 상폐(카프로 006380 등) 일부 누락*. D2 라벨 정의 시 별도 출처 보강 필요 (아래 결정 로그).
+- [x] **전체 42 통과 + 1 skip** (3.17초). ruff clean.
 
 ---
 
@@ -65,11 +69,8 @@
    5. ~~분기 CSV 다운로드~~ ✅ 40/40 완료
    6. ~~`universe_loader.py`~~ ✅ v1 + 12 테스트
    7. ~~`src/frr/data/calendars.py`~~ ✅ v1 + 20 테스트
-   8. **`src/frr/data/fdr.py`** ← **다음 (제가 작성)**
-      - 현 시점 KOSPI 전종목 (Marcap 포함)
-      - 상장폐지 데이터(ListingDate/DelistingDate/Reason)
-      - parquet 캐시
-   9. **`src/frr/data/krx.py`** — pykrx 단일 종목 OHLCV 래퍼 (캐시)
+   8. ~~`src/frr/data/fdr.py`~~ ✅ v1 + 10 테스트 (FDR 상폐 한계 발견)
+   9. **`src/frr/data/krx.py`** ← **다음** — pykrx 단일 종목 OHLCV 래퍼 (캐시)
    10. **`src/frr/data/dart.py`** — DART 재무제표 + rcept_dt 기반 lag 적용
       (`calendars.add_business_days(rcept_dt, +1)`)
    11. `configs/data.yaml` (분석 기간·캐시 경로·lag·유니버스 매니페스트 경로)
@@ -86,6 +87,14 @@
   피처에 `DelistingDate`·`Reason`·`ArrantEnforceDate` 등 라벨 함수
   변수가 포함되지 않음을 단위 테스트로 증명 (CLAUDE.md §5). 라벨에는
   *사용해도 됨*, 피처로는 *금지*.
+- [ ] **★ D2 라벨 출처 보강 결정**: FDR 상폐 데이터의 *부산물 종목 혼입* +
+  *진짜 부실 폐지 누락* 한계가 확인됨 (2026-05-18). 옵션:
+  (a) FDR 데이터 + 종목코드 6자리 + Reason 필터링으로 가용한 만큼만 사용
+  (b) KRX 정보데이터시스템에서 *상장폐지/관리종목 지정 이력*을 분기 CSV
+      처럼 수동 다운로드해 `data/external/krx_delist/` 보강
+  (c) `universe_loader` 의 분기 변화에서 *KOSPI200 → 누락* 종목을 직접
+      추출해 라벨 후보로 (인덱스 편출 ≠ 상폐, 분리 필요)
+  단계 2 진입 시 사용자와 합의.
 
 ---
 
@@ -112,6 +121,16 @@
 
 > 확정되면 시간 역순으로 누적. 동시에 CLAUDE.md에도 반영한다.
 
+- **2026-05-18** — `fdr.py` 작성 + FDR 상폐 데이터 한계 발견:
+  - `FDRDataSource.listing()` / `delisting()` + parquet 캐시. 종목코드
+    6자리 str 강제·날짜 datetime64 정규화. Module docstring에 상폐
+    메타데이터 격리 원칙 박제.
+  - **FDR KRX-DELISTING 한계** (4128건):
+    - 상당수가 신주인수권·우선주 *부산물 종목* (8자리 코드, "...2R" 류)
+    - *진짜 부실 상폐* 일부 누락 (예: 카프로 006380 — universe_loader의
+      2015Q1 데이터에 있고 2017-12 폐지된 종목인데 FDR에 없음)
+    - → 단계 2 D2 라벨 정의 시 *출처 보강* 필요. 미해결 결정으로
+      "단계 2 진입 시 추가될 DoD" 섹션에 기록.
 - **2026-05-18** — 40/40 KOSPI200 분기 다운로드 완료 + 행 수 사실 발견:
   - 사용자가 전 분기(2015Q1~2024Q4) 수동 다운로드·매니페스트 작성 완료.
   - **새 사실 ①**: KOSPI200이 *목표 200종목*이지만 인덱스 리밸런싱 직후
