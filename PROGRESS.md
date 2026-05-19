@@ -3,34 +3,40 @@
 이 문서는 본 프로젝트의 **변하는 상태**를 추적한다.
 변하지 않는 사실·규칙·방향은 `CLAUDE.md` 에 있다.
 
-**마지막 갱신**: 2026-05-19 (커밋 3 — D2 = α 최종 확정. 후보 A 자동 확보 불가 검증 후 5개 후보 전수 기각 여정 종료)
+**마지막 갱신**: 2026-05-19 (커밋 4 — CRLF .gitattributes `text eol=lf` 해결. 단계 2 진입 3 조건 충족: D2 ✅ + CI ✅ + CRLF ✅)
 
 ---
 
 ## ★ 다음 세션 시작 지점 (Resume Marker)
 
 > **다음 세션은 이 지점부터 이어간다**:
-> 1. **CRLF 이슈 해결 — 단계 2 진입 마지막 관문** (§4-pre):
->    - 권장: `.gitattributes` 에 `data/external/**/*.csv binary` 추가
->      (워크트리·OS 무관 근본 해결).
->    - 사용자 확인 후 적용 → 워크트리에서 CSV 재체크아웃 → sha256 매니페스트
->      일치 검증 → 단위 테스트 전체 그린 회복 (CI 변동 없음, 단계 2 진입 가능).
-> 2. 단계 2 진입 조건: **CI 그린 ✅** + **D2 ✅ 확정 (2026-05-19)** +
->    **CRLF 해결**. 3 조건 충족 후 단계 2 첫 작업 *진입 시점에 재계획·확인*.
+> 1. **단계 2 진입 3 조건 모두 충족** (2026-05-19 커밋 4 시점):
+>    - D2 ✅ 확정 (α = 상폐 부실 ∪ B1', §5.5.7/§5.5.8)
+>    - CI ✅ 그린 (커밋 1 회복 후 유지)
+>    - CRLF ✅ 해결 (`.gitattributes` `text eol=lf`, 40 sha256 MATCH, pytest
+>      11→0 fail, 커밋 4)
+> 2. **단계 2 첫 작업**: 진입 시점에 사용자와 작업 순서·DoD 재확인 후 진행
+>    (CLAUDE.md §7.2 코드 작성 전 절차). 핵심 결정 사항: (a) labels.py 먼저
+>    vs 격리 테스트 골격 먼저, (b) finstate(CFS only 캐시 재사용) vs
+>    finstate_all 재페치 (D10 CFS 우선 + OFS fallback 구현 방식), (c)
+>    walk-forward 분할 인프라 위치(`src/frr/time/splits.py` 신규 vs
+>    `calendars.py` 확장).
 
 ---
 
 ## 1. 현재 상태 (Current Status)
 
-- **단계**: 단계 1 코드 작업 완료. **D2 ✅ 확정 (2026-05-19) + CI 그린 ✅**.
-  단계 2 진입 직전 *마지막 필수 해결*: CRLF / `.gitattributes` (§4-pre).
-  3 조건 충족 시 단계 2 진입 (첫 작업은 진입 시점에 재계획·확인).
+- **단계**: 단계 1 코드 작업 완료. **단계 2 진입 3 조건 모두 충족 ✅** —
+  D2 ✅ + CI ✅ + CRLF ✅ (2026-05-19 커밋 4 시점). 단계 2 첫 작업은
+  진입 시점에 사용자와 작업 순서·DoD 재확인 후 (CLAUDE.md §7.2).
 - **요약**: CI 4회 연속 실패(2026-05-18) → 커밋 1 (`71ef11a`) ruff format
   으로 그린 회복. 커밋 2 (`3585848`) D2 후보 상태 되돌림 + §7.4 ruff format
-  규칙. 커밋 3 (이번) D2 = α 최종 확정 — *5개 후보(D2(E)·B1 v1·v2·B3·A)
+  규칙. 커밋 3 (`2977262`) D2 = α 최종 확정 — *5개 후보(D2(E)·B1 v1·v2·B3·A)
   전수 검증·기각 끝에 입증된 최선*. A1(신용등급 자동 확보 불가) 결과
   PROGRESS §5.5.8 박제. α 의 한계(양성 27·0년 2개·모집단 희소성)는 §5.5.7
-  + §5 로그 + CLAUDE.md §4.1 세 곳에 정직히 기록.
+  + §5 로그 + CLAUDE.md §4.1 세 곳에 정직히 기록. 커밋 4 (이번) `.gitattributes`
+  `text eol=lf` 로 CRLF 해결 — `binary` 오추정·원복·정정 경위 §4-pre 박제
+  (방법론적 엄밀성 증거, 안전장치 작동 사례).
 - **원격**: https://github.com/MoriochoRadio/fundamental-regime-report (Public, MIT)
 
 ---
@@ -92,16 +98,21 @@
 
 > 모두 사용자 확인을 받은 뒤 진행한다.
 
-### 3.0. 커밋 1~3 적용 완료 (2026-05-19)
+### 3.0. 커밋 1~4 적용 완료 (2026-05-19) — **단계 2 진입 3 조건 충족**
 
 - **커밋 1** (`71ef11a`): `fix(ci): apply ruff format to unblock CI`
   → CI 4회 실패 회복 (그린 ✅).
 - **커밋 2** (`3585848`): `docs(d2): revert D2 to candidate state + enforce
   ruff format pre-commit` → D2 후보 상태 되돌림 + CLAUDE.md §7.4 한 줄
   (재발 방지).
-- **커밋 3** (이번): `docs(d2): finalize D2 = alpha after exhausting all
-  candidates (E,B1v1/v2,B3,A)` → 9 항목 (PROGRESS 6 + CLAUDE.md 3) +
+- **커밋 3** (`2977262`): `docs(d2): finalize D2 = alpha after exhausting
+  all candidates (E,B1v1/v2,B3,A)` → 9 항목 (PROGRESS 6 + CLAUDE.md 3) +
   A1 보고서 §5.5.8 박제 + α 한계 정직 기록 3곳 일관.
+- **커밋 4** (이번): `chore: normalize CSV line endings via .gitattributes
+  for sha256 manifest integrity` → `data/external/**/*.csv text eol=lf` +
+  CLAUDE.md §8.3 보강 (text eol=lf 정책·sha256 LF 기준 명시) + PROGRESS
+  §4-pre 정정 경위 박제 (binary 오추정·원복·text eol=lf 정정, 방법론적
+  엄밀성 증거).
 
 ### 3.1. 후보 A (신용등급) 검증 — 완료 (A 기각, 2026-05-19)
 
@@ -160,25 +171,51 @@ A2 미진행 (사용자 지시 — "A1 불확실하면 A2 진행 금지" 충족:
 
 > 결정이 아니라 *코드 차원에서 점검 예정* 항목.
 
-- **★ 워크트리 CRLF — sha256 매니페스트 정합성 깨짐** (2026-05-19 발견,
-  **단계 2 진입 직전 필수 해결**):
-  - 현상: 본 워크트리(`competent-jackson-a02ec0`)는 `core.autocrlf=true` +
-    `.gitattributes` 부재 → KOSPI200 분기 CSV들이 LF로 저장된 git index 에서
-    *CRLF로 체크아웃*. 결과: 워크트리 sha256(`73df0f89...`) ≠ MANIFEST의
-    LF 기준 sha256(`4307c9cb...`). `universe_loader._is_verified` 에서
-    `IntegrityError` → sha256 의존 단위 테스트 11개 워크트리 한정 실패.
-  - 영향 범위: **CI(Linux)는 LF 그대로라 영향 없음** (2026-05-19 시점 그린
-    유지). 본 워크트리에서 *코드 실행*하는 작업만 영향 — 문서/조사 작업은
-    무관. *git 원본 LF sha256은 `git show HEAD:...csv | sha256sum` 으로
-    매니페스트와 일치 확인 완료*.
-  - 단계 2 진입 직전 필수 해결 이유: 본 프로젝트의 **sha256 매니페스트는
-    재현성 핵심 장치** (CLAUDE.md §8.3 외부 데이터 매니페스트 정책). 깨진
-    채 모델링 단계 진입 불가.
-  - 권장 방향 (단계 2 진입 직전 함께 결정): **(b) `.gitattributes` 에
-    `data/external/**/*.csv binary` 추가** — 워크트리·OS 무관 근본 해결.
-    대안: (a) 워크트리 한정 `git config core.autocrlf input` + 재체크아웃
-    (다른 Windows 워크트리 재발 가능), (c) MANIFEST 의 sha256 의미를
-    *LF-정규화 후 계산* 으로 명시 (현재 사실과 일치하나 문서만 갱신).
+- **워크트리 CRLF — sha256 매니페스트 정합성 깨짐** (2026-05-19 발견 →
+  ✅ **해결 (커밋 4)**):
+
+  **원래 증상**: 본 워크트리(`competent-jackson-a02ec0`)는 `core.autocrlf=true`
+  + `.gitattributes` 부재 → KOSPI200 분기 CSV들이 LF로 저장된 git index 에서
+  *CRLF로 체크아웃*. 결과: 워크트리 sha256(`73df0f89...`) ≠ MANIFEST의
+  LF 기준 sha256(`4307c9cb...`). `universe_loader._is_verified` 에서
+  `IntegrityError` → sha256 의존 단위 테스트 11개 워크트리 한정 실패.
+  CI(Linux) 는 LF 그대로라 영향 없음 (그린 유지).
+
+  **★ 정정 경위 — 방법론적 엄밀성 증거 (D2 여정 보존 원칙과 동일)**:
+
+  - *1차 처방 (잘못된 추정)*: `data/external/**/*.csv binary` — Code 가
+    "binary 면 index 바이트(LF) 가 그대로 워크트리에 복사되므로 sha256 일치"
+    로 추정. 사용자 검증 보고 안전장치 (커밋 전 `git add --renormalize .`
+    결과 확인) 가 작동:
+    - 실측: 40개 CSV 전부 *index 에서 변경* (각 +200 bytes ≈ 200행 × `\r`
+      추가). 즉 `binary` 가 *워크트리 CRLF 를 그대로 index 로 propagate* →
+      새 index sha256 = `73df0f89...` (CRLF) → 매니페스트 영구 불일치.
+    - 추정 오류 원인: `binary` 의 동작 방향을 잘못 가정. 정규화를 *꺼면*
+      working tree → index 방향에서 CRLF 가 그대로 들어감.
+    - 사용자 경고("CSV 가 index 에서 변경되면 멈추고 보고") 에 따라 즉시
+      `git restore --staged .` + `.gitattributes` 삭제로 원복. 데이터 손실 0.
+
+  - *2차 처방 (실측 검증 통과)*: `data/external/**/*.csv text eol=lf` —
+    git 이 *워크트리를 LF 로 강제* (Windows core.autocrlf 무시), index 는
+    LF 그대로 (변경 0). 매니페스트 sha256 = `4307c9cb...` 와 매번 일치.
+    - 1개 분기(2015Q1) 시범 적용 후 3 항목 실측 검증 통과:
+      (a) `git diff --cached --stat` 에 `.gitattributes` 만 (CSV index 변경 0),
+      (b) 워크트리 sha256 = 매니페스트 `4307c9cb...` 정확 일치,
+      (c) `od -c` 로 CR 0개·byte count 10,889 (git 원본과 동일).
+    - 39개 일괄 재체크아웃 후 40개 전체 sha256 대조: MATCH 40 / MISMATCH 0
+      / SKIPPED 0. 단위 테스트 11 실패 → 0 실패 회복 (`84 passed, 1 skipped,
+      6 deselected, 0 failed in 7.32s`).
+
+  **남기는 이유**: 잘못된 처방이 *적용되기 전에* 검증 안전장치로 잡힌 사례.
+  이 정정 과정 자체가 *방법론적 엄밀성의 증거* — sha256 매니페스트를
+  재현성 핵심 장치로 삼고 매 작업에 검증 보고를 요구해온 누적된 신중함이
+  값을 한 순간. "빨리 가자" 모드였으면 40개 CSV 가 깨진 채 커밋되고 단계 2
+  에서 모델 결과가 이상해진 뒤 한참 후 추적했을 것. **D2 여정 보존(§5.5.7)
+  과 같은 이유로 이 정정 경위도 지우지 않는다**.
+
+  **부수 교훈**: Code 의 진단이 논리적으로 보여도 *git 내부 동작*처럼
+  미묘한 영역은 *실측 검증 없이 일괄 적용 금지*. 이번 사건 이후 `.gitattributes`
+  같은 *환경 변경*은 1개 시범 → 검증 → 일괄 패턴을 표준 절차로 채택.
 
 - **★ 룩어헤드 캘린더 경계 — 분석 기간 말단 정정공시** (2026-05-18 검증):
   분석 시점(2024-12-31) *이후* 접수된 정정공시는 룩어헤드 차단 설계에 의해

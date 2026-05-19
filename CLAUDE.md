@@ -260,6 +260,13 @@ PROGRESS.md를 갱신하고 git 커밋을 제안한다.
   - `notes` (필요 시)
   매니페스트도 git 추적한다. *재현성과 추적가능성*은 외부 데이터의
   필수 조건이다.
+- **줄바꿈 정규화 정책 (sha256 무결성)**: CSV 등 외부 텍스트 파일은
+  `.gitattributes` 에서 `text eol=lf` 로 지정해 *모든 OS·워크트리에서
+  LF 로 통일* 한다. `binary` 매크로는 사용 금지 — *워크트리 CRLF 를
+  그대로 index 로 propagate* 해 매니페스트 sha256 을 깨뜨린다 (2026-05-19
+  실측 확인, PROGRESS §4-pre). 매니페스트의 `sha256` 도 **git index 바이트
+  (LF 정규화 후) 기준** 으로 계산해야 OS·체크아웃 환경과 무관하게 재현
+  가능하다.
 
 ### 8.4 모델
 - ML(부실 스코어링): **scikit-learn** + **LightGBM** (캘리브레이션 포함)
