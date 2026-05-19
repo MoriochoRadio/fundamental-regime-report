@@ -3,19 +3,39 @@
 이 문서는 본 프로젝트의 **변하는 상태**를 추적한다.
 변하지 않는 사실·규칙·방향은 `CLAUDE.md` 에 있다.
 
-**마지막 갱신**: 2026-05-19 (★ D2 확정 — 상폐 부실 합집합 B1' drawdown+영업악화)
+**마지막 갱신**: 2026-05-19 (CI 그린 회복 + 세션 재시작 직전 — 커밋 2 사용자 확인 대기)
+
+---
+
+## ★ 다음 세션 시작 지점 (Resume Marker)
+
+> **다음 세션은 이 지점부터 이어간다**:
+> 1. 커밋 2 (D2 revert + CLAUDE.md §7.4 ruff format 규칙) 변경 요약을
+>    사용자에게 제시 → **사용자 확인 후** 커밋. (현재 *사용자 확인 대기*
+>    상태, 작업물은 미적용 — 변경 요약만 본 문서에 기록됨, 아래 §3 참조.)
+> 2. 커밋 2 완료 후 **후보 A 검증**:
+>    - (A1) 한국 신용등급 변동 이력 2015-2024·유니버스 321 종목 자동
+>      확보 출처 존재 여부. DART 텍스트 파싱이 필요하면 B1.2급 부담
+>      여부 정직 평가.
+>    - (A2) 자동 확보 가능 시 *N단계 하향* 라벨로 양성 수·비율·
+>      walk-forward 연도 분포·spot-check 산출 → **α (27건·8.4%) 와
+>      나란히 비교표** 제시.
+>    - 판정: A 데이터 확보 + 라벨 품질 통과면 *A로 D2 확정* (의미
+>      보존 우선). A 가 B1.2급 부담이면 A 기각, *B (α) 로 D2 확정*.
+> 3. 단계 2 진입 조건: **CI 그린 (✅ 2026-05-19 회복)** + **D2 최종 확정**.
+>    현재 CI는 그린, D2는 *후보 A 검증 대기*.
 
 ---
 
 ## 1. 현재 상태 (Current Status)
 
-- **단계**: **1 종료 → 단계 2 진입 직전** (D2 결정 대기)
-- **요약**: 단계 1 모든 코드·테스트·CI 완료. **사용자 전체 수집 완료**
-  (321 종목 / KRX 321 / DART 10,114 ok + 2,719 notfound + **7 failures**).
-  **7 failures 모두 룩어헤드 차단의 의도된 동작** — 분석 시점 이후
-  정정공시(2026년 접수) 거부 (`docs/data_sources.md §4` 참조).
-  D8/D9/D10 결정 합의. D2 는 진단 결과 *상폐만 양성 ~9건*이라 관리종목
-  데이터 보강 필수 — D2 확정 대기.
+- **단계**: **D2 후보 A 검증 대기 + CI 그린** — 단계 2 진입은 D2 최종
+  확정 시. 커밋 2 (D2 revert + CLAUDE.md §7.4 규칙) 가 사용자 확인 대기.
+- **요약**: CI 4회 연속 실패(2026-05-18) 의 원인은 *ruff format --check*
+  단계의 미정리 7개 파일 → 커밋 1 (`71ef11a`, 2026-05-19) 로 `ruff format`
+  적용 후 그린 회복. 다음은 커밋 2 (D2 revert 6항목 + CLAUDE.md §7.4 에
+  "코드 커밋 전 ruff format 필수" 규칙 1줄) — *내용 합의 + 사용자 확인
+  대기*. D2 후보 A 검증은 커밋 2 완료 후.
 - **원격**: https://github.com/MoriochoRadio/fundamental-regime-report (Public, MIT)
 
 ---
@@ -59,6 +79,7 @@
 - [x] **`.env.example` 추가** — DART 키 자리 + 발급 안내 + 보안 규칙. `.env` 는 `.gitignore` 대상.
 - [x] **`src/frr/data/dart.py` v1 작성** — `DARTReporter`: `fetch_report(ticker, year, period)` / `available_at(t)` / `latest_available(t)`. **`rcept_no` 첫 8자 → `rcept_dt`** 추출, **`available_from = rcept_dt + 1영업일`** (D7 룩어헤드 차단의 코드 구현). 캐시 = parquet + yaml sidecar, `notfound` 상태 메타 기록으로 DART 한도 절약. CFS 기본 (D10 결정 대기).
 - [x] **`tests/test_dart.py` 11 테스트 통과** — 단위 10 + **통합 1 (실 DART API + 실 캘린더 FDR fetch로 005930 2020 사업보고서 페치 + rcept_dt 2021-03-09 + available_from 2021-03-10 검증)**. 전체 61 + 1 skip (4.49s).
+- [x] **커밋 1 — CI 수정 (`71ef11a`, 2026-05-19)** — ruff format 7파일 자동 정리 → CI 그린 회복. CI 4회 연속 실패 원인 진단: 로컬에서 `ruff check + pytest` 만 검증하고 `ruff format` 누락. 추후 재발 방지: 커밋 2 의 CLAUDE.md §7.4 한 줄 규칙으로 박제 예정.
 - [x] **`configs/data.yaml` + `src/frr/config.py` 작성** — 분석 기간·유니버스 매니페스트·DART lag·periods·fs_div 의 단일 source of truth. frozen dataclass 4개 + `load_data_config(path)`. pydantic 미도입 (단순성 우선). `fs_div: CFS` 주석에 *D10 결정 대기* 표기.
 - [x] **`tests/test_config.py` 7 테스트 통과** — 실 yaml 검증 1 + 경계(tmp_path 격리) 6. 전체 68 + 1 skip (4.85s).
 - [x] **`src/frr/data/collect.py` + `scripts/collect_data.py` v1 작성** — 코어/CLI 분리. `collect_universe()` 가 universe_loader → FDR(1회) → 각 종목 KRX+DART. 부분 성공 패턴(종목·보고서 단위 실패 → `CollectionSummary.failures` 누적). 의존성 주입으로 단위 테스트 네트워크 0. CLI 옵션: `--config`/`--limit`/`--tickers`/`--skip-{krx,dart,fdr}`/`-v`.
@@ -75,6 +96,35 @@
 ## 3. 다음 할 일 (Next)
 
 > 모두 사용자 확인을 받은 뒤 진행한다.
+
+### 3.0. 커밋 2 — *사용자 확인 대기* (변경 요약 보존)
+
+**상태**: 작업물 미적용. 본 절에 변경 요약을 기록만. 새 세션에서 이 요약을
+사용자에게 *최종 변경 요약*으로 제시하고 확인받은 뒤 적용·커밋.
+
+**커밋 2 의 6 + 1 항목**:
+
+1. PROGRESS §4 D2 행:
+   - 현재 표기: `✅ 확정 (2026-05-19) — 양성 27 (8.4%) ...`
+   - 정정 후: `🟡 미확정 — 후보 A/B 동시 검증 대기 (사용자 요청 2026-05-19)`
+2. PROGRESS §1 현재 상태 문장: "단계 1 종료 → 단계 2 진입 직전" 표현을
+   *"D2 확정 + CI 그린 두 조건 모두 충족 전까지 단계 2 보류"* 로 정정.
+3. PROGRESS §5.5.7 헤더: `D2 최종 확정` → *`D2 1차 후보 (α=상폐∪B1') —
+   사용자 요청으로 미확정으로 되돌림 (2026-05-19)`* + 본 절 본문은 *후보
+   B 계열 확정 수치 (양성 27·8.4%)* 로 보존.
+4. PROGRESS 결정 로그 한 줄 추가: `2026-05-19 — D2 확정 정정: α는
+   *후보*로 격하. 사용자 요청 — 후보 A(신용등급) 와 동일 진단 틀로 숫자
+   검증 후 비교. 후보 B(B1') 도 drawdown 임계의 객관적 규정 방식 명시
+   후 동일 진단.`
+5. CLAUDE.md §3.1 D2 박제: *후보 검증 단계 — 최종 확정 시 갱신* 표기.
+6. CLAUDE.md §4.1 D2 단락: *D2 1차 후보 — 미확정* 표기. 양성 27·8.4%
+   는 후보 B 수치로 보존.
+7. **CLAUDE.md §7.4 추가** (사용자 명시): `"모든 코드 변경 커밋 전
+   `uv run ruff format src/frr tests scripts` 실행이 필수다. 이 규칙은
+   2026-05-18 의 CI 4회 연속 실패 (`ruff format --check` 누락) 의
+   재발 방지 차원."` 한 줄.
+
+### 3.1. 후보 A (신용등급) 검증 — 커밋 2 후
 
 1. ~~권장 기술 스택 제안~~ ✅
 2. ~~디렉터리 구조 제안~~ ✅
