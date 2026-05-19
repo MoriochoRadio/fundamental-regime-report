@@ -35,9 +35,7 @@ with contextlib.suppress(AttributeError, OSError):
 
 load_dotenv()
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-DISCLOSURES_CACHE = (
-    PROJECT_ROOT / "data" / "raw" / "dart_corrections" / "all_disclosures.parquet"
-)
+DISCLOSURES_CACHE = PROJECT_ROOT / "data" / "raw" / "dart_corrections" / "all_disclosures.parquet"
 
 from frr.data.universe_loader import KOSPI200QuarterlyLoader  # noqa: E402
 
@@ -105,9 +103,7 @@ else:
 section("A2 — 신용평가 키워드 매칭")
 
 credit_kw = ["신용평가", "신용등급", "회사채", "NICE신용", "한기평", "한신평", "KIS신용"]
-mask_credit = df_all["report_nm"].astype(str).apply(
-    lambda s: any(kw in s for kw in credit_kw)
-)
+mask_credit = df_all["report_nm"].astype(str).apply(lambda s: any(kw in s for kw in credit_kw))
 credit_events = df_all[mask_credit].copy()
 print(f"  신용평가 키워드 매칭: {len(credit_events)} 건")
 print(f"  고유 종목: {credit_events['ticker'].nunique()} / 유니버스 {len(universe)}")
@@ -118,12 +114,19 @@ if len(credit_events) > 0:
         print(f"    {n:4d}  {nm}")
     # 부정적 변동 키워드 분리 시도
     neg_kw = [
-        "하향", "강등", "하락", "Downgrade", "Negative",
-        "조정(하향)", "(하향)", "BBB", "BB", "B+", "CCC",
+        "하향",
+        "강등",
+        "하락",
+        "Downgrade",
+        "Negative",
+        "조정(하향)",
+        "(하향)",
+        "BBB",
+        "BB",
+        "B+",
+        "CCC",
     ]
-    mask_neg = credit_events["report_nm"].astype(str).apply(
-        lambda s: any(kw in s for kw in neg_kw)
-    )
+    mask_neg = credit_events["report_nm"].astype(str).apply(lambda s: any(kw in s for kw in neg_kw))
     n_neg = int(mask_neg.sum())
     print(f"\n  *부정적 변동* 키워드 매칭: {n_neg} 건")
     if n_neg > 0:
@@ -175,9 +178,22 @@ for year in range(2015, 2025):
 # spot-check
 top_a = credit_window["ticker"].value_counts().head(10)
 KNOWN_BLUE_CHIPS = {
-    "005930", "000660", "005380", "066570", "035420", "035720", "051910",
-    "005490", "207940", "006400", "068270", "105560", "055550", "086790",
-    "017670", "030200",
+    "005930",
+    "000660",
+    "005380",
+    "066570",
+    "035420",
+    "035720",
+    "051910",
+    "005490",
+    "207940",
+    "006400",
+    "068270",
+    "105560",
+    "055550",
+    "086790",
+    "017670",
+    "030200",
 }
 blue_a = 0
 print("\n  spot-check top 10:")
@@ -371,8 +387,8 @@ mask_dl = (
 )
 delisted_universe = delisting[mask_dl]
 distress_kw = ["잠식", "해산", "감사", "부도", "회생", "관리"]
-mask_distress = delisted_universe["Reason"].astype(str).apply(
-    lambda r: any(kw in r for kw in distress_kw)
+mask_distress = (
+    delisted_universe["Reason"].astype(str).apply(lambda r: any(kw in r for kw in distress_kw))
 )
 distress_delisted = delisted_universe[mask_distress]
 delisted_tickers = set(distress_delisted["Symbol"])

@@ -61,8 +61,8 @@ print(f"  KOSDAQ 일반(6자리) 상폐 (2015-2024): {len(kosdaq_delisted)} 건"
 
 # 부실 사유 필터 (KOSPI 와 동일 키워드)
 distress_kw = ["잠식", "해산", "감사", "부도", "회생", "관리", "감리"]
-mask_distress = kosdaq_delisted["Reason"].astype(str).apply(
-    lambda r: any(kw in r for kw in distress_kw)
+mask_distress = (
+    kosdaq_delisted["Reason"].astype(str).apply(lambda r: any(kw in r for kw in distress_kw))
 )
 kosdaq_distress = kosdaq_delisted[mask_distress]
 print(f"  그 중 부실 사유 키워드 매칭: {len(kosdaq_distress)} 건")
@@ -243,13 +243,13 @@ print("""  장점:
 section("비교표 — 최종 결정 자료")
 
 print(f"""
-  {'항목':<25} {'갈래 1 (B3 KOSDAQ)':<25} {'갈래 2 (타깃 재정의)':<25}
-  {'-' * 25} {'-' * 25} {'-' * 25}
-  {'양성 확보 (KOSDAQ부실)':<25} {len(kosdaq_distress):<25} {'A: 연 5-15 추정':<25}
-  {'walk-forward 0 연도':<25} {str(zero_years if zero_years else 'X')[:24]:<25} {'후보별 차이':<25}
-  {'데이터 자동 확보':<25} {'부분 (point-in-time X)':<25} {'A 부분 / B 완전':<25}
-  {'1인 추가 일정':<25} {'+1.5-2주 (상한 +3주)':<25} {'A +2-3일 / B +1-2일':<25}
-  {'스코프 경계 변경':<25} {'CLAUDE.md §4.1 변경':<25} {'경미~중간':<25}
-  {'데이터 정합성':<25} {'KOSDAQ150 시점별 X':<25} {'기존 KOSPI200 유지':<25}
-  {'자기참조 위험':<25} {'X':<25} {'A 낮음 / B 약함':<25}
+  {"항목":<25} {"갈래 1 (B3 KOSDAQ)":<25} {"갈래 2 (타깃 재정의)":<25}
+  {"-" * 25} {"-" * 25} {"-" * 25}
+  {"양성 확보 (KOSDAQ부실)":<25} {len(kosdaq_distress):<25} {"A: 연 5-15 추정":<25}
+  {"walk-forward 0 연도":<25} {str(zero_years if zero_years else "X")[:24]:<25} {"후보별 차이":<25}
+  {"데이터 자동 확보":<25} {"부분 (point-in-time X)":<25} {"A 부분 / B 완전":<25}
+  {"1인 추가 일정":<25} {"+1.5-2주 (상한 +3주)":<25} {"A +2-3일 / B +1-2일":<25}
+  {"스코프 경계 변경":<25} {"CLAUDE.md §4.1 변경":<25} {"경미~중간":<25}
+  {"데이터 정합성":<25} {"KOSDAQ150 시점별 X":<25} {"기존 KOSPI200 유지":<25}
+  {"자기참조 위험":<25} {"X":<25} {"A 낮음 / B 약함":<25}
 """)

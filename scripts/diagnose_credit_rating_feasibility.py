@@ -24,9 +24,7 @@ with contextlib.suppress(AttributeError, OSError):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-CORRECTIONS_CACHE = (
-    PROJECT_ROOT / "data" / "raw" / "dart_corrections" / "all_corrections.parquet"
-)
+CORRECTIONS_CACHE = PROJECT_ROOT / "data" / "raw" / "dart_corrections" / "all_corrections.parquet"
 
 
 def section(t: str) -> None:
@@ -49,12 +47,12 @@ print(f"  corrections 캐시: {len(df_corr)} 건")
 keywords = ["신용평가", "신용등급", "NICE", "KIS", "한기평", "한신평", "회사채"]
 print(f"\n  검색 키워드: {keywords}")
 
-mask = df_corr["report_nm"].astype(str).apply(
-    lambda s: any(kw in s for kw in keywords)
-)
+mask = df_corr["report_nm"].astype(str).apply(lambda s: any(kw in s for kw in keywords))
 credit_in_corrections = df_corr[mask]
-print(f"\n  매칭: {len(credit_in_corrections)} 건 / {len(df_corr)} 전체 "
-      f"({100 * len(credit_in_corrections) / len(df_corr):.2f}%)")
+print(
+    f"\n  매칭: {len(credit_in_corrections)} 건 / {len(df_corr)} 전체 "
+    f"({100 * len(credit_in_corrections) / len(df_corr):.2f}%)"
+)
 
 if len(credit_in_corrections) > 0:
     print("\n  매칭된 report_nm top 20:")

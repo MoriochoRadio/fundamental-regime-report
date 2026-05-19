@@ -254,9 +254,7 @@ def test_fs_div_cfs_recorded_in_meta(
         df["_fs_div_used"] = "CFS"
         return df
 
-    rep = DARTReporter(
-        calendar=calendar_2020_2022, project_root=tmp_path, fetcher=stub_cfs
-    )
+    rep = DARTReporter(calendar=calendar_2020_2022, project_root=tmp_path, fetcher=stub_cfs)
     result = rep.fetch_report("005930", 2020, "FY")
 
     assert result.ref.status == "ok"
@@ -266,9 +264,7 @@ def test_fs_div_cfs_recorded_in_meta(
     # 메타 yaml 에 fs_div 기록
     import yaml as _yaml
 
-    meta = _yaml.safe_load(
-        (tmp_path / "data/raw/dart/005930/2020_FY.meta.yaml").read_text("utf-8")
-    )
+    meta = _yaml.safe_load((tmp_path / "data/raw/dart/005930/2020_FY.meta.yaml").read_text("utf-8"))
     assert meta.get("fs_div") == "CFS"
 
 
@@ -283,26 +279,20 @@ def test_fs_div_ofs_fallback_recorded(
         df["_fs_div_used"] = "OFS"
         return df
 
-    rep = DARTReporter(
-        calendar=calendar_2020_2022, project_root=tmp_path, fetcher=stub_ofs
-    )
+    rep = DARTReporter(calendar=calendar_2020_2022, project_root=tmp_path, fetcher=stub_ofs)
     result = rep.fetch_report("999999", 2020, "FY")
 
     assert result.ref.status == "ok"
     assert result.ref.fs_div == "OFS"
 
 
-def test_fs_div_notfound_has_none(
-    tmp_path: Path, calendar_2020_2022: KRXBusinessCalendar
-) -> None:
+def test_fs_div_notfound_has_none(tmp_path: Path, calendar_2020_2022: KRXBusinessCalendar) -> None:
     """D10: 빈 응답 (CFS·OFS 둘 다 빈) → fs_div=None."""
 
     def stub_empty(ticker: str, year: int, reprt_code: str) -> pd.DataFrame:
         return pd.DataFrame()
 
-    rep = DARTReporter(
-        calendar=calendar_2020_2022, project_root=tmp_path, fetcher=stub_empty
-    )
+    rep = DARTReporter(calendar=calendar_2020_2022, project_root=tmp_path, fetcher=stub_empty)
     result = rep.fetch_report("999999", 2020, "FY")
 
     assert result.ref.status == "notfound"

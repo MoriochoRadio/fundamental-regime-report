@@ -146,8 +146,10 @@ strict_severe["rcept_date"] = pd.to_datetime(
 )
 strict_severe = strict_severe.dropna(subset=["rcept_date"])
 
-print(f"  정밀 severe 매칭: {len(strict_severe)} 건 (전체 {len(df_corr)} 의 "
-      f"{100 * len(strict_severe) / len(df_corr):.1f}%)")
+print(
+    f"  정밀 severe 매칭: {len(strict_severe)} 건 (전체 {len(df_corr)} 의 "
+    f"{100 * len(strict_severe) / len(df_corr):.1f}%)"
+)
 
 # 분석 기간 한정 + 중복 제거
 mask_window = (strict_severe["rcept_date"] >= pd.Timestamp("2015-01-01")) & (
@@ -241,8 +243,8 @@ mask_dl = (
 )
 delisted_universe = delisting[mask_dl]
 distress_kw = ["잠식", "해산", "감사", "부도", "회생", "관리"]
-mask_distress = delisted_universe["Reason"].astype(str).apply(
-    lambda r: any(kw in r for kw in distress_kw)
+mask_distress = (
+    delisted_universe["Reason"].astype(str).apply(lambda r: any(kw in r for kw in distress_kw))
 )
 distress_delisted = delisted_universe[mask_distress]
 delisted_tickers = set(distress_delisted["Symbol"])
@@ -277,8 +279,10 @@ print(f"\n  → 합산 0 연도: {combined_zero if combined_zero else '없음'}"
 section("결과 요약 + 판정 기준 적용")
 
 pct = 100 * len(union_set) / len(universe)
-print(f"  - 정밀 severe 양성 종목: {len(severe_tickers)} (유니버스 비율 "
-      f"{100 * len(severe_tickers) / len(universe):.1f}%)")
+print(
+    f"  - 정밀 severe 양성 종목: {len(severe_tickers)} (유니버스 비율 "
+    f"{100 * len(severe_tickers) / len(universe):.1f}%)"
+)
 print(f"  - 양성 0 연도: {zero_years if zero_years else '없음'}")
 print(f"  - spot-check top 10 우량주 비중: {blue_count}/10")
 print(f"  - 정밀 B1 합집합 상폐 부실 합집합: {len(union_set)} ({pct:.1f}%)")

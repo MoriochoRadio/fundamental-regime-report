@@ -315,13 +315,15 @@ def _make_default_fetcher(api_key: str | None) -> Fetcher:
     def _fetch(ticker: str, year: int, reprt_code: str) -> pd.DataFrame:
         for fs_div in ("CFS", "OFS"):
             try:
-                df = odr.finstate_all(
-                    ticker, year, reprt_code=reprt_code, fs_div=fs_div
-                )
+                df = odr.finstate_all(ticker, year, reprt_code=reprt_code, fs_div=fs_div)
             except Exception as e:
                 logger.warning(
                     "OpenDartReader finstate_all 예외 %s/%d/%s/%s: %s",
-                    ticker, year, reprt_code, fs_div, e,
+                    ticker,
+                    year,
+                    reprt_code,
+                    fs_div,
+                    e,
                 )
                 continue
             if df is not None and len(df) > 0:

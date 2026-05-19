@@ -86,10 +86,14 @@ print(f"  ArrantEndDate    dtype: {delisting['ArrantEndDate'].dtype}")
 
 enforce_valid = delisting["ArrantEnforceDate"].notna().sum()
 end_valid = delisting["ArrantEndDate"].notna().sum()
-print(f"\n  ArrantEnforceDate 유효: {enforce_valid} / {len(delisting)} "
-      f"({100 * enforce_valid / len(delisting):.1f}%)")
-print(f"  ArrantEndDate    유효: {end_valid} / {len(delisting)} "
-      f"({100 * end_valid / len(delisting):.1f}%)")
+print(
+    f"\n  ArrantEnforceDate 유효: {enforce_valid} / {len(delisting)} "
+    f"({100 * enforce_valid / len(delisting):.1f}%)"
+)
+print(
+    f"  ArrantEndDate    유효: {end_valid} / {len(delisting)} "
+    f"({100 * end_valid / len(delisting):.1f}%)"
+)
 
 # 둘 다 유효 (지정·해제 둘 다 있음)
 both_valid = (delisting["ArrantEnforceDate"].notna() & delisting["ArrantEndDate"].notna()).sum()
@@ -100,9 +104,8 @@ print(f"  지정·해제 둘 다 유효: {both_valid} 건")
 
 section("3. ArrantEnforceDate 2015-2024 범위 분포 (delisting 테이블 한정)")
 
-mask_arrant_window = (
-    (delisting["ArrantEnforceDate"] >= pd.Timestamp("2015-01-01"))
-    & (delisting["ArrantEnforceDate"] <= pd.Timestamp("2024-12-31"))
+mask_arrant_window = (delisting["ArrantEnforceDate"] >= pd.Timestamp("2015-01-01")) & (
+    delisting["ArrantEnforceDate"] <= pd.Timestamp("2024-12-31")
 )
 arrant_in_window = delisting[mask_arrant_window]
 print(f"  2015-2024 ArrantEnforceDate: {len(arrant_in_window)} 건")
@@ -136,8 +139,10 @@ print(f"  유니버스 union: {len(universe_union)} 종목")
 # 유니버스에 있고 ArrantEnforceDate 가 2015-2024 범위인 행
 mask_in_universe = arrant_in_window["Symbol"].isin(universe_union)
 arrant_in_uni = arrant_in_window[mask_in_universe]
-print(f"  유니버스 + 2015-2024 ArrantEnforceDate: {len(arrant_in_uni)} 건 "
-      f"(고유 종목 {arrant_in_uni['Symbol'].nunique()})")
+print(
+    f"  유니버스 + 2015-2024 ArrantEnforceDate: {len(arrant_in_uni)} 건 "
+    f"(고유 종목 {arrant_in_uni['Symbol'].nunique()})"
+)
 
 # 종목별 사례
 print("\n  유니버스 내 관리종목 지정 사례 (Symbol/Name/EnforceDate/EndDate/Reason):")
@@ -197,8 +202,10 @@ print(f"  (a) 유니버스 ∩ 상폐(2015-2024): {len(delisted_universe)} 건")
 
 # 부실 사유 필터
 distress_keywords = ["잠식", "해산", "감사", "부도", "회생", "관리"]
-mask_distress = delisted_universe["Reason"].astype(str).apply(
-    lambda r: any(kw in r for kw in distress_keywords)
+mask_distress = (
+    delisted_universe["Reason"]
+    .astype(str)
+    .apply(lambda r: any(kw in r for kw in distress_keywords))
 )
 delisted_distress = delisted_universe[mask_distress]
 print(f"      그 중 *부실 사유* 만: {len(delisted_distress)} 건")
@@ -209,8 +216,10 @@ mask_arrant_uni_window = (
     arrant_in_uni["Symbol"].notna()  # 이미 필터됨
 )
 arrant_distress = arrant_in_uni[mask_arrant_uni_window]
-print(f"\n  (b) 유니버스 ∩ 관리종목(2015-2024, delisting 테이블에 한정): "
-      f"{len(arrant_distress)} 건 (고유 {arrant_distress['Symbol'].nunique()})")
+print(
+    f"\n  (b) 유니버스 ∩ 관리종목(2015-2024, delisting 테이블에 한정): "
+    f"{len(arrant_distress)} 건 (고유 {arrant_distress['Symbol'].nunique()})"
+)
 
 # (a) ∩ (b) — 상폐 + 관리종목 중복
 overlap = set(delisted_distress["Symbol"]) & set(arrant_distress["Symbol"])
