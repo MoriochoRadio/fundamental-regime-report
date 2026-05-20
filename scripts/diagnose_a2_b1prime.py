@@ -386,10 +386,16 @@ mask_dl = (
     & (delisting["Symbol"].isin(universe))
 )
 delisted_universe = delisting[mask_dl]
-distress_kw = ["잠식", "해산", "감사", "부도", "회생", "관리"]
-mask_distress = (
-    delisted_universe["Reason"].astype(str).apply(lambda r: any(kw in r for kw in distress_kw))
-)
+# 2026-05-19 정정 (PROGRESS §5.5.9): distress_kw 키워드 매칭 → 카테고리 화이트리스트 isin.
+# 변경 사유: 기존 distress_kw=["잠식","해산","감사","부도","회생","관리"] 가 A 8 중
+# 7건의 합병성 자발 해산("해산 사유 발생" 카테고리)을 부실로 오분류.
+# §5.5.5 가 사전 경고했던 패턴이 §5.5.7 박제 시 누락 → A 8 육안 게이트로 박제 직전 포착.
+# ToSymbol/ToName 가설은 76% 결측으로 기각, Reason 카테고리 화이트리스트 (옵션 A) 채택.
+# 현 universe + 분석기간 매칭은 "자본전액잠식" 1건뿐 (포스코플랜텍 051310, 2016-04-15).
+# 다른 부실 카테고리(감사거절·계속기업의문 등) 는 KOSPI200 universe 매칭 0건 — 미래
+# 안전망은 §3 단계 2 DoD "D2 라벨 출처 보강" 에서 별도 검증 (자의적 변종 enum 회피).
+DISTRESS_REASONS_WHITELIST = frozenset({"자본전액잠식"})
+mask_distress = delisted_universe["Reason"].isin(DISTRESS_REASONS_WHITELIST)
 distress_delisted = delisted_universe[mask_distress]
 delisted_tickers = set(distress_delisted["Symbol"])
 print(f"  상폐 부실 종목: {len(delisted_tickers)}")
