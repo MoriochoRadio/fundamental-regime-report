@@ -3,38 +3,41 @@
 이 문서는 본 프로젝트의 **변하는 상태**를 추적한다.
 변하지 않는 사실·규칙·방향은 `CLAUDE.md` 에 있다.
 
-**마지막 갱신**: 2026-05-20 (§5.5.10 박제 — D2 데이터 충분성 게이트 종료. O2/O1 보강 안 함 결정, α=20 진입 확정. 다음: labels.py 설계안 재제시)
+**마지막 갱신**: 2026-05-20 (§5.5.11 박제 — D10 가정 오류 정정. D10 OFS fallback 코드 이미 적용 (commit 6962cb7), 잔여 백필·refresh는 features 단계. labels.py 양성 20 변동 0 재확인)
 
 ---
 
 ## ★ 다음 세션 시작 지점 (Resume Marker)
 
 > **다음 세션은 이 지점부터 이어간다**:
-> 1. **D2 정정 + 데이터 충분성 게이트 종료** (2026-05-20):
+> 1. **단계 2 진입 + labels.py 완료** (2026-05-20):
 >    - α = 상폐 부실(A=1) ∪ B1'(B=19) = **양성 20**, 0년 {2015,2021,2023}
->    - §5.5.9 — P1 정정 (distress 화이트리스트 = {"자본전액잠식"})
->    - §5.5.10 — O2/O1 검토 후 보강 안 함 결정 (12건 전수 의미 검증:
->      합당 5 / 모호 3 / 노이즈 4 → forward window 방향 전체 폐기)
-> 2. **다음 — labels.py 설계안 재제시**:
->    - 수치 갱신 (EXPECTED_POSITIVES = 20 종목 frozenset, EXPECTED_YEAR_DIST
->      = {2015:0, 2016:1, 2017:3, 2018:3, 2019:2, 2020:9, 2021:0, 2022:1,
->      2023:0, 2024:1})
->    - 단계 2 첫 작업 — labels.py + test_labels.py 구현
->    - 사용자 확인 후 코드 작성 (CLAUDE.md §7.2 코드 작성 전 절차)
-> 3. **단계 2 학습 측 보완 항목 (D8 시점)**: class weight · forward window
->    ablation (모델 측, 라벨 측 변경 X) · bootstrap · 시점별 가중치 · 0년
->    fold 처리. §5.5.10 결정으로 *라벨 측 보강 안 함, 모델 측 보완 우선*.
+>    - `src/frr/labels.py` + `tests/test_labels.py` (commit `03e494f`,
+>      단위 7 + 통합 1 PASS)
+>    - D10 OFS fallback 인프라 ✅ (commit `6962cb7`, 단계 1 시점에 이미
+>      적용 — 본 세션 §5.5.11 가정 오류 정정 박제)
+>    - labels.py 양성 20 변동 0 — 본 세션 사전 검증 (가)(나)(다) 실측
+> 2. **다음 — 격리 테스트 3종 설계안 제시**:
+>    - features 모듈이 *라벨 정의 변수*에 접근 안 함 검증 (CLAUDE.md §5)
+>    - (i) universe 변수 (편입/편출·시총 순위) 격리
+>    - (ii) 상폐/관리 메타 (DelistingDate·Reason·ArrantEnforceDate) 격리
+>    - (iii) 룩어헤드 차단 종합 (기존 test_time_align 확장)
+>    - 검증 방식: AST import 검사 + features 출력 컬럼 화이트리스트
+>      (PROGRESS §3 DoD 사전 메모)
+> 3. **그 후 단계 2 작업**: walk-forward 분할 · features 모듈 (D10 fs_div
+>    백필 + 9 FY refresh 시점) · 모델 (class weight·forward window ablation·
+>    bootstrap·시점별 가중치·0년 fold 처리, §5.5.10 결정으로 라벨 측 보강
+>    안 함·모델 측 보완 우선).
 
 ---
 
 ## 1. 현재 상태 (Current Status)
 
-- **단계**: 단계 1 코드 작업 완료. **D2 = α ✅ 정정 완료 + 데이터 충분성
-  게이트 종료 (2026-05-20, §5.5.9/§5.5.10)** — 양성 20 (A=1 + B=19) 진입
-  확정. O2 (forward 1→2년) 12건 전수 검증 결과 노이즈 33% + 모호 25% 로
-  *라벨 의미 균질성 위반* 기각. O1 (KOSDAQ150) §5.5.6 결론 유지. CI ✅ +
-  CRLF ✅ + D2 ✅ + 게이트 ✅ 충족. **다음: labels.py 설계안 재제시 (수치
-  갱신) → 사용자 확인 → 코드 작성**.
+- **단계**: 단계 2 진입 + labels.py 구현 완료 (commit `03e494f`, 단위 7 +
+  통합 1 PASS) + D10 OFS fallback 인프라 ✅ (commit `6962cb7`, 본 세션
+  사전 검증으로 labels 영향 0 재확인). 다음: **격리 테스트 3종** (features
+  모듈이 라벨 변수 접근 안 함 — universe 변수·상폐 메타·정정공시 메타).
+  그 후 walk-forward 분할·features 모듈·모델.
 - **요약**: CI 4회 연속 실패(2026-05-18) → 커밋 1 (`71ef11a`) ruff format
   으로 그린 회복. 커밋 2 (`3585848`) D2 후보 상태 되돌림 + §7.4 ruff format
   규칙. 커밋 3 (`2977262`) D2 = α 최종 확정 — *5개 후보(D2(E)·B1 v1·v2·B3·A)
@@ -84,7 +87,7 @@
 - [x] **`src/frr/data/krx.py` v1 작성** — `KRXSingleTicker.fetch_ohlcv(ticker, start, end, refresh)`. 캐시 정책: *요청 ⊆ 캐시 → 슬라이스 hit (네트워크 0)*, *그 외 → 합집합 범위 재페치 (캐시 점진 확장)*. 의존성 주입(`fetcher` 인자)으로 단위 테스트 네트워크 0회.
 - [x] **`tests/test_krx.py` 8 테스트 통과** — 캐시 정책 6경로(없음/⊆/왼쪽/오른쪽/gap/refresh) + 잘못된 범위 + pykrx 실호출 통합. 전체 50 + 1 skip (3.05s).
 - [x] **`.env.example` 추가** — DART 키 자리 + 발급 안내 + 보안 규칙. `.env` 는 `.gitignore` 대상.
-- [x] **`src/frr/data/dart.py` v1 작성** — `DARTReporter`: `fetch_report(ticker, year, period)` / `available_at(t)` / `latest_available(t)`. **`rcept_no` 첫 8자 → `rcept_dt`** 추출, **`available_from = rcept_dt + 1영업일`** (D7 룩어헤드 차단의 코드 구현). 캐시 = parquet + yaml sidecar, `notfound` 상태 메타 기록으로 DART 한도 절약. CFS 기본 (D10 결정 대기).
+- [x] **`src/frr/data/dart.py` v1 작성** — `DARTReporter`: `fetch_report(ticker, year, period)` / `available_at(t)` / `latest_available(t)`. **`rcept_no` 첫 8자 → `rcept_dt`** 추출, **`available_from = rcept_dt + 1영업일`** (D7 룩어헤드 차단의 코드 구현). 캐시 = parquet + yaml sidecar, `notfound` 상태 메타 기록으로 DART 한도 절약. **D10 OFS fallback 코드 적용 완료** (commit `6962cb7`, 2026-05-18) — `_make_default_fetcher` 가 CFS 우선 + OFS fallback 자동 동작, `ReportRef.fs_div` 필드 + meta.yaml `fs_div` 기록. 캐시 fs_div 메타 백필은 features 단계로 이전 (10,114 캐시 모두 fs_div=None 상태). **labels.py 영향 0 실측 확인** (본 세션 사전 검증 (가)(나)(다), §5.5.11).
 - [x] **`tests/test_dart.py` 11 테스트 통과** — 단위 10 + **통합 1 (실 DART API + 실 캘린더 FDR fetch로 005930 2020 사업보고서 페치 + rcept_dt 2021-03-09 + available_from 2021-03-10 검증)**. 전체 61 + 1 skip (4.49s).
 - [x] **커밋 1 — CI 수정 (`71ef11a`, 2026-05-19)** — ruff format 7파일 자동 정리 → CI 그린 회복. CI 4회 연속 실패 원인 진단: 로컬에서 `ruff check + pytest` 만 검증하고 `ruff format` 누락. 추후 재발 방지: 커밋 2 의 CLAUDE.md §7.4 한 줄 규칙으로 박제 예정.
 - [x] **`configs/data.yaml` + `src/frr/config.py` 작성** — 분석 기간·유니버스 매니페스트·DART lag·periods·fs_div 의 단일 source of truth. frozen dataclass 4개 + `load_data_config(path)`. pydantic 미도입 (단순성 우선). `fs_div: CFS` 주석에 *D10 결정 대기* 표기.
@@ -943,6 +946,66 @@ window 옵션의 라벨 의미 분산을 입증하는 데이터로 기록*되며
 12 종목 전수 의미 검증의 실측 위에 있다*는 점. 단계 2 진입 후 양성 20의
 한계가 학습에 영향을 줄 때 *"왜 보강 안 했나"* 의 답이 *§5.5.10 의 12 종목
 판정 + 5 근거* 로 분명. **면접 방어 정직성 = 자료 견고성**.
+
+---
+
+### 5.5.11. D10 가정 오류 + 작업 직전 dart.py 점검으로 잡힌 사례 (2026-05-20)
+
+> **본 절은 본 세션의 자문 측 가정 오류와 작업 직전 실측으로 잡힌 사례
+> 박제.** §5.5.9 (§5.5.5 경고 → §5.5.7 박제 시 누락) 의 거울상 패턴 —
+> PROGRESS §결정 로그에 *2026-05-18 D10 옵션 C (CFS 우선 + OFS fallback)
+> 승인* 박혀 있었으나 본 세션이 *"D10 미적용 단계 2 step #3 작업 예정"*
+> 가정 위에서 진행한 사례.
+
+**경위**:
+- 본 세션 내내 "D10 미적용, 단계 2 step #3 작업 예정" 가정 위에서 진행
+- (Z) 절충안까지 합의 — *dart.py 변경 diff + 9 FY None 케이스에 OFS
+  fallback 적용*
+- 작업 직전 dart.py 재읽기에서 **D10 OFS fallback 코드가 이미 적용됨**을
+  발견 (commit `6962cb7` "feat(dart): D10 - CFS preferred with OFS
+  fallback", 본 세션 시작 *전*)
+- `test_dart.py` 에 fs_div 단위 테스트 4건도 이미 박혀 있음 (CFS 기록 / OFS
+  fallback 기록 / notfound / 레거시 호환)
+- 사전 검증 (가)(나)(다) — *"D10 미적용 검증"* 으로 인식했으나 *실제로는*
+  *"D10 이미 적용된 상태에서 labels.py 영향 0 재검증"* 으로 의미 재해석.
+  9 FY None 케이스도 *D10 fallback 시도된 후* 캐시된 결과로 추정 (정확한
+  fallback 동작 여부는 features 단계 백필 시점에 정밀 분석)
+
+**자문 측 가정 오류 — Co-Authored-By 가정 오류에 이은 두 번째 사례**:
+- 첫 번째: commit Z 직전, "이전 커밋들에 Co-Authored-By 없음" 잘못된 가정
+  (실제 모두 있음). Code 가 git log 로 실측 → 정정.
+- 두 번째: 본 세션 내내 "D10 미적용" 잘못된 가정 (실제 commit `6962cb7` 로
+  단계 1 시점 적용). Code 가 작업 직전 dart.py 재읽기로 실측 → 정정.
+
+**교훈 — 자문 시스템도 "추정 말고 실측" 정신 적용**:
+사용자 (자문 측) 와 Code 모두 동일한 정직성 원칙. 작업 진입 시점에 다음
+자문 측 검증 게이트를 명시 절차로 채택:
+- **PROGRESS §결정 로그 점검** — 본 세션 작업 영역의 *과거 결정* 확인
+- **`git log -- <파일>`** — 작업 대상 파일의 최근 변경 이력 확인
+- **관련 코드 한 번 더 읽기** — 작업 직전 *현 상태* 실측 (가정 우회 차단)
+
+본 게이트가 §5.5.9 의 *"A 8 육안 게이트"* + §5.5.10 의 *"12건 전수 검증"*
+과 같은 정신 — *가정 위에서 작업 들어가는 패턴의 시점 이동 차단*.
+
+**(Z) → (W') 옵션 채택 사유**:
+- D10 본질적 작업 (코드 + labels 영향 0) 은 이미 완료
+- 잔여 항목 (백필·9 FY refresh) 은 *features 단계 자연스러운 항목*
+- 본 turn 의 추가 작업: ① labels.py 통합 테스트 재실행 (양성 20 변동 0
+  실측 재확인) ② dart.py fs_div 단위 테스트 4건 검증 (이미 PASS) ③ PROGRESS
+  정정 박제
+
+**잔여 항목 (features 단계 이전)**:
+- 캐시 fs_div 메타 백필 (10,114 모두 None) — 일괄 vs lazy 방식은 features
+  시점 결정
+- 9 FY None 케이스 (롯데지주·SK텔레콤·하나투어·더블유게임즈·두산퓨얼셀)
+  refresh fetch — OFS fallback 시 실제 영업이익 회수 가능성 정밀 분석
+- §3 DoD 의 *지주회사 CFS 희석/증폭* 점검 항목 — D10 인프라 이미 있음,
+  features 에서 활용
+
+**남기는 이유** (§5.5.7·§5.5.9·§5.5.10 와 동일 원칙):
+"PROGRESS 결정 → 본 세션 가정 누락 → 작업 직전 실측으로 포착 → 정정" 의
+전 경위는 *자문 시스템도 "추정 말고 실측" 정신 적용*의 증거. 두 번 (Co-Authored-By
++ D10) 에 걸쳐 입증된 패턴 — 미래 자문 시스템 운용의 명시적 가이드.
 
 ---
 
