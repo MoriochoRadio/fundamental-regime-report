@@ -3,41 +3,53 @@
 이 문서는 본 프로젝트의 **변하는 상태**를 추적한다.
 변하지 않는 사실·규칙·방향은 `CLAUDE.md` 에 있다.
 
-**마지막 갱신**: 2026-05-20 (§5.5.11 박제 — D10 가정 오류 정정. D10 OFS fallback 코드 이미 적용 (commit 6962cb7), 잔여 백필·refresh는 features 단계. labels.py 양성 20 변동 0 재확인)
+**마지막 갱신**: 2026-05-20 (§5.5.12 박제 — walk-forward 합의 + D2 정직성 사슬 4 차원 종합. 본 세션 종료 박제로 다음 세션 walk-forward 코드 작성 시작점 확보)
 
 ---
 
 ## ★ 다음 세션 시작 지점 (Resume Marker)
 
-> **다음 세션은 이 지점부터 이어간다**:
-> 1. **단계 2 진입 + labels.py 완료** (2026-05-20):
->    - α = 상폐 부실(A=1) ∪ B1'(B=19) = **양성 20**, 0년 {2015,2021,2023}
->    - `src/frr/labels.py` + `tests/test_labels.py` (commit `03e494f`,
->      단위 7 + 통합 1 PASS)
->    - D10 OFS fallback 인프라 ✅ (commit `6962cb7`, 단계 1 시점에 이미
->      적용 — 본 세션 §5.5.11 가정 오류 정정 박제)
->    - labels.py 양성 20 변동 0 — 본 세션 사전 검증 (가)(나)(다) 실측
-> 2. **다음 — 격리 테스트 3종 설계안 제시**:
->    - features 모듈이 *라벨 정의 변수*에 접근 안 함 검증 (CLAUDE.md §5)
->    - (i) universe 변수 (편입/편출·시총 순위) 격리
->    - (ii) 상폐/관리 메타 (DelistingDate·Reason·ArrantEnforceDate) 격리
->    - (iii) 룩어헤드 차단 종합 (기존 test_time_align 확장)
->    - 검증 방식: AST import 검사 + features 출력 컬럼 화이트리스트
->      (PROGRESS §3 DoD 사전 메모)
-> 3. **그 후 단계 2 작업**: walk-forward 분할 · features 모듈 (D10 fs_div
->    백필 + 9 FY refresh 시점) · 모델 (class weight·forward window ablation·
->    bootstrap·시점별 가중치·0년 fold 처리, §5.5.10 결정으로 라벨 측 보강
->    안 함·모델 측 보완 우선).
+> **다음 세션은 이 지점부터 이어간다 — Walk-forward 코드 작성**:
+>
+> ### 1. 첫 메시지로 사전 점검할 항목 (§5.5.11 학습의 자문/실행 양측 게이트)
+> - `git log --oneline -25` — 본 세션 17 커밋 history 확인
+> - **PROGRESS §5.5.12** — walk-forward 합의 + 정밀화 사항 + 단위 테스트 9건
+> - **PROGRESS §5.5.11** — D10 가정 오류·자문 측 정직성 사슬 2 사례
+> - CLAUDE.md §5 (격리 원칙) / §7.2 (코드 작성 전 절차) / §8.6 (점진 생성)
+> - `tests/test_isolation.py` 변환 게이트 (features 작성 시 자동 활성)
+>
+> ### 2. Walk-forward 코드 작성 — 7 단계 (PROGRESS §5.5.12 명시)
+> 1. embargo 알고리즘 정확 구현 (train_end_threshold + valid_train_grid + skip)
+> 2. `src/frr/eval/__init__.py` + `src/frr/eval/splits.py` 작성
+> 3. 단위 테스트 9건 (1-5 기본 + 6 ValueError + 7 NotImplementedError + 8 raise 정상 + 9 embargo 위반 ValueError)
+> 4. 실제 분석 기간 적용 fold 수 실측 보고 (예상 28 folds)
+> 5. labels.py 통합 + 격리 + 회귀 영향 0 재확인
+> 6. ruff format → commit (`feat(eval): add walk-forward expanding window with embargo gap`)
+> 7. push → CI 그린 실측
+>
+> ### 3. 마지막 합의 상태 (본 세션 종료 시점)
+> - Walk-forward 알고리즘 정밀화 ✅
+> - Embargo gap (embargo_days = forward_window_days = 365 일관성) ✅
+> - 정밀화 #2 (min_train > grid 시 ValueError) ✅
+> - 정밀화 #3 (WalkForwardFold __post_init__ 시간순 + embargo 검증) ✅
+> - 0년 fold 처리는 D8 placeholder (NotImplementedError, 격리 (iii) placeholder 와 같은 패턴) ✅
+>
+> ### 4. 단계 2 후속 (walk-forward 완료 후)
+> features 모듈 (D10 fs_div 백필 + 9 FY refresh + 격리 (iii) placeholder
+> 본격 구현 시점) → 모델 (class weight·forward window ablation·bootstrap·
+> 시점별 가중치·0년 fold 처리, §5.5.10 결정으로 라벨 측 보강 안 함·모델 측
+> 보완 우선) → D8 평가 → LLM 빌드타임 배치 → Streamlit 통합.
 
 ---
 
 ## 1. 현재 상태 (Current Status)
 
-- **단계**: 단계 2 진입 + labels.py 구현 완료 (commit `03e494f`, 단위 7 +
-  통합 1 PASS) + D10 OFS fallback 인프라 ✅ (commit `6962cb7`, 본 세션
-  사전 검증으로 labels 영향 0 재확인). 다음: **격리 테스트 3종** (features
-  모듈이 라벨 변수 접근 안 함 — universe 변수·상폐 메타·정정공시 메타).
-  그 후 walk-forward 분할·features 모듈·모델.
+- **단계**: 단계 2 진입 + labels.py ✅ + 격리 프레임워크 ✅ + D10 정정 ✅ +
+  walk-forward 합의 박제 ✅ (본 세션 종료 시점, 2026-05-20). 다음 세션:
+  **walk-forward 코드 작성** (`src/frr/eval/splits.py` 신규, 7 단계 명시,
+  PROGRESS §5.5.12). D2 정직성 사슬 4 차원 (변수·양성 충분성·격리·시간) 중
+  *시간 차원*이 walk-forward 코드로 완성됨. 그 후 features 모듈 → 모델 → D8
+  평가 → LLM → Streamlit.
 - **요약**: CI 4회 연속 실패(2026-05-18) → 커밋 1 (`71ef11a`) ruff format
   으로 그린 회복. 커밋 2 (`3585848`) D2 후보 상태 되돌림 + §7.4 ruff format
   규칙. 커밋 3 (`2977262`) D2 = α 최종 확정 — *5개 후보(D2(E)·B1 v1·v2·B3·A)
@@ -1006,6 +1018,161 @@ window 옵션의 라벨 의미 분산을 입증하는 데이터로 기록*되며
 "PROGRESS 결정 → 본 세션 가정 누락 → 작업 직전 실측으로 포착 → 정정" 의
 전 경위는 *자문 시스템도 "추정 말고 실측" 정신 적용*의 증거. 두 번 (Co-Authored-By
 + D10) 에 걸쳐 입증된 패턴 — 미래 자문 시스템 운용의 명시적 가이드.
+
+---
+
+### 5.5.12. Walk-forward 합의 + D2 정직성 사슬 4 차원 종합 (2026-05-20 본 세션 종료 박제)
+
+> **본 절은 본 세션 종료 박제 — 다음 세션 walk-forward 코드 작성이 합의된
+> 알고리즘·정밀화 사항을 *모른 채로 시작*하는 위험을 차단**. §5.5.11 학습
+> ("작업 진입 시점에 PROGRESS·git log 점검을 자문/실행 양측 검증 게이트로")
+> 의 환경 차원 적용 — 미래 세션이 합의를 *추정*이 아닌 *문서 박제 실측*으로
+> 확보.
+
+**Walk-forward 골격 합의** (옵션 X-a: 최소 골격 + 0년 placeholder):
+
+- **위치**: `src/frr/eval/splits.py` (신규 `eval/` 패키지). 향후 D8 모듈
+  (metrics·calibration·bootstrap) 가 같은 그룹으로 자연 확장 — *점진 생성*
+  원칙 (CLAUDE.md §8.6).
+- **as_of_grid 추출**: walk-forward 모듈 내부 `_quarter_end_grid(loader)`
+  헬퍼 — universe_loader 책임 분리 유지.
+
+**핵심 데이터 클래스**:
+
+```python
+@dataclass(frozen=True)
+class WalkForwardFold:
+    train_start: date     # 분석 기간 시작 (모든 fold 고정 — expanding)
+    train_end: date       # 본 fold train 종료 (embargo 충족 분기말)
+    test_as_of: date      # test 시점 (분기말 영업일)
+    embargo_days: int     # 자체 무결성 검증용 필드
+    fold_id: int
+
+    def __post_init__(self) -> None:
+        # 시간 순 검증
+        if not (self.train_start < self.train_end < self.test_as_of):
+            raise ValueError(...)
+        # embargo 준수 검증 (정밀화 #3)
+        if self.train_end > self.test_as_of - timedelta(days=self.embargo_days):
+            raise ValueError(...)
+```
+
+→ walk_forward_expanding 우회하고 직접 WalkForwardFold 생성해도 검증 작동.
+*features 격리 (i)(ii) 가 import-level 차단이듯, fold 무결성은 dataclass-level
+차단*.
+
+**핵심 함수 시그니처**:
+
+```python
+def walk_forward_expanding(
+    *,
+    as_of_grid: list[date],
+    min_train_quarters: int = 8,        # 학습 임계 (2년 = 8 분기)
+    embargo_days: int = 365,            # forward_window_days 와 *일관*
+    analysis_start: date = date(2015, 1, 1),
+    zero_year_handling: Literal["skip", "merged", "synthetic", "raise"] = "raise",
+    zero_years: frozenset[int] | None = None,
+) -> list[WalkForwardFold]:
+    """Expanding window + embargo gap.
+
+    forward_window_days 는 labels.py 소관, embargo_days 는 본 모듈 소관.
+    호출자가 둘의 *일관성 유지 책임* (둘 다 365 기본).
+
+    알고리즘:
+      for each test_as_of in as_of_grid:
+          train_end_threshold = test_as_of - timedelta(days=embargo_days)
+          valid_train_grid = [q for q in as_of_grid if q <= threshold]
+          if len(valid_train_grid) < min_train_quarters:
+              continue   # train 분기 부족, skip
+          train_end = max(valid_train_grid)
+          yield WalkForwardFold(...)
+
+    0년 fold 처리 (§5.5.10):
+      zero_year_handling != "raise" → NotImplementedError
+        (D8 결정 시점에 구현, 격리 (iii) placeholder 와 같은 패턴)
+
+    min_train > len(as_of_grid) → ValueError (silent 실패 차단, 정밀화 #2)
+    """
+```
+
+**Embargo 본질 — 시간 누수 차단**:
+
+walk-forward 의 *근본적* 안전장치. fold i 의 *train 내부* 각 `as_of=s` 의
+label 은 `(s, s + forward_window]` event 로 결정. 만약 `s + forward_window
+> train_end` 이면 *train 의 label 정의 자체가 train_end 이후 event 를 본
+결과* → **train 에 미래 정보 누수**. forward_window=365 인 본 프로젝트에서는
+*train 의 모든 as_of s 가 `s ≤ train_end - 365` 보장* 되어야 함.
+
+→ **embargo_days = forward_window_days = 365** 로 일관성 유지. 향후 forward
+window 변경 시 embargo 도 동일 변경 (호출자 책임).
+
+**예상 fold 수** (40 분기, min_train=8, embargo=365):
+- 8 + 4 (1년 ≈ 4 분기) = 12 분기 누적 후 첫 fold
+- 예상 첫 fold: `i=12, test=2018Q1, train=[2015Q1~2017Q1]`
+- **예상 총 28 folds** (40 − 12 = 28, embargo 없는 경우 32 대비 −4)
+- *정확한 수는 다음 세션 코드 작성 후 실측 보고* — 본 박제는 예상치만.
+
+**정직성**: embargo 로 fold 수 감소 (32→28) 는 *학습 데이터 약간 손실*이나,
+label 누수 차단이 *우선*. §5.5.10 의 *"노이즈 27 > 정직한 20 이 아님"* 정신과
+같음 — 손실 받아들이고 정직성 보존.
+
+**단위 테스트 9건** (CI 실행 가능, 합성 데이터):
+
+| # | 시나리오 | 검증 |
+|---|---|---|
+| 1 | 합성 as_of_grid 40개, min_train=8, embargo=365 → 28 folds (예상) | fold 수 일치 |
+| 2 | 첫 fold | train_end = grid[i-?], test = grid[12] (embargo 후) |
+| 3 | 마지막 fold | test = grid[39] (2024Q4) |
+| 4 | Expanding 확인 | `folds[i].train_end ≤ folds[i+1].train_end` 시간 순 |
+| 5 | train_start 모든 fold 고정 | `all(f.train_start == analysis_start)` |
+| 6 | min_train > len(as_of_grid) | **ValueError** (silent 차단, 정밀화 #2) |
+| 7 | zero_year_handling="skip"/"merged"/"synthetic" 호출 | **NotImplementedError** + "D8 결정 시점" + "§5.5.10 참조" 포함 |
+| 8 | zero_year_handling="raise" (기본) | 정상 fold 생성, 0년 fold 도 그대로 반환 |
+| 9 | **WalkForwardFold 직접 생성 시 embargo 위반** | **ValueError** (dataclass __post_init__ 검증, 정밀화 #3) |
+
+**다음 세션 작업 7 단계** (본 세션 종료 시 합의):
+1. embargo 알고리즘 정확 구현 (train_end_threshold + valid_train_grid + skip 로직)
+2. `src/frr/eval/__init__.py` + `src/frr/eval/splits.py` 작성
+3. 단위 테스트 9건 (위 표)
+4. 실제 분석 기간 적용 fold 수 실측 보고 (예상 28)
+5. labels.py 통합 + 격리 + 회귀 영향 0 재확인
+6. ruff format → commit (`feat(eval): add walk-forward expanding window with embargo gap`)
+7. push → CI 그린 실측
+
+---
+
+**D2 정직성 사슬 4 차원 종합 정리** (본 세션 마무리 종합):
+
+D2 라벨 정의를 *4 차원의 누수 차단* 으로 보호. 각 차원이 다른 종류의 누수를
+차단하며, *모든 차원이 박제되어야 D2 의 통합적 정직성*이 성립:
+
+| 차원 | 박제 위치 | 차단 대상 | 안전장치 |
+|---|---|---|---|
+| **변수 차원** | §5.5.7→§5.5.9 distress filter | 합병성 자발 해산 → A 라벨 노이즈 | A 8 육안 게이트로 7건 합병 적발 + P1 화이트리스트 `{"자본전액잠식"}` |
+| **양성 충분성 차원** | §5.5.10 | 양성 수 늘리려는 forward window 확장 → 라벨 의미 균질성 파괴 | O2 forward 1→2년 ablation 12건 전수 의미 검증 (합당 5/모호 3/노이즈 4) → 자의적 변종 선별 차단 → 기각 |
+| **격리 차원** | commit `a0d7932` (`tests/test_isolation.py`) | features 모듈이 라벨 변수 (DelistingDate·Reason·KOSPI200 편입 등) 직접 학습 → 라벨 누수 | AST + 컬럼 화이트리스트 + 변환 게이트 (missing/active/empty) |
+| **시간 차원** | 본 §5.5.12 + 다음 세션 walk-forward + embargo | train 의 label 정의 자체가 미래 event 본 결과 → 시간 누수 | `embargo_days = forward_window_days = 365` 일관성, WalkForwardFold dataclass `__post_init__` 검증 |
+
+**의미**: 격리 프레임워크가 *features 변수 누수*를 차단했듯, embargo 가
+*시간 누수*를 차단. 두 안전장치가 *동시 작동*해야 모델 평가의 정직성 보존.
+D2 정직성 사슬 4 차원이 *완성되는 시점이 walk-forward 코드 작성 직후* —
+다음 세션의 의미.
+
+**자문 측 정직성 사슬 2 사례** (§5.5.11 박제 그대로 — 본 절에서 재정리 X):
+- Co-Authored-By 가정 오류 → git log 실측 정정
+- D10 가정 오류 → 작업 직전 dart.py 재읽기로 §5.5.11 박제
+
+자문/실행 양측 모두 "추정 말고 실측" 정신 적용 — 작업 진입 시점에 PROGRESS·
+git log·관련 코드 *실측 점검* 을 자문 측 검증 게이트로 명시.
+
+---
+
+**남기는 이유** (§5.5.7·§5.5.9·§5.5.10·§5.5.11 와 동일 원칙):
+
+본 박제의 가치는 *합의 내용 자체* 가 아니라 *합의가 다음 세션에 실측 문서로
+전달되는 것*. 다음 세션이 walk-forward 합의를 *모른 채로 시작*하면 코드가
+다시 처음부터 설계되거나 합의와 다른 방향으로 작성될 위험. 본 박제로 그 위험
+사전 차단. **§5.5.11 학습의 환경 차원 적용**.
 
 ---
 
