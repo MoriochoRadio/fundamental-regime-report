@@ -3,7 +3,7 @@
 이 문서는 본 프로젝트의 **변하는 상태**를 추적한다.
 변하지 않는 사실·규칙·방향은 `CLAUDE.md` 에 있다.
 
-**마지막 갱신**: 2026-05-20 (§5.5.13 실측 — walk-forward 코드 작성 완료, fold 수 28 박제 예상 정확히 일치. D2 정직성 사슬 *시간 차원* 완성)
+**마지막 갱신**: 2026-05-20 (features 사전 토대 0단계 완료 — fs_div 라벨 백필 12,833 meta, ok→CFS 10,114·notfound→absent 2,719, idempotent 실측 검증. 1단계 (b)+(c)+(d) 설계 합의 게이트 대기)
 
 ---
 
@@ -22,13 +22,18 @@
 > - `tests/test_isolation.py` 변환 게이트 — features 작성 시점에 missing→active
 >   전환되며 (iii) lookahead placeholder 도 본격 구현 진입
 >
-> ### 2. 다음 작업 — features 모듈 진입 (단계 2 후속)
-> - D10 fs_div 백필 결정 (10,114 캐시 일괄 vs lazy)
-> - 9 FY None 케이스 refresh fetch (롯데지주·SK텔레콤·하나투어·더블유게임즈·
->   두산퓨얼셀) — OFS fallback 영업이익 회수 가능성 정밀 분석
-> - test_isolation.py (iii) lookahead placeholder 본격 구현
-> - 지주회사 CFS 희석/증폭 점검 (§3 DoD, §5.5.9 실측 사례)
-> - FDR ticker key 정규화 (`Code` vs `Symbol`, §3 DoD)
+> ### 2. 다음 작업 — features 사전 토대 1단계 설계 합의 게이트
+> 0단계 (a-α: fs_div 라벨 백필 12,833) 완료 (2026-05-20). 다음은 1단계
+> *코드 작성 전 설계 합의*:
+> - **(b) features 빌더 API** — 1차 후보 `build_features(ticker, as_of) -> DataFrame`
+> - **(b) lookahead 검증 방식** — 1차 권장 *런타임 mock + AST 보조* (vacuous 위험·실수 누수 검출 균형)
+> - **(c) fs_div 처리** — 1차 권장 (i) fs_div 컬럼 동행 (D10 CFS 우선 + OFS fallback + 격리 호환)
+> - **(d) FDR join helper** — `fdr_ticker_key(df) -> Series` 1 함수, (b) 빌더 작성 시 흡수
+> 본 4 항목은 *코드 작성 전 자문↔사용자 결정 게이트* — 합의 후 2단계 (features 첫 모듈 + lookahead 본격 구현) 진입.
+>
+> ### 3. 별도 결정 게이트 (features 안정화 후)
+> - (β) §5.5.11 5 종목 FY refresh (페치 ≤5) — OFS fallback 영업이익 회수 정밀 분석
+> - (γ) notfound 2,719 OFS 재페치 (페치 ≤2,719, DART 한도 27%) — D10 효과 ablation 측정
 >
 > ### 3. 다음 세션 후속 (features 후)
 > 모델 (class weight·forward window ablation·bootstrap·시점별 가중치·0년 fold
@@ -40,11 +45,10 @@
 ## 1. 현재 상태 (Current Status)
 
 - **단계**: 단계 2 진입 + labels.py ✅ + 격리 프레임워크 ✅ + D10 정정 ✅ +
-  **walk-forward 코드 작성 완료 ✅** (2026-05-20). D2 정직성 사슬 4 차원
-  (변수·양성 충분성·격리·시간) 중 *시간 차원* 완성. fold 수 28 (박제 예상
-  정확히 일치, PROGRESS §5.5.13). 다음: **features 모듈** (D10 fs_div 백필 +
-  9 FY refresh + 격리 (iii) lookahead placeholder 본격 구현 + 지주회사 CFS
-  희석/증폭 점검 + FDR ticker key 정규화).
+  walk-forward 코드 ✅ + **features 사전 토대 0단계 (fs_div 라벨 백필 12,833) 완료 ✅**
+  (2026-05-20). 다음: **1단계 (b)+(c)+(d) 설계 합의 게이트** — features 빌더 API +
+  lookahead 검증 방식 + fs_div 처리 + FDR join helper. 합의 후 2단계 features
+  첫 모듈 + lookahead 본격 구현 진입.
 - **요약**: CI 4회 연속 실패(2026-05-18) → 커밋 1 (`71ef11a`) ruff format
   으로 그린 회복. 커밋 2 (`3585848`) D2 후보 상태 되돌림 + §7.4 ruff format
   규칙. 커밋 3 (`2977262`) D2 = α 최종 확정 — *5개 후보(D2(E)·B1 v1·v2·B3·A)
@@ -111,6 +115,7 @@
 - [x] **`tests/test_splits.py` 12 테스트 통과** — 합성 40 분기 grid 기반 9 시나리오 + 시간순 검증 분리 1건 + parametrize 3건 = 총 12건. ruff clean.
 - [x] **`universe_loader.reference_date(quarter) -> date` 공개 메서드 추가** — walk-forward `_quarter_end_grid(loader)` 헬퍼가 분기 라벨 → date 변환 시 권위 정보 (매니페스트 `actual_reference_date`, 13/40 분기 holiday fallback) 노출 경로. *추론* 으로 대체하면 holiday fallback 권위 깨짐 → 공개 API 1줄 확장 채택. tests/test_universe_loader.py 에 2 테스트 추가 (14 통과).
 - [x] **전체 회귀 영향 0 재확인 (2026-05-20)** — 비 integration: 105 통과 + 4 skip + 7 integration deselected. ruff check + ruff format --check 통과. eval/ 모듈은 features/ 아니므로 격리 변환 게이트 영향 없음 (의도된 설계).
+- [x] **features 사전 토대 0단계 — fs_div 라벨 백필 (2026-05-20)** — `src/frr/data/dart.py` 에 `backfill_fs_div_label(cache_dir) -> dict[str, int]` module-level 함수 추가 (인스턴스 의존성 0, 페치 0). status='ok'→fs_div='CFS', status='notfound'→fs_div='absent', 이미 키 있으면 skip (idempotent). `scripts/backfill_dart_fs_div.py` CLI. `tests/test_dart.py` 에 단위 테스트 2건 추가 (정상 + idempotent). ReportRef docstring 에 'absent' 라벨 추가. **실측 12,833 meta 일괄 백필**: updated 10,114 CFS + 2,719 absent, skipped 0, errors 0. 2회 실행 시 skipped 12,833·errors 0 (idempotent 실측 검증). 교차 검증: ok≠CFS=0, notfound≠absent=0. 전체 비-integration 107 통과 + 4 skip + 7 deselected.
 
 ---
 

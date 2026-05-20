@@ -60,10 +60,12 @@ REPORT_CODES: dict[str, str] = {
 class ReportRef:
     """보고서 메타 (페치 본문 없이 룩어헤드 결정용).
 
-    `fs_div` (2026-05-19 D10 추가):
+    `fs_div` (2026-05-19 D10 추가, 2026-05-20 absent 추가):
     - "CFS": 연결재무제표 (1순위)
     - "OFS": 별도재무제표 (CFS 미작성 시 fallback)
-    - None: 기존 캐시 (fs_div 부재) 또는 notfound. 로더는 None 을 CFS 로 간주.
+    - "absent": notfound 보고서 (페치 실패, 어느 fs_div 도 회수 안 됨;
+      `backfill_fs_div_label` 으로 라벨링됨)
+    - None: 기존 캐시 (fs_div 부재, 백필 전). 로더는 None 을 CFS 로 간주.
     """
 
     ticker: str
@@ -333,3 +335,62 @@ def _make_default_fetcher(api_key: str | None) -> Fetcher:
         return pd.DataFrame()
 
     return _fetch
+
+
+def backfill_fs_div_label(cache_dir: Path) -> dict[str, int]:
+    """기존 캐시 meta.yaml 에 `fs_div` 라벨 백필 (D10 적용 이전 캐시 호환).
+
+    D10 OFS fallback 코드 (commit `6962cb7`) *이전* 페치된 캐시는 meta.yaml
+    에 `fs_div` 키 자체가 없음. 본 함수가 `status` 별 라벨 추가:
+
+    - `status='ok'` → `fs_div='CFS'` (D10 이전 fetcher 는 CFS only)
+    - `status='notfound'` → `fs_div='absent'` (페치 실패, 어느 fs_div 도 회수 안 됨)
+
+    이미 `fs_div` 키 있는 meta 는 skip — **idempotent** (반복 실행 안전).
+    페치 0, 네트워크 0.
+
+    Args:
+        cache_dir: DART 캐시 루트 (보통 `data/raw/dart/`).
+
+    Returns:
+        카운터 dict {updated, updated_ok, updated_notfound, skipped, errors}.
+    """
+    updated_ok = 0
+    updated_notfound = 0
+    skipped = 0
+    errors = 0
+
+    for meta_path in cache_dir.glob("*/*.meta.yaml"):
+        try:
+            data = yaml.safe_load(meta_path.read_text(encoding="utf-8"))
+        except Exception as e:
+            logger.warning("meta 파싱 실패 %s: %s", meta_path, e)
+            errors += 1
+            continue
+        if not isinstance(data, dict):
+            logger.warning("meta 가 dict 아님 %s (%s)", meta_path, type(data).__name__)
+            errors += 1
+            continue
+        if "fs_div" in data:
+            skipped += 1
+            continue
+        status = data.get("status")
+        if status == "ok":
+            data["fs_div"] = "CFS"
+            updated_ok += 1
+        elif status == "notfound":
+            data["fs_div"] = "absent"
+            updated_notfound += 1
+        else:
+            logger.warning("알 수 없는 status %r in %s", status, meta_path)
+            errors += 1
+            continue
+        meta_path.write_text(yaml.safe_dump(data, allow_unicode=True), encoding="utf-8")
+
+    return {
+        "updated": updated_ok + updated_notfound,
+        "updated_ok": updated_ok,
+        "updated_notfound": updated_notfound,
+        "skipped": skipped,
+        "errors": errors,
+    }

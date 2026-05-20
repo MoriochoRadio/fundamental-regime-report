@@ -26,6 +26,7 @@ from frr.data.calendars import KRXBusinessCalendar
 from frr.data.dart import (
     DARTReporter,
     _rcept_no_to_date,
+    backfill_fs_div_label,
 )
 
 # ---- 합성 캘린더 fixture ------------------------------------------------
@@ -359,3 +360,130 @@ def test_fetch_samsung_2020_fy_real(tmp_path: Path) -> None:
     # 캐시·메타 생성
     assert (tmp_path / "data/raw/dart/005930/2020_FY.parquet").exists()
     assert (tmp_path / "data/raw/dart/005930/2020_FY.meta.yaml").exists()
+
+
+# ---- backfill_fs_div_label 단위 테스트 -----------------------------------
+
+
+def _write_meta(path: Path, data: dict) -> None:
+    """헬퍼: 합성 meta.yaml 작성."""
+    import yaml
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(yaml.safe_dump(data, allow_unicode=True), encoding="utf-8")
+
+
+def test_backfill_fs_div_label_adds_cfs_and_absent(tmp_path: Path) -> None:
+    """ok → CFS, notfound → absent, 이미 키 있으면 skip.
+
+    합성 4 meta: ok 2 (CFS 추가) + notfound 1 (absent 추가) + fs_div='OFS' 1 (skip).
+    페치 0 — 네트워크 의존성 없음 (단위 테스트 충분).
+    """
+    cache = tmp_path / "dart"
+    # ok 2 (fs_div 키 부재)
+    _write_meta(
+        cache / "005930" / "2020_FY.meta.yaml",
+        {
+            "ticker": "005930",
+            "year": 2020,
+            "period": "FY",
+            "status": "ok",
+            "rcept_dt": "2021-03-09",
+            "available_from": "2021-03-10",
+            "fetched_at": "2026-05-18",
+        },
+    )
+    _write_meta(
+        cache / "005930" / "2020_Q1.meta.yaml",
+        {
+            "ticker": "005930",
+            "year": 2020,
+            "period": "Q1",
+            "status": "ok",
+            "rcept_dt": "2020-05-15",
+            "available_from": "2020-05-18",
+            "fetched_at": "2026-05-18",
+        },
+    )
+    # notfound 1 (fs_div 키 부재)
+    _write_meta(
+        cache / "000030" / "2019_FY.meta.yaml",
+        {
+            "ticker": "000030",
+            "year": 2019,
+            "period": "FY",
+            "status": "notfound",
+            "rcept_dt": None,
+            "available_from": None,
+            "fetched_at": "2026-05-18",
+        },
+    )
+    # 이미 fs_div='OFS' (skip 검증용)
+    _write_meta(
+        cache / "267250" / "2022_FY.meta.yaml",
+        {
+            "ticker": "267250",
+            "year": 2022,
+            "period": "FY",
+            "status": "ok",
+            "rcept_dt": "2023-03-15",
+            "available_from": "2023-03-16",
+            "fs_div": "OFS",
+            "fetched_at": "2026-05-19",
+        },
+    )
+
+    result = backfill_fs_div_label(cache)
+
+    assert result == {
+        "updated": 3,
+        "updated_ok": 2,
+        "updated_notfound": 1,
+        "skipped": 1,
+        "errors": 0,
+    }
+
+    # 라벨 검증
+    import yaml
+
+    fy_data = yaml.safe_load((cache / "005930" / "2020_FY.meta.yaml").read_text(encoding="utf-8"))
+    assert fy_data["fs_div"] == "CFS"
+    nf_data = yaml.safe_load((cache / "000030" / "2019_FY.meta.yaml").read_text(encoding="utf-8"))
+    assert nf_data["fs_div"] == "absent"
+    ofs_data = yaml.safe_load((cache / "267250" / "2022_FY.meta.yaml").read_text(encoding="utf-8"))
+    assert ofs_data["fs_div"] == "OFS"  # skip 으로 변경 없음
+
+
+def test_backfill_fs_div_label_idempotent(tmp_path: Path) -> None:
+    """2회 실행 시 두 번째는 updated=0, skipped=N (idempotent)."""
+    cache = tmp_path / "dart"
+    _write_meta(
+        cache / "005930" / "2020_FY.meta.yaml",
+        {
+            "ticker": "005930",
+            "year": 2020,
+            "period": "FY",
+            "status": "ok",
+            "rcept_dt": "2021-03-09",
+            "available_from": "2021-03-10",
+            "fetched_at": "2026-05-18",
+        },
+    )
+    _write_meta(
+        cache / "000030" / "2019_FY.meta.yaml",
+        {
+            "ticker": "000030",
+            "year": 2019,
+            "period": "FY",
+            "status": "notfound",
+            "rcept_dt": None,
+            "available_from": None,
+            "fetched_at": "2026-05-18",
+        },
+    )
+
+    first = backfill_fs_div_label(cache)
+    assert first["updated"] == 2 and first["skipped"] == 0
+
+    second = backfill_fs_div_label(cache)
+    assert second["updated"] == 0 and second["skipped"] == 2 and second["errors"] == 0
