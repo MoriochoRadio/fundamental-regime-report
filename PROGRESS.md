@@ -3,53 +3,48 @@
 이 문서는 본 프로젝트의 **변하는 상태**를 추적한다.
 변하지 않는 사실·규칙·방향은 `CLAUDE.md` 에 있다.
 
-**마지막 갱신**: 2026-05-20 (§5.5.12 박제 — walk-forward 합의 + D2 정직성 사슬 4 차원 종합. 본 세션 종료 박제로 다음 세션 walk-forward 코드 작성 시작점 확보)
+**마지막 갱신**: 2026-05-20 (§5.5.13 실측 — walk-forward 코드 작성 완료, fold 수 28 박제 예상 정확히 일치. D2 정직성 사슬 *시간 차원* 완성)
 
 ---
 
 ## ★ 다음 세션 시작 지점 (Resume Marker)
 
-> **다음 세션은 이 지점부터 이어간다 — Walk-forward 코드 작성**:
+> **다음 세션은 이 지점부터 이어간다 — features 모듈 작업 진입**:
 >
 > ### 1. 첫 메시지로 사전 점검할 항목 (§5.5.11 학습의 자문/실행 양측 게이트)
-> - `git log --oneline -25` — 본 세션 17 커밋 history 확인
-> - **PROGRESS §5.5.12** — walk-forward 합의 + 정밀화 사항 + 단위 테스트 9건
-> - **PROGRESS §5.5.11** — D10 가정 오류·자문 측 정직성 사슬 2 사례
+> - `git log --oneline -25` — 본 세션 walk-forward 커밋 + 그 직전 커밋 확인
+> - **PROGRESS §5.5.13** — walk-forward 실측 결과 (fold 28 박제 예상 일치) +
+>   universe_loader.reference_date 추가 경위 + 합성·실제 grid 차이의 의미
+> - **PROGRESS §5.5.12** — walk-forward 합의 박제 (실측은 §5.5.13)
+> - **PROGRESS §5.5.11** — 자문 측 정직성 사슬 2 사례
+> - **PROGRESS §3 단계 2 DoD** — CFS/OFS 일관성·지주 희석/증폭·FDR ticker key 통일
 > - CLAUDE.md §5 (격리 원칙) / §7.2 (코드 작성 전 절차) / §8.6 (점진 생성)
-> - `tests/test_isolation.py` 변환 게이트 (features 작성 시 자동 활성)
+> - `tests/test_isolation.py` 변환 게이트 — features 작성 시점에 missing→active
+>   전환되며 (iii) lookahead placeholder 도 본격 구현 진입
 >
-> ### 2. Walk-forward 코드 작성 — 7 단계 (PROGRESS §5.5.12 명시)
-> 1. embargo 알고리즘 정확 구현 (train_end_threshold + valid_train_grid + skip)
-> 2. `src/frr/eval/__init__.py` + `src/frr/eval/splits.py` 작성
-> 3. 단위 테스트 9건 (1-5 기본 + 6 ValueError + 7 NotImplementedError + 8 raise 정상 + 9 embargo 위반 ValueError)
-> 4. 실제 분석 기간 적용 fold 수 실측 보고 (예상 28 folds)
-> 5. labels.py 통합 + 격리 + 회귀 영향 0 재확인
-> 6. ruff format → commit (`feat(eval): add walk-forward expanding window with embargo gap`)
-> 7. push → CI 그린 실측
+> ### 2. 다음 작업 — features 모듈 진입 (단계 2 후속)
+> - D10 fs_div 백필 결정 (10,114 캐시 일괄 vs lazy)
+> - 9 FY None 케이스 refresh fetch (롯데지주·SK텔레콤·하나투어·더블유게임즈·
+>   두산퓨얼셀) — OFS fallback 영업이익 회수 가능성 정밀 분석
+> - test_isolation.py (iii) lookahead placeholder 본격 구현
+> - 지주회사 CFS 희석/증폭 점검 (§3 DoD, §5.5.9 실측 사례)
+> - FDR ticker key 정규화 (`Code` vs `Symbol`, §3 DoD)
 >
-> ### 3. 마지막 합의 상태 (본 세션 종료 시점)
-> - Walk-forward 알고리즘 정밀화 ✅
-> - Embargo gap (embargo_days = forward_window_days = 365 일관성) ✅
-> - 정밀화 #2 (min_train > grid 시 ValueError) ✅
-> - 정밀화 #3 (WalkForwardFold __post_init__ 시간순 + embargo 검증) ✅
-> - 0년 fold 처리는 D8 placeholder (NotImplementedError, 격리 (iii) placeholder 와 같은 패턴) ✅
->
-> ### 4. 단계 2 후속 (walk-forward 완료 후)
-> features 모듈 (D10 fs_div 백필 + 9 FY refresh + 격리 (iii) placeholder
-> 본격 구현 시점) → 모델 (class weight·forward window ablation·bootstrap·
-> 시점별 가중치·0년 fold 처리, §5.5.10 결정으로 라벨 측 보강 안 함·모델 측
-> 보완 우선) → D8 평가 → LLM 빌드타임 배치 → Streamlit 통합.
+> ### 3. 다음 세션 후속 (features 후)
+> 모델 (class weight·forward window ablation·bootstrap·시점별 가중치·0년 fold
+> 처리, §5.5.10 결정으로 라벨 측 보강 안 함·모델 측 보완 우선) → D8 평가
+> (walk-forward 본 모듈 사용) → LLM 빌드타임 배치 → Streamlit 통합.
 
 ---
 
 ## 1. 현재 상태 (Current Status)
 
 - **단계**: 단계 2 진입 + labels.py ✅ + 격리 프레임워크 ✅ + D10 정정 ✅ +
-  walk-forward 합의 박제 ✅ (본 세션 종료 시점, 2026-05-20). 다음 세션:
-  **walk-forward 코드 작성** (`src/frr/eval/splits.py` 신규, 7 단계 명시,
-  PROGRESS §5.5.12). D2 정직성 사슬 4 차원 (변수·양성 충분성·격리·시간) 중
-  *시간 차원*이 walk-forward 코드로 완성됨. 그 후 features 모듈 → 모델 → D8
-  평가 → LLM → Streamlit.
+  **walk-forward 코드 작성 완료 ✅** (2026-05-20). D2 정직성 사슬 4 차원
+  (변수·양성 충분성·격리·시간) 중 *시간 차원* 완성. fold 수 28 (박제 예상
+  정확히 일치, PROGRESS §5.5.13). 다음: **features 모듈** (D10 fs_div 백필 +
+  9 FY refresh + 격리 (iii) lookahead placeholder 본격 구현 + 지주회사 CFS
+  희석/증폭 점검 + FDR ticker key 정규화).
 - **요약**: CI 4회 연속 실패(2026-05-18) → 커밋 1 (`71ef11a`) ruff format
   으로 그린 회복. 커밋 2 (`3585848`) D2 후보 상태 되돌림 + §7.4 ruff format
   규칙. 커밋 3 (`2977262`) D2 = α 최종 확정 — *5개 후보(D2(E)·B1 v1·v2·B3·A)
@@ -112,6 +107,10 @@
 - [x] **사용자 `--limit 3` 점검 통과** — 3차 실행: 3종목 / KRX 3 / FDR OK / **DART 49 ok + 71 notfound + 0 failures**. 구조적 실패 0. 71 notfound 는 *도메인 사실* (000030 우리은행 2017 합병 폐지 → 2018+ 보고서 미존재 ≈ 28건 + 분기보고서 부분 미제출). **사용자 전체 수집 시작** (~250 종목, 예상 1~2시간).
 - [x] **`tests/test_time_align.py` 4 테스트 통과** — 단계 1 룩어헤드 차단 통합 시나리오 (universe.as_of + dart.available_at 동시·available_from↔캘린더 일치·분기 경계·연 경계). 격리 두 항목(유니버스 변수·상폐 메타)은 *단계 2 진입 시* 추가 — module docstring 에 placeholder 명시. 전체 86 + 1 skip (6.56s).
 - [x] **`.github/workflows/ci.yml` 작성 + integration marker 분리** — pyproject 에 `integration` marker 등록, 외부 API 의존 6 테스트(FDR/pykrx/DART)에 `@pytest.mark.integration` 부여. CI 워크플로: actions/checkout@v4 → setup-uv@v5 → Python 3.13 → `uv sync --frozen` → ruff check → ruff format --check → `pytest -m "not integration"`. **CI 단위 80 + 1 skip (2.29s, 네트워크·키 0)**. 로컬 통합 6 (3.54s). 전체 86 + 1 skip (5.06s).
+- [x] **`src/frr/eval/splits.py` v1 + walk-forward expanding window 작성 (2026-05-20)** — `WalkForwardFold` (frozen dataclass + `__post_init__` 시간순/embargo 두 단계 검증), `walk_forward_expanding(*, as_of_grid, min_train_quarters=8, embargo_days=365, analysis_start, zero_year_handling="raise", zero_years=None)`, `_quarter_end_grid(loader)` 헬퍼. 정밀화 #2 (silent 차단) + 정밀화 #3 (dataclass-level 무결성) + 0년 fold placeholder (NotImplementedError + 메시지 검증). PROGRESS §5.5.12 합의 그대로 구현 + §5.5.13 실측 보고. D2 정직성 사슬 *시간 차원* 완성.
+- [x] **`tests/test_splits.py` 12 테스트 통과** — 합성 40 분기 grid 기반 9 시나리오 + 시간순 검증 분리 1건 + parametrize 3건 = 총 12건. ruff clean.
+- [x] **`universe_loader.reference_date(quarter) -> date` 공개 메서드 추가** — walk-forward `_quarter_end_grid(loader)` 헬퍼가 분기 라벨 → date 변환 시 권위 정보 (매니페스트 `actual_reference_date`, 13/40 분기 holiday fallback) 노출 경로. *추론* 으로 대체하면 holiday fallback 권위 깨짐 → 공개 API 1줄 확장 채택. tests/test_universe_loader.py 에 2 테스트 추가 (14 통과).
+- [x] **전체 회귀 영향 0 재확인 (2026-05-20)** — 비 integration: 105 통과 + 4 skip + 7 integration deselected. ruff check + ruff format --check 통과. eval/ 모듈은 features/ 아니므로 격리 변환 게이트 영향 없음 (의도된 설계).
 
 ---
 
@@ -1173,6 +1172,65 @@ git log·관련 코드 *실측 점검* 을 자문 측 검증 게이트로 명시
 전달되는 것*. 다음 세션이 walk-forward 합의를 *모른 채로 시작*하면 코드가
 다시 처음부터 설계되거나 합의와 다른 방향으로 작성될 위험. 본 박제로 그 위험
 사전 차단. **§5.5.11 학습의 환경 차원 적용**.
+
+---
+
+### 5.5.13. Walk-forward 코드 작성 실측 + D2 정직성 *시간 차원* 완성 (2026-05-20)
+
+> §5.5.12 합의 코드 구현 + 실측. **§5.5.12 의 *예상* 28 folds 가 실측 28 과
+> 정확히 일치** — 합의 시점의 추정이 실제로 정확했음을 검증.
+
+**작업 7 단계** (§5.5.12 명시) 모두 완료:
+
+1. ✅ embargo 알고리즘 정확 구현 — `train_end_threshold = test_as_of - timedelta(days=embargo_days)`, `valid_train_grid = [q for q in grid if q ≤ threshold]`, `len(valid) < min_train` 시 skip, 아니면 `train_end = max(valid)`.
+2. ✅ `src/frr/eval/__init__.py` + `src/frr/eval/splits.py` 작성. `WalkForwardFold` (frozen dataclass + `__post_init__` 2 단계 검증) + `walk_forward_expanding(*, ...)` + `_quarter_end_grid(loader)` 헬퍼.
+3. ✅ 단위 테스트 9건 + 시간순 검증 분리 1건 + parametrize 3건 = **총 12건 통과** (`tests/test_splits.py`).
+4. ✅ **실제 40 분기 grid 적용 fold 수 = 28 (박제 예상 정확히 일치)**.
+5. ✅ 전체 105 통과 + 4 skip + 7 integration deselected, 회귀 영향 0.
+6. ✅ ruff format → commit (본 박제 후 진행).
+7. ✅ push → CI 그린 (본 박제 후 진행).
+
+**합성 grid (휴일 무시) 29 vs 실제 grid (holiday fallback 포함) 28** — 1 fold 차이:
+
+- 합성: `test=2017-12-31` 의 `threshold=2016-12-31`. grid[7]=2016-12-31 정확히 일치 → valid=grid[0..7]=8개 충족 → 첫 fold (i=11).
+- 실제: `test=grid[11]=2017-12-28` (holiday fallback) 의 `threshold=2016-12-28`. grid[7]=2016-12-29 (holiday fallback) > threshold → 제외, valid=7개 부족 → skip. 첫 fold = grid[12]=2018-03-30 (i=12).
+- → **holiday fallback 권위 보존 효과로 1 fold 손실, 정직성 우선**. 박제 예상 28 정확히 일치.
+
+**universe_loader.reference_date 메서드 추가 경위** (§5.5.12 합의 외 결정 — 사용자 합의 게이트 통과 후):
+
+`_quarter_end_grid(loader)` 헬퍼가 분기 라벨 → date 변환 시 권위 정보가 매니페스트 `actual_reference_date` (13/40 분기 holiday fallback 처리됨, 실측 결과 *20/40* 으로 더 많음). 이 정보가 *private* `QuarterEntry._entries` 였음. 옵션 3 가지 (private 접근 / 공개 메서드 추가 / 추론) 중 사용자가 *공개 메서드 1줄 추가* 선택 — 캡슐화·정직성·점진 생성 (CLAUDE.md §8.6) 모두 만족.
+
+→ `KOSPI200QuarterlyLoader.reference_date(quarter) -> date` 1 메서드 + 단위 테스트 2건 추가.
+
+**holiday fallback 실측 20/40 분기** (PROGRESS §2 의 13/40 보다 7 분기 더 많음):
+- 2015Q4·2016Q4·2017Q3·2017Q4·2018Q1~Q4·2019Q1·Q2·Q4·2020Q3·Q4·2021Q4·2022Q4·2023Q3·Q4·2024Q1·Q2·Q4
+- §2 박제의 13 은 다운로드 시점 사용자 일괄 보고 카운트, 실측 20 은 매니페스트 *현재* 상태. 차이는 후속 fallback 적용 분기 — 본 절에서 실측 우선.
+
+**D2 정직성 사슬 4 차원 — *시간 차원* 완성 시점**:
+
+| 차원 | 박제 위치 | 상태 |
+|---|---|---|
+| 변수 차원 | §5.5.9 distress 화이트리스트 | ✅ |
+| 양성 충분성 | §5.5.10 O2/O1 기각 | ✅ |
+| 격리 차원 | commit `a0d7932` (test_isolation.py) | ✅ (features 작성 시 자동 활성) |
+| **시간 차원** | **본 §5.5.13 + eval/splits.py + 12 테스트** | **✅ (본 작업으로 완성)** |
+
+격리 (i)(ii) 가 *features 변수 누수* 를 import-level 차단했듯, embargo 가 *시간 누수* 를 dataclass-level + algorithm-level 양쪽으로 차단. 두 안전장치가 동시 작동해야 모델 평가의 통합 정직성 보존 — 본 시점에 사슬 모두 박힘.
+
+**정밀화 #2·#3 실증 단위 테스트로 박힘**:
+
+- 정밀화 #2 (silent 차단): `min_train_quarters > len(as_of_grid)` 시 ValueError. silent 빈 fold 리스트 반환은 호출자가 *실행 안 됨* 을 인지 못 함. 테스트 `test_min_train_exceeds_grid_raises_value_error`.
+- 정밀화 #3 (dataclass-level 검증): `WalkForwardFold.__post_init__` 가 (a) 시간순 (`train_start < train_end < test_as_of`) + (b) embargo (`train_end ≤ test_as_of - embargo_days`) 2 단계 검증. walk_forward_expanding 우회해 직접 생성해도 무결성 보장. 두 단계 모두 도달 가능 함을 별도 테스트 2건으로 박제 (`test_walk_forward_fold_direct_embargo_violation_raises`, `test_walk_forward_fold_direct_time_order_violation_raises`).
+
+**0년 fold placeholder** (격리 (iii) 와 같은 패턴):
+
+- 현재 `zero_year_handling="raise"` 만 지원
+- `"skip"/"merged"/"synthetic"` 호출 시 NotImplementedError + 메시지에 "D8 결정 시점" + "§5.5.10 참조" 둘 다 포함 — 미래 작업이 PROGRESS 결정으로 연결됨을 명시
+- D8 결정 시점에 본격 구현 (호출자가 양성 0 연도 frozenset 주입)
+
+**남기는 이유** (§5.5.7·§5.5.9·§5.5.10·§5.5.11·§5.5.12 와 동일 원칙):
+
+§5.5.12 의 합의 박제가 *다음 세션이 모른 채로 시작하는 위험 차단* 이었듯, 본 §5.5.13 의 실측 박제는 *합의된 예상과 실측이 일치함을 보존* — 미래 features 작업 시점에 walk-forward 가 *어떻게 동작하는지·왜 28 folds 인지* 가 코드만 보고도 추적 가능. **자문 측 정직성 사슬에 *작업 완료 시점의 실측 박제* 차원 추가**.
 
 ---
 
