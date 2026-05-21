@@ -3,7 +3,7 @@
 이 문서는 본 프로젝트의 **변하는 상태**를 추적한다.
 변하지 않는 사실·규칙·방향은 `CLAUDE.md` 에 있다.
 
-**마지막 갱신**: 2026-05-20 (features 사전 토대 0단계 완료 — fs_div 라벨 백필 12,833 meta, ok→CFS 10,114·notfound→absent 2,719, idempotent 실측 검증. 1단계 (b)+(c)+(d) 설계 합의 게이트 대기)
+**마지막 갱신**: 2026-05-20 (§5.5.14 박제 — 1단계 features 사전 토대 4 항목 설계 합의 + CLAUDE.md §7.6 작업 진입 검토 사이클 박제. 2단계 step 1 (spot-check 진단) 진입 청)
 
 ---
 
@@ -22,14 +22,13 @@
 > - `tests/test_isolation.py` 변환 게이트 — features 작성 시점에 missing→active
 >   전환되며 (iii) lookahead placeholder 도 본격 구현 진입
 >
-> ### 2. 다음 작업 — features 사전 토대 1단계 설계 합의 게이트
-> 0단계 (a-α: fs_div 라벨 백필 12,833) 완료 (2026-05-20). 다음은 1단계
-> *코드 작성 전 설계 합의*:
-> - **(b) features 빌더 API** — 1차 후보 `build_features(ticker, as_of) -> DataFrame`
-> - **(b) lookahead 검증 방식** — 1차 권장 *런타임 mock + AST 보조* (vacuous 위험·실수 누수 검출 균형)
-> - **(c) fs_div 처리** — 1차 권장 (i) fs_div 컬럼 동행 (D10 CFS 우선 + OFS fallback + 격리 호환)
-> - **(d) FDR join helper** — `fdr_ticker_key(df) -> Series` 1 함수, (b) 빌더 작성 시 흡수
-> 본 4 항목은 *코드 작성 전 자문↔사용자 결정 게이트* — 합의 후 2단계 (features 첫 모듈 + lookahead 본격 구현) 진입.
+> ### 2. 다음 작업 — features 사전 토대 2단계 step 1 (spot-check 진단)
+> 0단계 (fs_div 라벨 백필) ✅ + 1단계 4 항목 설계 합의 (§5.5.14) ✅ +
+> CLAUDE.md §7.6 작업 진입 검토 사이클 박제 ✅ (2026-05-20).
+> 다음: 2단계 step 1 — `scripts/diagnose_holding_fs_div.py` 작성·실행.
+> 양성 20 종목 중 지주회사·금융지주 spot-check (신 SK 034730 포함 ≥4건),
+> CFS vs OFS 영업이익 분포 비교 + 요약 표. 결과 PROGRESS 박제 후 features
+> 설계 영향 검토 자문 사이클 → step 2 (fdr_ticker_key) 진입.
 >
 > ### 3. 별도 결정 게이트 (features 안정화 후)
 > - (β) §5.5.11 5 종목 FY refresh (페치 ≤5) — OFS fallback 영업이익 회수 정밀 분석
@@ -45,10 +44,11 @@
 ## 1. 현재 상태 (Current Status)
 
 - **단계**: 단계 2 진입 + labels.py ✅ + 격리 프레임워크 ✅ + D10 정정 ✅ +
-  walk-forward 코드 ✅ + **features 사전 토대 0단계 (fs_div 라벨 백필 12,833) 완료 ✅**
-  (2026-05-20). 다음: **1단계 (b)+(c)+(d) 설계 합의 게이트** — features 빌더 API +
-  lookahead 검증 방식 + fs_div 처리 + FDR join helper. 합의 후 2단계 features
-  첫 모듈 + lookahead 본격 구현 진입.
+  walk-forward 코드 ✅ + features 사전 토대 0단계 (fs_div 라벨 백필) ✅ +
+  **1단계 4 항목 설계 합의 ✅** (§5.5.14, 2026-05-20) + **CLAUDE.md §7.6 작업
+  진입 검토 사이클 박제 ✅** (commit `a094edf`). 다음: **2단계 step 1** —
+  scripts/diagnose_holding_fs_div.py spot-check 진단 → PROGRESS 박제 →
+  자문 검토 사이클 → step 2 (fdr_ticker_key) 진입.
 - **요약**: CI 4회 연속 실패(2026-05-18) → 커밋 1 (`71ef11a`) ruff format
   으로 그린 회복. 커밋 2 (`3585848`) D2 후보 상태 되돌림 + §7.4 ruff format
   규칙. 커밋 3 (`2977262`) D2 = α 최종 확정 — *5개 후보(D2(E)·B1 v1·v2·B3·A)
@@ -1236,6 +1236,88 @@ git log·관련 코드 *실측 점검* 을 자문 측 검증 게이트로 명시
 **남기는 이유** (§5.5.7·§5.5.9·§5.5.10·§5.5.11·§5.5.12 와 동일 원칙):
 
 §5.5.12 의 합의 박제가 *다음 세션이 모른 채로 시작하는 위험 차단* 이었듯, 본 §5.5.13 의 실측 박제는 *합의된 예상과 실측이 일치함을 보존* — 미래 features 작업 시점에 walk-forward 가 *어떻게 동작하는지·왜 28 folds 인지* 가 코드만 보고도 추적 가능. **자문 측 정직성 사슬에 *작업 완료 시점의 실측 박제* 차원 추가**.
+
+---
+
+### 5.5.14. Stage-1 features 사전 토대 4 항목 설계 합의 (2026-05-20)
+
+> §7.6 작업 진입 검토 사이클 통과 후 합의. 자문 측이 §5.5.13 종료 시점에
+> 4 항목 권장 + 사용자 *그대로 채택 + 정밀화*. 본 박제로 2단계 진입.
+
+**(b-1) build_features 시그니처 + strict default**:
+
+```python
+def build_features(
+    ticker: str,
+    as_of: date,
+    *,
+    reporter: DARTReporter | None = None,
+    universe_loader: KOSPI200QuarterlyLoader | None = None,
+    krx_ohlcv_cache_dir: Path | None = None,
+) -> pd.DataFrame:
+```
+
+- `as_of` 가 빌더의 *공식 시간 인자* — 룩어헤드 contract 의 공식 입구
+- **strict default**: 의존성 주입 인자 모두 Optional 이지만 *None 시 default
+  생성하지 않음*. None 이면 ValueError ("의존성 명시 주입 필요").
+- 사유: (1) 정직성 — 코드 자체에 의존성 명시 / (2) 진입점 한 곳에서 한 번
+  생성 / (3) labels.py 의 dependency injection 패턴과 일관
+- fs_div_strategy 인자 *제외* (D10 + (i) 컬럼 동행 단일 정책)
+
+**(b-2) lookahead 검증 2 단계**:
+
+| 단계 | 위치 | 방식 |
+|---|---|---|
+| (α) AST 화이트리스트 | test_isolation.py (iii) 활성화 | features 모듈의 모든 `dart.*` 호출 attr ⊆ `{available_at, latest_available, fetch_report}` |
+| (β) 런타임 mock contract | tests/test_features_lookahead.py (신규) | build_features 에 mock reporter 주입 → mock 이 받은 모든 시점 인자의 available_from ≤ as_of |
+
+- (γ) → (β) 흡수, 별도 단계 없음
+- mock 정확한 시점 검증 로직은 2단계 코드 작성 시 자문 검토 (YAGNI)
+- vacuous 위험: (α) 단독은 getattr 우회·간접 호출에 vacuous → (β) 가 실제
+  호출 패턴 검증으로 보완. 두 단계 *다른 누수 패턴* 차단.
+
+**(c) fs_div (i) + 격리 분리 + spot-check β1 시점**:
+
+- 빌더: **(i) fs_div 컬럼 동행, 단일 정책 cfs_preferred** (D10 캐시 이미 반영,
+  §2 fs_div 라벨 백필 완료)
+- 격리: fs_div 컬럼은 features 출력 컬럼, **모델 입력 시 제외 — 모델 모듈
+  책임**. test_isolation.py 가 아닌 *모델 모듈의 separate test* 로 검증.
+- spot-check 시점: **β1 = features 직전** (§5.5.9 신 SK 1건 큰 영향, 반복
+  여부 확인 후 features 설계 영향 검토)
+- 진단 스크립트: `scripts/diagnose_holding_fs_div.py` — 양성 20 종목 중
+  지주회사·금융지주 spot-check (신 SK 034730 포함 ≥4건). CFS vs OFS 영업이익
+  분포 비교 + 요약 표.
+- 진단 결과 PROGRESS 박제 후 features 설계 영향 검토 자문 사이클
+
+**(d) fdr_ticker_key NaN + warning**:
+
+```python
+def fdr_ticker_key(df: pd.DataFrame, col: str | None = None) -> pd.Series:
+    """FDR DataFrame ticker key 정규화 → 6자리 string Series.
+
+    Code (fdr.listing) / Symbol (fdr.delisting) 자동 탐지. 6자리 아닌 row → NaN.
+    NaN row 발생 시 logger.warning 으로 건수 로그 (silent drop 회피).
+    universe 6자리 ticker 와 join 시 NaN 자동 차단.
+    """
+```
+
+- 위치: `src/frr/data/fdr.py`
+- 단위 테스트 3~5건 (Code/Symbol 자동 탐지, 8자리 NaN, 6자리 pass, 로그 경고)
+
+**2단계 작업 순서 (6 단계, 각 단계 §7.6 통과 의무)**:
+
+1. (c) spot-check 진단 (`scripts/diagnose_holding_fs_div.py`)
+   → 결과 PROGRESS 박제 → features 설계 영향 자문 사이클
+2. (d) fdr_ticker_key + 단위 테스트
+3. features 첫 모듈 — *사용자 결정 게이트* (재무비율 baseline 군: balance
+   sheet? income statement? 둘 다? — 자문 검토 사이클)
+4. test_features_lookahead.py (β 런타임 mock contract)
+5. test_isolation.py (iii) 활성화 (α AST 화이트리스트)
+6. CI 통과 확인 + commit
+
+**남기는 이유** (§5.5.7·§5.5.9·§5.5.10·§5.5.11·§5.5.12·§5.5.13 와 동일 원칙):
+1단계 설계 합의가 다음 작업 진입 시점에 *합의 외 결정 진입* 차단. §7.6 검토
+사이클의 1 단계 (PROGRESS 점검) 가 자연스럽게 본 절 참조.
 
 ---
 
