@@ -138,3 +138,46 @@ def _normalize_dtypes(df: pd.DataFrame) -> pd.DataFrame:
             df[col] = pd.to_datetime(df[col], errors="coerce")
 
     return df
+
+
+def fdr_ticker_key(df: pd.DataFrame, col: str | None = None) -> pd.Series:
+    """FDR DataFrame ticker key 정규화 → 6자리 string Series.
+
+    `fdr.listing()` 은 ``Code``, `fdr.delisting()` 은 ``Symbol`` 컬럼명을 가져
+    데이터셋 간 join 시 *silently 잘못된 매핑* 또는 *키 불일치를 "데이터 없음"
+    으로 오해* 위험이 있다 (PROGRESS §3 DoD). 본 헬퍼가 컬럼명 차이를 흡수.
+
+    Args:
+        df: FDR DataFrame (listing 또는 delisting 결과 또는 호환 형식).
+        col: ticker 컬럼 명시. None 이면 ``Code`` / ``Symbol`` 순으로 자동 탐지.
+
+    Returns:
+        ``string`` dtype Series. 6자리 row 는 그대로, 6자리 아닌 row 는 NaN.
+        NaN row 가 발생하면 ``logger.warning`` 으로 건수 로그 (silent drop 회피).
+        universe 6자리 ticker 와 join 시 NaN row 자동 차단.
+
+    Raises:
+        ValueError: ``col`` 미지정 + ``Code``/``Symbol`` 둘 다 없음.
+
+    설계 결정 (PROGRESS §5.5.14 (d)):
+    - FDR delisting 4,130 행 중 1,787 (43%) 가 8자리 (신주인수권·트러스트·
+      우선주 부산물). 본 헬퍼가 6자리 NaN 처리로 *부산물 자동 차단*.
+    """
+    if col is None:
+        if "Code" in df.columns:
+            col = "Code"
+        elif "Symbol" in df.columns:
+            col = "Symbol"
+        else:
+            raise ValueError("FDR DataFrame 에 'Code' / 'Symbol' 컬럼 없음. col 명시 필요.")
+
+    series = df[col].astype("string")
+    is_6digit = series.str.len() == 6
+    nan_count = int((~is_6digit).sum())
+    if nan_count > 0:
+        logger.warning(
+            "fdr_ticker_key: %d row 가 6자리 아님 (col=%s, NaN 처리) — universe join 시 자동 차단",
+            nan_count,
+            col,
+        )
+    return series.where(is_6digit)

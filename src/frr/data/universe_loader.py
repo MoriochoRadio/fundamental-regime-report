@@ -142,6 +142,19 @@ class KOSPI200QuarterlyLoader:
             "(매니페스트에서 더 이른 분기를 다운로드·검증해야 함)"
         )
 
+    def reference_date(self, quarter: str) -> date:
+        """주어진 분기의 권위 있는 기준일자 (holiday fallback 포함).
+
+        매니페스트의 `actual_reference_date` 를 반환. 분기말 자연 종료일이
+        비영업일인 경우 사용자가 직전 영업일로 보정한 일자가 박혀 있음
+        (13/40 분기, PROGRESS §2). walk-forward grid 의 권위 있는 분기말
+        영업일 매핑 제공 — 분기 라벨 → date 변환에서 *추론* 으로 대체하면
+        holiday fallback 권위가 깨지므로 본 메서드 사용.
+        """
+        entry = self._require_verified(quarter)
+        assert entry.actual_reference_date is not None  # 완전 검증 통과
+        return entry.actual_reference_date
+
     # ---- 내부 ------------------------------------------------------------
 
     def _parse_entries(self, manifest: dict[str, Any]) -> dict[str, QuarterEntry]:

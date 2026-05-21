@@ -147,6 +147,26 @@ def test_as_of_blocks_lookahead(loader: KOSPI200QuarterlyLoader) -> None:
         loader.as_of(date(2015, 3, 30))
 
 
+# ---- 분기 라벨 → 기준일자 매핑 (walk-forward grid 추출 권위) ------------
+
+
+def test_reference_date_returns_actual_with_holiday_fallback(
+    loader: KOSPI200QuarterlyLoader,
+) -> None:
+    """reference_date(quarter) 가 매니페스트의 actual_reference_date 반환.
+
+    2015Q1 자연 종료일 2015-03-31 (영업일) → 그대로 반환. 비영업일 분기말은
+    사용자가 직전 영업일로 보정한 일자가 박혀 있음 — walk-forward grid 권위.
+    """
+    assert loader.reference_date("2015Q1") == date(2015, 3, 31)
+
+
+def test_reference_date_unknown_quarter_raises(loader: KOSPI200QuarterlyLoader) -> None:
+    """매니페스트에 없는 분기는 KeyError."""
+    with pytest.raises(KeyError):
+        loader.reference_date("1999Q1")
+
+
 # ---- 무결성 검증 (변조 시뮬레이션, tmp_path 격리) -----------------------
 
 

@@ -150,3 +150,65 @@ def test_refresh_rewrites_cache(tmp_path: Path) -> None:
     src.listing(refresh=True)
     mtime_after = cache.stat().st_mtime
     assert mtime_after > mtime_before
+
+
+# ---- fdr_ticker_key 단위 테스트 -------------------------------------------
+
+
+def test_fdr_ticker_key_detects_code_column() -> None:
+    """listing 형태 (Code 컬럼) 자동 탐지."""
+    from frr.data.fdr import fdr_ticker_key
+
+    df = pd.DataFrame({"Code": ["005930", "000660"], "Name": ["삼성전자", "SK하이닉스"]})
+    result = fdr_ticker_key(df)
+    assert result.tolist() == ["005930", "000660"]
+    assert result.dtype == "string"
+
+
+def test_fdr_ticker_key_detects_symbol_column() -> None:
+    """delisting 형태 (Symbol 컬럼) 자동 탐지."""
+    from frr.data.fdr import fdr_ticker_key
+
+    df = pd.DataFrame({"Symbol": ["051310", "006380"], "Name": ["포스코플랜텍", "카프로"]})
+    result = fdr_ticker_key(df)
+    assert result.tolist() == ["051310", "006380"]
+
+
+def test_fdr_ticker_key_8digit_becomes_nan(caplog: pytest.LogCaptureFixture) -> None:
+    """8자리 row → NaN, 6자리 row 통과. logger.warning 으로 건수 로그.
+
+    FDR delisting 의 신주인수권·트러스트·우선주 부산물 (8자리) 자동 차단.
+    """
+    import logging
+
+    from frr.data.fdr import fdr_ticker_key
+
+    df = pd.DataFrame({"Symbol": ["005930", "722012HC", "000660", "712011KB"]})
+    with caplog.at_level(logging.WARNING, logger="frr.data.fdr"):
+        result = fdr_ticker_key(df)
+
+    # 6자리는 그대로, 8자리는 NaN
+    assert result.iloc[0] == "005930"
+    assert pd.isna(result.iloc[1])
+    assert result.iloc[2] == "000660"
+    assert pd.isna(result.iloc[3])
+    # warning 발생 (silent drop 회피)
+    assert any("2 row" in rec.message and "6자리 아님" in rec.message for rec in caplog.records)
+
+
+def test_fdr_ticker_key_explicit_col_override() -> None:
+    """col 명시 override — Code·Symbol 외 다른 컬럼 사용 가능."""
+    from frr.data.fdr import fdr_ticker_key
+
+    df = pd.DataFrame({"my_ticker": ["005930", "000660"], "Code": ["IGNORED1", "IGNORED2"]})
+    result = fdr_ticker_key(df, col="my_ticker")
+    assert result.tolist() == ["005930", "000660"]
+
+
+def test_fdr_ticker_key_no_code_or_symbol_raises() -> None:
+    """Code · Symbol 둘 다 없으면 ValueError (silent 차단)."""
+    from frr.data.fdr import fdr_ticker_key
+
+    df = pd.DataFrame({"OtherCol": ["005930"]})
+    with pytest.raises(ValueError, match=r"Code.*Symbol"):
+        fdr_ticker_key(df)
