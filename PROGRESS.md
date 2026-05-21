@@ -3,7 +3,7 @@
 이 문서는 본 프로젝트의 **변하는 상태**를 추적한다.
 변하지 않는 사실·규칙·방향은 `CLAUDE.md` 에 있다.
 
-**마지막 갱신**: 2026-05-21 (§5.5.15 박제 — 지주회사 CFS vs OFS spot-check 200 cells 실측. 명시 지주 (034730·267250·096770) 증폭 패턴 확인. 부호 차이 9 cells / D2 라벨 견고성 모델 단계 결정. step 2 (fdr_ticker_key) 진입 청)
+**마지막 갱신**: 2026-05-21 (2단계 step 2 완료 — fdr_ticker_key 추가 + 단위 테스트 5건. 112 통과 + 4 skip. step 3 (features 첫 모듈 사용자 결정 게이트) 진입 청)
 
 ---
 
@@ -22,12 +22,16 @@
 > - `tests/test_isolation.py` 변환 게이트 — features 작성 시점에 missing→active
 >   전환되며 (iii) lookahead placeholder 도 본격 구현 진입
 >
-> ### 2. 다음 작업 — features 사전 토대 2단계 step 2 (fdr_ticker_key)
-> step 1 (spot-check 진단) ✅ — §5.5.15 박제 (200 cells, 명시 지주 증폭 패턴
-> 확인, 부호 차이 9 cells, §3 DoD 해소).
-> 다음: step 2 — `src/frr/data/fdr.py` 에 `fdr_ticker_key(df, col=None)` 추가.
-> 6자리 NaN + logger.warning. 단위 테스트 3~5건. §7.6 검토 사이클 통과 후
-> 코드 작성 → step 3 (features 첫 모듈 사용자 결정 게이트) 진입.
+> ### 2. 다음 작업 — features 사전 토대 2단계 step 3 (features 첫 모듈)
+> step 1 (spot-check 진단) ✅ — §5.5.15 (200 cells, 명시 지주 증폭 패턴
+> 확인, 부호 차이 9 cells, §3 DoD 지주 점검 해소).
+> step 2 (fdr_ticker_key) ✅ — fdr.py module-level + 5 단위 테스트 + §3 DoD
+> FDR ticker key 항목 해소.
+> 다음: **step 3 — features 첫 모듈 작성** (`src/frr/features/`). §5.5.14
+> (b-1) build_features 시그니처 strict default + (b-2) lookahead 검증 (α+β)
+> + (c) fs_div 컬럼 동행 cfs_preferred 적용. **사용자 결정 게이트**: 재무
+> 비율 baseline 군 (balance sheet / income statement / 둘 다). §7.6 검토
+> 사이클 통과 후 코드 작성 → step 4 (test_features_lookahead.py) 진입.
 >
 > ### 3. 별도 결정 게이트 (features 안정화 후)
 > - (β) §5.5.11 5 종목 FY refresh (페치 ≤5) — OFS fallback 영업이익 회수 정밀 분석
@@ -45,8 +49,9 @@
 - **단계**: 단계 2 진입 + labels.py ✅ + 격리 프레임워크 ✅ + D10 정정 ✅ +
   walk-forward 코드 ✅ + features 사전 토대 0단계 (fs_div 라벨 백필) ✅ +
   1단계 4 항목 설계 합의 (§5.5.14) ✅ + §7.6 작업 진입 검토 사이클 박제 ✅ +
-  **2단계 step 1 spot-check 진단 완료 ✅** (§5.5.15, 2026-05-21). 다음:
-  **step 2** — `src/frr/data/fdr.py` 에 `fdr_ticker_key(df, col=None)` 추가.
+  2단계 step 1 spot-check 진단 (§5.5.15) ✅ + **step 2 fdr_ticker_key 완료 ✅**
+  (2026-05-21). 다음: **step 3 — features 첫 모듈** (`src/frr/features/`).
+  사용자 결정 게이트: 재무비율 baseline 군.
 - **요약**: CI 4회 연속 실패(2026-05-18) → 커밋 1 (`71ef11a`) ruff format
   으로 그린 회복. 커밋 2 (`3585848`) D2 후보 상태 되돌림 + §7.4 ruff format
   규칙. 커밋 3 (`2977262`) D2 = α 최종 확정 — *5개 후보(D2(E)·B1 v1·v2·B3·A)
@@ -114,6 +119,10 @@
 - [x] **`universe_loader.reference_date(quarter) -> date` 공개 메서드 추가** — walk-forward `_quarter_end_grid(loader)` 헬퍼가 분기 라벨 → date 변환 시 권위 정보 (매니페스트 `actual_reference_date`, 13/40 분기 holiday fallback) 노출 경로. *추론* 으로 대체하면 holiday fallback 권위 깨짐 → 공개 API 1줄 확장 채택. tests/test_universe_loader.py 에 2 테스트 추가 (14 통과).
 - [x] **전체 회귀 영향 0 재확인 (2026-05-20)** — 비 integration: 105 통과 + 4 skip + 7 integration deselected. ruff check + ruff format --check 통과. eval/ 모듈은 features/ 아니므로 격리 변환 게이트 영향 없음 (의도된 설계).
 - [x] **features 사전 토대 0단계 — fs_div 라벨 백필 (2026-05-20)** — `src/frr/data/dart.py` 에 `backfill_fs_div_label(cache_dir) -> dict[str, int]` module-level 함수 추가 (인스턴스 의존성 0, 페치 0). status='ok'→fs_div='CFS', status='notfound'→fs_div='absent', 이미 키 있으면 skip (idempotent). `scripts/backfill_dart_fs_div.py` CLI. `tests/test_dart.py` 에 단위 테스트 2건 추가 (정상 + idempotent). ReportRef docstring 에 'absent' 라벨 추가. **실측 12,833 meta 일괄 백필**: updated 10,114 CFS + 2,719 absent, skipped 0, errors 0. 2회 실행 시 skipped 12,833·errors 0 (idempotent 실측 검증). 교차 검증: ok≠CFS=0, notfound≠absent=0. 전체 비-integration 107 통과 + 4 skip + 7 deselected.
+- [x] **features 사전 토대 1단계 4 항목 설계 합의 (§5.5.14, 2026-05-20)** — (b-1) build_features 시그니처 + strict default / (b-2) lookahead 2 단계 (α AST + β 런타임 mock) / (c) fs_div (i) 컬럼 동행 + cfs_preferred + 격리 분리 + spot-check β1 시점 / (d) fdr_ticker_key NaN + warning. 2단계 작업 순서 6 단계 박제.
+- [x] **CLAUDE.md §7.6 작업 진입 검토 사이클 박제 (2026-05-20, commit `a094edf`)** — 4 단계 (PROGRESS 점검 / git log / 코드 실측 / 사용자 검토 게이트). §7.2 + §7.5 + §5.5.11 정신의 명시 강화. 자문·실행 양측 적용, 예외 없음.
+- [x] **2단계 step 1 — 지주회사 CFS vs OFS spot-check 진단 (§5.5.15, 2026-05-21)** — `scripts/diagnose_holding_fs_div.py` 작성·실행. 양성 20 전체 (옵션 B) 200 cells 실측: 유사 78 + 증폭 41 + 둘 다 음수 39 + 부호 차이 9 + 희석 2. 명시 지주 (034730 SK 증폭 9/10·267250 HD현대 7/10·096770 SK이노베이션 6/10) 패턴 확인. 키워드 매칭 false negative 0 발견. §5.5.15 보완 커밋 (commit `689a4ec`) 으로 (A) 표현 정밀화 + (B) 모델 단계 진입 결정 게이트 메모 추가. §3 DoD "지주회사 점검" 항목 해소.
+- [x] **2단계 step 2 — `fdr_ticker_key` 추가 (2026-05-21)** — `src/frr/data/fdr.py` 에 module-level 함수 추가. `Code` (listing) / `Symbol` (delisting) 자동 탐지, 6자리 아닌 row → NaN + logger.warning, col override 지원. `tests/test_fdr.py` 단위 테스트 5건 (자동 탐지 2 + 8자리 NaN + override + ValueError). 전체 비-integration **112 통과 + 4 skip + 7 deselected**. §3 DoD "FDR ticker key 컬럼 불일치" 항목 해소.
 
 ---
 
