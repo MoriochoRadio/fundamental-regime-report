@@ -177,12 +177,15 @@ n_total=1,774 / n_positive=25:
 - 가격 기반: rolling volatility (252-day)·short drawdown (60-day)
 - 단 *random 미만 결과* 가 features 확장만으로 극복 안 될 가능성.
 
-### (C) (β)+(γ) 데이터 보강
-- (β) §5.5.11 9 FY None refresh (롯데지주·SK텔레콤·하나투어·더블유게임즈·
-  두산퓨얼셀) — OFS fallback 영업이익 회수 시도.
-- (γ) notfound 2,719 OFS 재페치 (DART 한도 27%) — D10 효과 ablation.
-- 9 cells 양성 종목 매칭 작아 *결정적 영향 작음* 추정. 비용 대비 효과
-  검토 필요.
+### (C) (β)+(γ) 데이터 보강 — *시도 후 실효 0 확인 (2026-05-21)*
+- (γ) notfound OFS 재페치 실측: **3,583 호출 → status 전환 0건**.
+  DART 응답 모두 *조회 데이터 없음* — CFS·OFS 모두 미공시.
+  → notfound 는 *실제 데이터 부재* (D10 fetcher 미적용 아님).
+- (β) 9 FY None refresh 도 동일 한계 추정 (별도 미실행, (γ) 강한 증명으로
+  실행 가치 약함).
+- → **데이터 보강 방향 종결**. §5.5.7 KOSPI200 모집단 한계가 *데이터
+  출처 변경으로 극복 불가능* 함을 정량 증명.
+- 산출물: `data/interim/refetch_notfound_ofs/summary.yaml`
 
 ### (D) 모집단 확장 거부 재확인
 - §5.5.6 (B3 KOSDAQ 확장) 기각 유지. *학습 불가능 결과를 모집단 확장으로
