@@ -587,11 +587,17 @@ def render_ticker_analysis() -> None:
                 )
             )
             fig.add_vline(
-                x=as_of,
+                x=as_of.to_pydatetime(),
                 line_dash="dash",
                 line_color="#444",
-                annotation_text=f"분석 시점 {as_of.strftime('%Y-%m-%d')}",
-                annotation_position="top",
+            )
+            fig.add_annotation(
+                x=as_of.to_pydatetime(),
+                y=1,
+                yref="paper",
+                text=f"분석 시점 {as_of.strftime('%Y-%m-%d')}",
+                showarrow=False,
+                yanchor="bottom",
             )
             fig.update_layout(
                 title=f"{ticker} {name_map.get(ticker, '')} 종가 + 시장 국면 overlay",
@@ -636,7 +642,9 @@ def render_ticker_analysis() -> None:
                 row=row_,
                 col=col_,
             )
-            fig2.add_vline(x=as_of, line_dash="dash", line_color="#444", row=row_, col=col_)
+            fig2.add_vline(
+                x=as_of.to_pydatetime(), line_dash="dash", line_color="#444", row=row_, col=col_
+            )
         fig2.update_layout(height=500, title=f"{ticker} 재무 비율 4개 추이")
         st.plotly_chart(fig2, use_container_width=True)
         st.caption("점선: 사용자 선택 분석 시점. 분모 0 또는 결측 시 NaN.")
