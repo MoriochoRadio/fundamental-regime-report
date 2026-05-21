@@ -3,7 +3,7 @@
 이 문서는 본 프로젝트의 **변하는 상태**를 추적한다.
 변하지 않는 사실·규칙·방향은 `CLAUDE.md` 에 있다.
 
-**마지막 갱신**: 2026-05-21 (B-4 walk-forward 통합 학습 실행 + 결과 박제 §5.5.17 — Negative finding 정직 박제. 모델 random 미만 (PR-AUC 0.01, ROC-AUC 0.27), §5.5.7 데이터 한계 정량 확인. B-5 모델 카드 진입 청)
+**마지막 갱신**: 2026-05-21 (B-5 모델 카드 + 단계 2 종료 — reports/d2_baseline_model_card.md 작성. 8 섹션 (명세·데이터·결과·Limitations·향후·학술 가치·재현성·단계 3 진입). 단계 2 펀더멘털 모듈 종료, 단계 3 시장 국면 모듈 진입 게이트 통과)
 
 ---
 
@@ -22,18 +22,15 @@
 > - `tests/test_isolation.py` 변환 게이트 — features 작성 시점에 missing→active
 >   전환되며 (iii) lookahead placeholder 도 본격 구현 진입
 >
-> ### 2. 다음 작업 — Stage-2 B-5 모델 카드 + 단계 2 종료
-> B-4 (walk-forward 통합 학습 실행) ✅ — §5.5.17 Negative finding 정직 박제.
-> 다음: **B-5 모델 카드 + 단계 2 종료** — `docs/model_card.md` (또는
-> `reports/d2_baseline_model_card.md`) 신규:
-> - 모델 명세 (LightGBM + Platt sigmoid + 5 features)
-> - 학습 데이터 (양성 45 cells / 종목 20 / 28 folds / 평가 9)
-> - 평가 결과 (PR-AUC 0.0136 random 미만, 정직 박제)
-> - **Limitations 명시** (§5.5.17 핵심 발견 + §5.5.7 KOSPI200 희소성)
-> - **향후 방향 4가지** (§5.5.17 (A)~(D))
-> - 면접 방어용 자료 — *negative finding 의 정직성 + D2 정직성 사슬 4 차원
->   완비에도 데이터 한계로 학습 불가능* 박제 가치
-> 단계 2 종료 commit → 단계 3 (국면 모듈) 진입 게이트.
+> ### 2. 다음 작업 — 단계 3 (시장 국면 모듈) 진입 게이트
+> 단계 2 펀더멘털 모듈 ✅ 종료 (2026-05-21). B-1~B-5 모두 완료.
+> 다음: **단계 3 시장 국면 모듈** (CLAUDE.md §3.2) —
+> - 데이터: 지수 수익률·변동성 (KOSPI200 지수 시계열, FDR 캐시)
+> - 방법: HMM (`hmmlearn`) 본 라인 + GMM·K-Means 비교 (CLAUDE.md §8.4)
+> - 핵심 결정 게이트: D3 (국면 모델·상태 수 K) + D4 (국면 입력 피처)
+> - **주가 예측 아님** — 국면 분류·맥락 제공만 (CLAUDE.md §3.2)
+> - 국면 라벨도 사전적 (causal) 산출 — §5 방법론적 원칙
+> §7.6 검토 사이클 적용 + D3·D4 사용자 결정 게이트 + 단계 3 진입 청.
 >
 > ### 3. 별도 결정 게이트 (features 안정화 후)
 > - (β) §5.5.11 5 종목 FY refresh (페치 ≤5) — OFS fallback 영업이익 회수 정밀 분석
@@ -48,10 +45,11 @@
 
 ## 1. 현재 상태 (Current Status)
 
-- **단계**: 단계 2 진입 + labels.py ✅ + 격리 ✅ + D10 ✅ + walk-forward ✅ +
-  features 전체 ✅ + Stage-2 B-1·B-2·B-3 ✅ + **B-4 결과 박제 ✅** (§5.5.17,
-  2026-05-21, Negative finding 정직). 다음: **B-5 모델 카드 + 단계 2 종료**
-  — limitations 명시 + 향후 방향 4가지 + 면접 방어용 자료 박제.
+- **단계**: **단계 2 펀더멘털 모듈 ✅ 종료** (2026-05-21) — labels.py ✅ +
+  격리 ✅ + D10 ✅ + walk-forward ✅ + features 전체 ✅ + Stage-2 B-1~B-5 ✅.
+  Negative finding 정직 박제 (§5.5.17) + 모델 카드 (reports/d2_baseline_model_card.md).
+  다음: **단계 3 (시장 국면 모듈)** — HMM (hmmlearn) + GMM/K-Means 비교.
+  D3 (국면 모델·상태 수) + D4 (국면 입력 피처) 결정 게이트.
 - **요약**: CI 4회 연속 실패(2026-05-18) → 커밋 1 (`71ef11a`) ruff format
   으로 그린 회복. 커밋 2 (`3585848`) D2 후보 상태 되돌림 + §7.4 ruff format
   규칙. 커밋 3 (`2977262`) D2 = α 최종 확정 — *5개 후보(D2(E)·B1 v1·v2·B3·A)
@@ -127,6 +125,7 @@
 - [x] **Stage-2 모델 진입 B-1·B-2 완료 (§5.5.16, 2026-05-21)** — B-1 지주 군 양성 종목 수 실측: 명시 지주 3 (15%, 034730·267250·096770) + 의심 추가 1-2 (010690·008060), 학습 임계 미달 확인 → Code 권장 (c) (fs_div as feature 학습 + 군별 평가 분리 보고) 채택. B-2 5 항목 결정: (1) LightGBM + D8 평가 지표 유지 / (2) Platt sigmoid 캘리브레이션 / (3) balanced + unweighted ablation / (4) 0년 fold 평가 skip ("fold 수 28 → 25" 명시) / (5) fs_div as feature + 지주 군별 평가 분리. B-3 평가 함수 설계 결정 게이트 메모 2 항목 박제 (양성 N=3 통계적 변동성 + fold 단위 vs 종목 단위 평가).
 - [x] **Stage-2 B-3 모델 학습 코드 작성 (2026-05-21)** — `src/frr/models/__init__.py` + `classifier.py` (`make_base_classifier`·`train_classifier`·`predict_proba`) + `evaluation.py` (`expected_calibration_error`·`top_k_precision`·`evaluate_predictions`). LightGBM + Platt sigmoid 캘리브레이션 (CalibratedClassifierCV). balanced/unweighted 2 가지 ablation 지원. 평가 5 metric (PR-AUC·ROC-AUC·Brier·ECE·Top-K precision) + n_positive·n_total 항상 보고 + bootstrap_n>0 시 95% CI 옵션 (B-4 활성 권장). `lightgbm>=4.6.0` + `scikit-learn>=1.8.0` 의존성 추가 (CLAUDE.md §8.4 박제). 단위 테스트 17건 (재현성 시드·class weight ablation 효과·캘리브레이션 동작·ECE·Top-K·bootstrap CI·단일 클래스 경계). 전체 비-integration **144 통과 + 1 skip + 7 deselected**.
 - [x] **Stage-2 B-4 walk-forward 통합 학습 실행 + 결과 박제 (2026-05-21, §5.5.17)** — `scripts/train_d2_baseline.py` (features × labels × folds 통합 + balanced/unweighted ablation + 종목 단위 pooled + bootstrap_n=1000 CI + 지주 군 분리 평가). **Negative finding 정직 박제**: features 8,008 cells (양성 45) / 28 folds 중 평가 9 + skip 19 (대부분 양성 0). **PR-AUC 0.0136 < base rate 0.0205 + ROC-AUC 0.2651 < 0.5** → 모델 random 보다 나쁨. balanced vs unweighted 차이 거의 0 (class weight 효과 양성 절대 수 부족 앞에서 무력). 지주 군 (n_pos=12) CI 폭 완전 변동 = §5.5.16 짚을 점 1 의 경험적 확인. §5.5.7 박제 한계 ("KOSPI200 모집단의 부실 사건 희소성") 의 정량 증거 박제 — 학술·면접 방어 가치 큼.
+- [x] **Stage-2 B-5 모델 카드 + 단계 2 종료 (2026-05-21)** — `reports/d2_baseline_model_card.md` 작성. 8 섹션: 모델 명세 (LightGBM + Platt sigmoid + 5 features) / 학습 데이터 (universe 321·grid 40·fold 28·평가 9) / 평가 결과 (PR-AUC 0.0136 random 미만, 정직 박제) / Limitations 4 (데이터·모델·지주 군 평가·D2 라벨 견고성) / 향후 방향 4 (A) Forward 2년 ablation 재고 (B) Features 확장 (C) (β)(γ) 데이터 보강 (D) 모집단 확장 거부 재확인 / 학술·면접 방어 가치 / 재현성 (시드·환경·산출물) / 단계 3 진입. **단계 2 펀더멘털 모듈 종료** — 단계 3 (시장 국면 모듈) 진입 게이트 통과.
 
 ---
 
