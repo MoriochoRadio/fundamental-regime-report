@@ -57,11 +57,19 @@ def _load_ks200_close(start: date, end: date) -> pd.Series:
     return df["Close"]
 
 
-def main() -> int:
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+def main(argv: list[str] | None = None) -> int:
+    import argparse
 
-    print("=== 단계 3 시장 국면 모듈 학습 (HMM K=3) ===\n")
+    parser = argparse.ArgumentParser(description="단계 3 시장 국면 모듈 학습")
+    parser.add_argument("--k", type=int, default=3, help="상태 수 (기본 3)")
+    args = parser.parse_args(argv)
+    k = args.k
+
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+    out_dir = OUTPUT_DIR if k == 3 else OUTPUT_DIR / f"k{k}"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    print(f"=== 단계 3 시장 국면 모듈 학습 (HMM K={k}) ===\n")
 
     # 1. KS200 close 로드
     print("1. KOSPI200 지수 일간 close 로드...")
@@ -74,19 +82,19 @@ def main() -> int:
     clean = drop_warmup_rows(df)
     print(f"   warmup drop 후 {len(clean)} obs")
 
-    # 3. HMM K=3 학습
-    print("\n3. HMM K=3 학습 (Gaussian, full cov, random_state=42)...")
-    model = train_hmm(clean, n_components=3, random_state=42, n_iter=500)
+    # 3. HMM K 학습
+    print(f"\n3. HMM K={k} 학습 (Gaussian, full cov, random_state=42)...")
+    model = train_hmm(clean, n_components=k, random_state=42, n_iter=500)
     log_lik = model.score(clean.to_numpy())
     print(f"   converged: {model.monitor_.converged}, log-likelihood: {log_lik:.2f}")
 
-    # 4. State labeling
-    print("\n4. State labeling (vol 순 매칭)...")
+    # 4. State labeling (K=3 만 학술 명명 — 다른 K 는 state_idx 사용)
+    print("\n4. State labeling...")
     labels = label_states_by_return_vol(model, FEATURE_COLUMNS)
-    for k, label in labels.items():
-        mean_ret = model.means_[k][FEATURE_COLUMNS.index("ret_20d")]
-        mean_vol = model.means_[k][FEATURE_COLUMNS.index("vol_60d")]
-        print(f"   state {k} → {label}: mean ret_20d={mean_ret:.3f}, vol_60d={mean_vol:.3f}")
+    for state_k, label in labels.items():
+        mean_ret = model.means_[state_k][FEATURE_COLUMNS.index("ret_20d")]
+        mean_vol = model.means_[state_k][FEATURE_COLUMNS.index("vol_60d")]
+        print(f"   state {state_k} → {label}: mean ret_20d={mean_ret:.3f}, vol_60d={mean_vol:.3f}")
 
     # 5. Forward-only filtering
     print("\n5. Forward-only filtering (각 시점 alpha)...")
@@ -105,13 +113,13 @@ def main() -> int:
 
     print("\n   전이 행렬 (transmat_):")
     print(f"   {' ':12s}", end="")
-    for k in range(3):
-        print(f"{labels[k]:>10s}", end="")
+    for i in range(k):
+        print(f"{labels[i]:>12s}", end="")
     print()
-    for k in range(3):
-        print(f"   from {labels[k]:7s}", end="")
-        for j in range(3):
-            print(f"{model.transmat_[k, j]:10.3f}", end="")
+    for i in range(k):
+        print(f"   from {labels[i]:7s}", end="")
+        for j in range(k):
+            print(f"{model.transmat_[i, j]:12.3f}", end="")
         print()
 
     # 7. Domain 해석 — 2020 코로나 시점 spot-check
@@ -130,7 +138,7 @@ def main() -> int:
         "generated_at": pd.Timestamp.now().isoformat(),
         "config": {
             "model": "GaussianHMM",
-            "n_components": 3,
+            "n_components": k,
             "covariance_type": "full",
             "n_iter": 500,
             "random_state": 42,
@@ -145,14 +153,14 @@ def main() -> int:
         "model_summary": {
             "converged": bool(model.monitor_.converged),
             "log_likelihood": float(log_lik),
-            "state_labels": {int(k): v for k, v in labels.items()},
-            "means": {int(k): model.means_[k].tolist() for k in range(3)},
+            "state_labels": {int(state_k): v for state_k, v in labels.items()},
+            "means": {int(state_k): model.means_[state_k].tolist() for state_k in range(k)},
             "transmat": model.transmat_.tolist(),
             "startprob": model.startprob_.tolist(),
         },
         "state_distribution": dict(state_dist),
     }
-    out_yaml = OUTPUT_DIR / "results.yaml"
+    out_yaml = out_dir / "results.yaml"
     out_yaml.write_text(
         yaml.safe_dump(summary, allow_unicode=True, sort_keys=False), encoding="utf-8"
     )
@@ -166,8 +174,8 @@ def main() -> int:
             "state_label": named_states,
         }
     )
-    state_series.to_parquet(OUTPUT_DIR / "state_series.parquet")
-    print(f"state 시계열: {OUTPUT_DIR / 'state_series.parquet'} ({len(state_series)} rows)")
+    state_series.to_parquet(out_dir / "state_series.parquet")
+    print(f"state 시계열: {out_dir / 'state_series.parquet'} ({len(state_series)} rows)")
     return 0
 
 
