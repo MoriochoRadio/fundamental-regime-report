@@ -22,6 +22,8 @@ dependencies = [
     "python-dotenv>=1.0",
     # --- 호환 (pykrx가 pkg_resources를 사용. setuptools 80부터 제거되어 <80로 핀) ---
     "setuptools>=70.0,<80.0",
+    "lightgbm>=4.6.0",
+    "scikit-learn>=1.8.0",
 ]
 
 [dependency-groups]

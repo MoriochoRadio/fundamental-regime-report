@@ -3,7 +3,7 @@
 이 문서는 본 프로젝트의 **변하는 상태**를 추적한다.
 변하지 않는 사실·규칙·방향은 `CLAUDE.md` 에 있다.
 
-**마지막 갱신**: 2026-05-21 (§5.5.16 박제 — Stage-2 모델 진입 B-1 결과 + B-2 5 항목 결정. 지주 군 양성 3-5 종목 (학습 임계 미달), Code 권장 (c) 채택, LightGBM + Platt sigmoid + balanced/unweighted ablation + 0년 fold skip + fs_div as feature + 평가 분리 보고. B-3 모델 학습 코드 진입 청)
+**마지막 갱신**: 2026-05-21 (B-3 모델 학습 코드 완료 — src/frr/models/ (classifier.py + evaluation.py) + lightgbm/scikit-learn 의존성 + 17 단위 테스트. 144 통과 + 1 skip. B-4 (walk-forward 통합 학습 실행) 진입 청)
 
 ---
 
@@ -22,18 +22,14 @@
 > - `tests/test_isolation.py` 변환 게이트 — features 작성 시점에 missing→active
 >   전환되며 (iii) lookahead placeholder 도 본격 구현 진입
 >
-> ### 2. 다음 작업 — Stage-2 모델 진입 B-3 (모델 학습 코드)
-> B-1 (지주 군 양성 실측 3-5 종목) ✅ + B-2 (5 항목 결정 §5.5.16) ✅.
-> 다음: **B-3 모델 학습 코드 작성** — `src/frr/models/` 신규.
-> - LightGBM + Platt sigmoid 캘리브레이션
-> - class weight balanced + unweighted 2 가지 ablation
-> - 평가 함수 (PR-AUC + AUC + Brier + Calibration + Top-K precision)
-> - **§5.5.16 평가 함수 설계 결정 게이트 메모 2 항목 본격 결정**:
->   (1) 양성 N=3 통계적 변동성 표시 (bootstrap CI)
->   (2) fold 단위 vs 종목 단위 평가 단위 결정
-> - 단위 테스트 (학습 reproducibility 시드·fs_div 컬럼 처리·class weight 효과)
-> §7.6 검토 사이클 통과 후 진입 → B-4 (walk-forward 통합 학습 실행) → B-5
-> (모델 카드 + 단계 2 종료).
+> ### 2. 다음 작업 — Stage-2 B-4 walk-forward 통합 학습 실행
+> B-3 (모델 학습 코드) ✅ — classifier.py + evaluation.py + 17 단위 테스트.
+> 다음: **B-4 walk-forward 통합 학습 실행** —
+> - features (`build_features`) × labels × walk-forward folds 통합
+> - 각 fold 학습 (balanced + unweighted ablation)
+> - 종목 단위 (ticker × as_of) pooled 평가 + bootstrap CI 활성
+> - 0년 fold skip + 지주 군별 평가 분리 보고
+> - 결과 PROGRESS §5.5.17 박제 → B-5 (모델 카드 + 단계 2 종료)
 >
 > ### 3. 별도 결정 게이트 (features 안정화 후)
 > - (β) §5.5.11 5 종목 FY refresh (페치 ≤5) — OFS fallback 영업이익 회수 정밀 분석
@@ -48,12 +44,11 @@
 
 ## 1. 현재 상태 (Current Status)
 
-- **단계**: 단계 2 진입 + labels.py ✅ + 격리 프레임워크 (i)(ii)(iii) ✅ +
-  D10 정정 ✅ + walk-forward 코드 ✅ + features 사전 토대 전체 완료 ✅ +
-  **Stage-2 모델 진입 B-1·B-2 완료 ✅** (§5.5.16, 2026-05-21). 다음:
-  **B-3 모델 학습 코드** (`src/frr/models/`) — LightGBM + Platt sigmoid +
-  balanced/unweighted ablation + 평가 함수 (PR-AUC·AUC·Brier·Calibration·
-  Top-K) + §5.5.16 평가 함수 설계 결정 게이트 메모 2 항목 본격 결정.
+- **단계**: 단계 2 진입 + labels.py ✅ + 격리 (i)(ii)(iii) ✅ + D10 ✅ +
+  walk-forward ✅ + features 전체 ✅ + Stage-2 B-1·B-2 (§5.5.16) ✅ +
+  **B-3 모델 학습 코드 완료 ✅** (2026-05-21). 다음: **B-4 walk-forward
+  통합 학습 실행** — features × labels × folds 통합 + balanced/unweighted
+  ablation + 종목 단위 평가 + bootstrap CI + 지주 군별 평가 분리.
 - **요약**: CI 4회 연속 실패(2026-05-18) → 커밋 1 (`71ef11a`) ruff format
   으로 그린 회복. 커밋 2 (`3585848`) D2 후보 상태 되돌림 + §7.4 ruff format
   규칙. 커밋 3 (`2977262`) D2 = α 최종 확정 — *5개 후보(D2(E)·B1 v1·v2·B3·A)
@@ -127,6 +122,7 @@
 - [x] **2단계 step 2 — `fdr_ticker_key` 추가 (2026-05-21)** — `src/frr/data/fdr.py` 에 module-level 함수 추가. `Code` (listing) / `Symbol` (delisting) 자동 탐지, 6자리 아닌 row → NaN + logger.warning, col override 지원. `tests/test_fdr.py` 단위 테스트 5건 (자동 탐지 2 + 8자리 NaN + override + ValueError). 전체 비-integration **112 통과 + 4 skip + 7 deselected**. §3 DoD "FDR ticker key 컬럼 불일치" 항목 해소.
 - [x] **2단계 step 3·4·5 통합 — features/baseline.py + (α)(β) 검증 활성 (2026-05-21)** — `src/frr/features/__init__.py` + `src/frr/features/baseline.py` 신규 (PROGRESS §5.5.14 (b-1) 시그니처 strict default + 4 baseline ratio). 4 비율: debt_ratio (BS) · current_ratio (BS) · op_margin (IS, 비율) · roa (IS×BS 결합). fs_div 컬럼 동행. labels.py `_get_op_income` 패턴 재사용. universe 멤버십 검증 + ValueError 경계. `tests/test_features_baseline.py` 단위 테스트 8건 + `tests/test_features_lookahead.py` 4건 (β 런타임 mock contract — 모든 시점 인자 ≤ as_of 검증). `tests/test_isolation.py` (iii) 활성화 — (α) AST 블랙리스트 (`finstate`/`finstate_all` 금지). **α-fix**: AST 검사가 `if TYPE_CHECKING:` 블록 내부 import + 타입 어노테이션 Name 노드를 제외 (런타임 0, false positive 회피). pyproject.toml 에 RUF002/RUF003 extend-ignore 추가 (한국어 docstring + α/β/× 박제 일관성). 전체 비-integration **127 통과 + 1 skip + 7 deselected**. §3 DoD "유니버스 변수 격리" + "상장폐지/관리 메타 격리" 항목 해소. **D2 정직성 사슬 격리 차원 완성** — features 모듈 작성 시점에 (i)(ii)(iii) 자동 활성으로 *시작 시점부터 격리 강제*.
 - [x] **Stage-2 모델 진입 B-1·B-2 완료 (§5.5.16, 2026-05-21)** — B-1 지주 군 양성 종목 수 실측: 명시 지주 3 (15%, 034730·267250·096770) + 의심 추가 1-2 (010690·008060), 학습 임계 미달 확인 → Code 권장 (c) (fs_div as feature 학습 + 군별 평가 분리 보고) 채택. B-2 5 항목 결정: (1) LightGBM + D8 평가 지표 유지 / (2) Platt sigmoid 캘리브레이션 / (3) balanced + unweighted ablation / (4) 0년 fold 평가 skip ("fold 수 28 → 25" 명시) / (5) fs_div as feature + 지주 군별 평가 분리. B-3 평가 함수 설계 결정 게이트 메모 2 항목 박제 (양성 N=3 통계적 변동성 + fold 단위 vs 종목 단위 평가).
+- [x] **Stage-2 B-3 모델 학습 코드 작성 (2026-05-21)** — `src/frr/models/__init__.py` + `classifier.py` (`make_base_classifier`·`train_classifier`·`predict_proba`) + `evaluation.py` (`expected_calibration_error`·`top_k_precision`·`evaluate_predictions`). LightGBM + Platt sigmoid 캘리브레이션 (CalibratedClassifierCV). balanced/unweighted 2 가지 ablation 지원. 평가 5 metric (PR-AUC·ROC-AUC·Brier·ECE·Top-K precision) + n_positive·n_total 항상 보고 + bootstrap_n>0 시 95% CI 옵션 (B-4 활성 권장). `lightgbm>=4.6.0` + `scikit-learn>=1.8.0` 의존성 추가 (CLAUDE.md §8.4 박제). 단위 테스트 17건 (재현성 시드·class weight ablation 효과·캘리브레이션 동작·ECE·Top-K·bootstrap CI·단일 클래스 경계). 전체 비-integration **144 통과 + 1 skip + 7 deselected**.
 
 ---
 
