@@ -45,7 +45,7 @@ select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
 # RUF002: 그리스 문자 (α/β/×) 와 라틴 문자 ambiguous 경고 비활성.
 # 본 프로젝트는 한국어 docstring + PROGRESS §5.5.7 D2=α / §5.5.14 (α)(β)
 # 박제로 그리스 문자가 영구 어휘. *오타 위험* 보다 *박제 일관성* 우선.
-extend-ignore = ["RUF002", "RUF003"]
+extend-ignore = ["RUF001", "RUF002", "RUF003"]
 
 [tool.ruff.format]
 quote-style = "double"
