@@ -16,11 +16,17 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 from data_loader import (
+    load_as_of_grid,
     load_d2_results,
+    load_features_timeseries,
+    load_predictions,
     load_refetch_summary,
     load_regime_comparison,
     load_regime_results,
     load_regime_state_series,
+    load_ticker_marcap_map,
+    load_ticker_name_map,
+    load_ticker_ohlcv,
 )
 
 
@@ -353,6 +359,296 @@ def render_limitations() -> None:
     )
 
 
+# ============================================================================
+# 사이클 2 — 종목 분석 페이지 (CLAUDE.md §2 핵심 사용자 시나리오 구현)
+# ============================================================================
+
+
+# 시장 국면 색상 (regime 페이지와 일관)
+_REGIME_COLOR_MAP = {
+    "위험회피": "#d62728",  # red
+    "중립": "#7f7f7f",  # gray
+    "위험선호": "#2ca02c",  # green
+}
+
+
+def _lookup_regime_at(date_val: pd.Timestamp) -> str | None:
+    """state_series 에서 *가장 가까운 영업일 ≤ date* 의 regime label."""
+    state = load_regime_state_series()
+    if state is None or state.empty:
+        return None
+    state = state.copy()
+    state["date"] = pd.to_datetime(state["date"])
+    mask = state["date"] <= date_val
+    if not mask.any():
+        return None
+    return str(state[mask].iloc[-1]["state_label"])
+
+
+def _format_won(value: float | None) -> str:
+    """원 단위 금액 → 조/억 단위 사람 친화 표시."""
+    if value is None or pd.isna(value):
+        return "—"
+    val = float(value)
+    if val >= 1e12:
+        return f"{val / 1e12:.2f} 조원"
+    if val >= 1e8:
+        return f"{val / 1e8:.1f} 억원"
+    return f"{val:,.0f} 원"
+
+
+def _regime_conditional_text(
+    regime: str | None,
+    ticker_features: pd.Series | None,
+) -> str:
+    """C-4 국면 조건부 해석 텍스트 (static template, v1).
+
+    본 v1 은 *방향성 가이드 정적 문구*. *동적 규칙 박제* 는 향후 사이클.
+    모델이 random 미만이므로 *해석 가이드만* 명시.
+    """
+    if regime is None:
+        return "ℹ️ 시장 국면 데이터 없음 (warmup 9 개월 또는 분석 시점 외)."
+
+    template = {
+        "위험회피": (
+            "현재 시장이 **위험회피 (위기)** 국면입니다. 위험회피 국면에서는 "
+            "*같은 부채비율 상승·영업이익 둔화* 가 *일반 시 대비 더 강한 "
+            "부실 신호*로 해석될 수 있습니다. 단 본 모델은 random 미만이라 "
+            "*방향성 가이드만* 으로 사용하세요."
+        ),
+        "위험선호": (
+            "현재 시장이 **위험선호 (상승)** 국면입니다. 위험선호 국면에서는 "
+            "*동일 재무 지표 약화* 가 *시장 전반 회복세에 가려질 수 있어* "
+            "해석 시 주의 필요. 본 모델은 random 미만이라 *방향성 가이드만*."
+        ),
+        "중립": (
+            "현재 시장이 **중립** 국면입니다. 중립 국면은 *전이로 자주 이동* "
+            "하는 교차로 역할 — 위험회피로 전환 확률 0.925 (§5.6.1). 재무 "
+            "지표 변화를 *전이 신호*로 함께 해석. 본 모델은 random 미만이라 "
+            "*방향성 가이드만*."
+        ),
+    }
+    base = template.get(regime, f"현재 시장 국면: **{regime}**.")
+
+    # ticker features 가 있으면 z-score 부착 (정적, v1)
+    if ticker_features is not None and not ticker_features.empty:
+        ratios = []
+        for col, label in [
+            ("debt_ratio", "부채비율"),
+            ("current_ratio", "유동비율"),
+            ("op_margin", "영업이익률"),
+            ("roa", "ROA"),
+        ]:
+            v = ticker_features.get(col)
+            if v is not None and not pd.isna(v):
+                ratios.append(f"{label} {v:.4f}")
+        if ratios:
+            base += f"\n\n해당 시점 종목 ratio: {' · '.join(ratios)}."
+    return base
+
+
+def render_ticker_analysis() -> None:
+    """페이지: 종목 분석 — CLAUDE.md §2 통합 리포트 구현 (사이클 2).
+
+    7 섹션:
+    1. 종목 선택 사이드바
+    2. 헤더 (코드·이름·시총)
+    3. 위험 점수 + 시장 국면
+    4. 국면 조건부 해석 텍스트
+    5. 주가 차트 + state overlay
+    6. 재무 비율 추이
+    7. 모델 한계 경고
+    """
+    st.title("종목 분석 — 통합 리포트")
+
+    # === 1. 사이드바: 종목 선택 / 시점 / ablation ===
+    name_map = load_ticker_name_map()
+    feats_all = load_features_timeseries()
+    preds_all = load_predictions()
+    grid = load_as_of_grid()
+
+    if not name_map or feats_all is None:
+        st.warning(
+            "⚠️ 산출물 없음. `scripts/train_d2_baseline.py` 실행 (predictions.parquet + "
+            "features.parquet 생성) 후 사용."
+        )
+        return
+
+    tickers = sorted(name_map.keys())
+    ticker = st.sidebar.selectbox(
+        "종목 선택",
+        tickers,
+        format_func=lambda t: f"{t} {name_map.get(t, '')}",
+    )
+
+    as_of_options = grid if grid else []
+    as_of = st.sidebar.selectbox(
+        "분석 시점",
+        as_of_options[::-1],  # 최신부터
+        format_func=lambda d: d.strftime("%Y-%m-%d"),
+    )
+    cw = st.sidebar.radio("class_weight ablation", ["balanced", "unweighted"])
+
+    # === 2. 헤더 ===
+    marcap_map = load_ticker_marcap_map()
+    col1, col2, col3 = st.columns(3)
+    col1.metric("종목코드", ticker)
+    col2.metric("종목명", name_map.get(ticker, "—"))
+    col3.metric("시가총액 (현시점)", _format_won(marcap_map.get(ticker)))
+    st.caption(
+        "ℹ️ 시가총액은 FDR 현 시점 스냅샷 (CLAUDE.md §8.1) — 과거 시점 시가총액 추적 X. 참고용."
+    )
+
+    # === 3. 위험 점수 + 시장 국면 ===
+    st.markdown("### 위험 점수 + 시장 국면")
+
+    # ticker × as_of 의 prediction 조회
+    pred_row = None
+    if preds_all is not None:
+        sel = preds_all[
+            (preds_all["ticker"] == ticker)
+            & (preds_all["test_as_of"] == as_of)
+            & (preds_all["class_weight"] == cw)
+        ]
+        if not sel.empty:
+            pred_row = sel.iloc[0]
+
+    # ticker × as_of 의 features 조회
+    feat_row = None
+    sel_f = feats_all[(feats_all["ticker"] == ticker) & (feats_all["as_of"] == as_of)]
+    if not sel_f.empty:
+        feat_row = sel_f.iloc[0]
+
+    # 해당 시점 regime
+    regime_label = _lookup_regime_at(as_of)
+
+    col_a, col_b, col_c, col_d = st.columns(4)
+    if pred_row is not None:
+        proba = float(pred_row["proba"])
+        col_a.metric("D2 위험 확률", f"{proba:.4f}")
+    else:
+        col_a.metric("D2 위험 확률", "—")
+        col_a.caption("skipped fold (양성 0) — prediction 없음")
+    col_b.metric("시장 국면", regime_label if regime_label else "—")
+    if feat_row is not None:
+        col_c.metric("양성 라벨 (1년 forward)", int(feat_row["label"]))
+        col_d.metric("fs_div", str(feat_row.get("fs_div", "—")))
+    else:
+        col_c.metric("양성 라벨", "—")
+        col_d.metric("fs_div", "—")
+
+    # === 4. 국면 조건부 해석 ===
+    st.markdown("### 국면 조건부 해석")
+    st.info(_regime_conditional_text(regime_label, feat_row))
+
+    # === 5. 주가 차트 + state overlay ===
+    st.markdown("### 주가 + 시장 국면 overlay")
+    ohlcv = load_ticker_ohlcv(ticker)
+    state_series = load_regime_state_series()
+
+    if ohlcv is None or ohlcv.empty:
+        st.warning(f"⚠️ {ticker} OHLCV 캐시 없음.")
+    else:
+        # cp949 한국어 컬럼 — 종가 컬럼 추출
+        close_col = next((c for c in ohlcv.columns if "종가" in c or c == "Close"), None)
+        if close_col is None:
+            st.warning("종가 컬럼 식별 실패. 컬럼: " + ", ".join(ohlcv.columns))
+        else:
+            ohlcv_plot = ohlcv.reset_index()
+            date_col = ohlcv_plot.columns[0]  # index → first column (보통 "날짜")
+            ohlcv_plot[date_col] = pd.to_datetime(ohlcv_plot[date_col])
+
+            fig = go.Figure()
+            # state background shading
+            if state_series is not None and not state_series.empty:
+                state = state_series.copy()
+                state["date"] = pd.to_datetime(state["date"])
+                # 단순화: 각 state 구간을 contiguous block 으로 묶어 shaded rect 추가
+                state["block"] = (state["state_label"] != state["state_label"].shift()).cumsum()
+                blocks = state.groupby("block").agg(
+                    start=("date", "min"), end=("date", "max"), label=("state_label", "first")
+                )
+                for _, b in blocks.iterrows():
+                    fig.add_vrect(
+                        x0=b["start"],
+                        x1=b["end"],
+                        fillcolor=_REGIME_COLOR_MAP.get(b["label"], "#cccccc"),
+                        opacity=0.15,
+                        line_width=0,
+                    )
+
+            fig.add_trace(
+                go.Scatter(
+                    x=ohlcv_plot[date_col],
+                    y=ohlcv_plot[close_col],
+                    mode="lines",
+                    name="종가",
+                    line={"color": "#1f77b4"},
+                )
+            )
+            fig.add_vline(
+                x=as_of,
+                line_dash="dash",
+                line_color="#444",
+                annotation_text=f"분석 시점 {as_of.strftime('%Y-%m-%d')}",
+                annotation_position="top",
+            )
+            fig.update_layout(
+                title=f"{ticker} {name_map.get(ticker, '')} 종가 + 시장 국면 overlay",
+                xaxis_title="날짜",
+                yaxis_title="종가 (원)",
+                hovermode="x unified",
+                height=420,
+            )
+            st.plotly_chart(fig, use_container_width=True)
+            st.caption(
+                "배경 색상: 시장 국면 (빨강=위험회피·회색=중립·초록=위험선호). "
+                "점선: 사용자 선택 분석 시점."
+            )
+
+    # === 6. 재무 비율 추이 ===
+    st.markdown("### 재무 비율 추이 (28 분기말 grid, rolling z-score 아님)")
+    ticker_feats = feats_all[feats_all["ticker"] == ticker].sort_values("as_of")
+    if ticker_feats.empty:
+        st.warning(f"{ticker} 의 features 시계열 없음.")
+    else:
+        import plotly.subplots as sp
+
+        fig2 = sp.make_subplots(
+            rows=2,
+            cols=2,
+            subplot_titles=("debt_ratio", "current_ratio", "op_margin", "roa"),
+        )
+        for col, row_, col_ in [
+            ("debt_ratio", 1, 1),
+            ("current_ratio", 1, 2),
+            ("op_margin", 2, 1),
+            ("roa", 2, 2),
+        ]:
+            fig2.add_trace(
+                go.Scatter(
+                    x=ticker_feats["as_of"],
+                    y=ticker_feats[col],
+                    mode="lines+markers",
+                    name=col,
+                    showlegend=False,
+                ),
+                row=row_,
+                col=col_,
+            )
+            fig2.add_vline(x=as_of, line_dash="dash", line_color="#444", row=row_, col=col_)
+        fig2.update_layout(height=500, title=f"{ticker} 재무 비율 4개 추이")
+        st.plotly_chart(fig2, use_container_width=True)
+        st.caption("점선: 사용자 선택 분석 시점. 분모 0 또는 결측 시 NaN.")
+
+    # === 7. 모델 한계 경고 ===
+    st.error(
+        "⚠️ **본 모델은 random 미만 성능** (PR-AUC 0.0136 < base rate 0.0205). "
+        "위 위험 확률은 *해석 가이드일 뿐* — 실제 투자 판단·신용 평가 사용 금지. "
+        "Limitations 페이지 참조 (CLAUDE.md §4.2 OUT 박제)."
+    )
+
+
 def main() -> None:
     st.set_page_config(
         page_title="기업 펀더멘털 + 시장 국면 통합 리포트",
@@ -362,11 +658,19 @@ def main() -> None:
 
     page = st.sidebar.radio(
         "페이지 선택",
-        ["개요", "시장 국면 시계열", "D2 baseline 결과", "⚠️ Limitations (방법론적 특징)"],
+        [
+            "개요",
+            "★ 종목 분석",
+            "시장 국면 시계열",
+            "D2 baseline 결과",
+            "⚠️ Limitations (방법론적 특징)",
+        ],
     )
 
     if page == "개요":
         render_overview()
+    elif page == "★ 종목 분석":
+        render_ticker_analysis()
     elif page == "시장 국면 시계열":
         render_regime_timeline()
     elif page == "D2 baseline 결과":
