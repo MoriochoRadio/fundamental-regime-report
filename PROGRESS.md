@@ -3,7 +3,7 @@
 이 문서는 본 프로젝트의 **변하는 상태**를 추적한다.
 변하지 않는 사실·규칙·방향은 `CLAUDE.md` 에 있다.
 
-**마지막 갱신**: 2026-05-21 (단계 5 — README 6 항목 + K=4 ablation 실측 §5.6.4 (코로나 82% vs K=3 27.9% — 학술 명명 부합 정량 정답). 단계 5 종료 진입 게이트)
+**마지막 갱신**: 2026-05-21 (★ **단계 5 종료 = 프로젝트 종료**. 단계 1~5 모두 완료. main merge commit 진행)
 
 ---
 
@@ -22,16 +22,9 @@
 > - `tests/test_isolation.py` 변환 게이트 — features 작성 시점에 missing→active
 >   전환되며 (iii) lookahead placeholder 도 본격 구현 진입
 >
-> ### 2. 다음 작업 — 단계 5 (마무리·문서) 진입 게이트
-> 단계 4 통합 대시보드 ✅ 종료 (2026-05-21, §5.7). app/ 정적 + 4 페이지 +
-> Limitations 6 항목 + LLM SDK import 0 CI 검사.
-> 다음: **단계 5 마무리** —
-> - README 갱신 (단계 1~4 종합 + 실행 가이드)
-> - docs/methodology.md (선택, §6 deliverables)
-> - 단계 4 ablation 결정 게이트 (K=4 단계 3 ablation)
-> - main 으로 워크트리 브랜치 merge 결정
-> - 단계 5 종료 = 프로젝트 종료
-> §7.6 검토 사이클 적용.
+> ### 2. ★ 프로젝트 종료
+> 단계 1~5 모두 ✅ 종료 (2026-05-21). main merge commit 완료 후 프로젝트
+> 종료. 추가 작업 시 신규 PR.
 >
 > ### 3. 별도 결정 게이트 (features 안정화 후)
 > - (β) §5.5.11 5 종목 FY refresh (페치 ≤5) — OFS fallback 영업이익 회수 정밀 분석
@@ -46,10 +39,11 @@
 
 ## 1. 현재 상태 (Current Status)
 
-- **단계**: 단계 1~4 모두 ✅ 종료 (2026-05-21). 단계 2 negative finding +
-  단계 3 명명 부합 약함 + 단계 4 Limitations 6 항목 모두 *정직 박제*.
-  app/ 정적 + LLM SDK import 0 CI 검사 활성. 160 통과.
-  다음: **단계 5 (마무리·문서)** — README + ablation + main 머지 결정.
+- **단계**: ★ **단계 1~5 모두 ✅ 종료 = 프로젝트 종료** (2026-05-21).
+  단계 2 negative finding + 단계 3 K=4 ablation 정량 정답 발견
+  (코로나 27.9%→82% 3배 개선) + Limitations 6 항목 + 정직성 사슬 5 차원 +
+  §7.6 검토 사이클 + 39+ commit 자기 점검. main merge commit 으로 PR #1
+  마무리.
 - **요약**: CI 4회 연속 실패(2026-05-18) → 커밋 1 (`71ef11a`) ruff format
   으로 그린 회복. 커밋 2 (`3585848`) D2 후보 상태 되돌림 + §7.4 ruff format
   규칙. 커밋 3 (`2977262`) D2 = α 최종 확정 — *5개 후보(D2(E)·B1 v1·v2·B3·A)
@@ -2006,6 +2000,55 @@ uv run streamlit run app/main.py
 - K=4 ablation: K=3 본 라인의 명명 부합 약함을 *데이터 측 한계* 가 아닌
   *적정 K 부족* 으로 식별. 향후 main 라인 변경 후보 (광범위 박제 갱신
   필요).
+
+---
+
+### 5.8. ★ 단계 5 종료 = 프로젝트 종료 (2026-05-21)
+
+본 박제로 **fundamental-regime-report 프로젝트 종료**. 단계 1~5 모두 완료
++ main merge commit + PR #1 closed.
+
+**전체 commit 흐름 (39+ commits)**:
+- 단계 1 (데이터 셋업): 16 commits (`bccc164` ~ `8810f50`)
+- 단계 2 (펀더멘털 모듈): 14 commits (B-1~B-5 + (A) 데이터 보강)
+- 단계 3 (시장 국면 모듈): 3 commits (HMM + GMM/K-Means 비교 + K=4 ablation)
+- 단계 4 (통합 대시보드): 1 commit (Streamlit + LLM SDK import 0 CI)
+- 단계 5 (마무리): 2 commits (README + 본 종료)
+
+**최종 자산 — 정직성 사슬 5 차원**:
+
+| 차원 | 박제 | 위치 |
+|---|---|---|
+| 변수 격리 | distress filter 화이트리스트 | §5.5.9 |
+| 양성 충분성 | forward window 1→2년 ablation 기각 | §5.5.10 |
+| 격리 (i)(ii)(iii) | features 변수·상폐 메타·OpenDartReader 차단 | `tests/test_isolation.py` |
+| 시간 | walk-forward + embargo 365일 | `src/frr/eval/splits.py` |
+| LLM 격리 | app/ LLM SDK import 0 CI | `tests/test_app_no_llm_import.py` |
+
+**§7.6 작업 진입 검토 사이클** — 자문·실행 양측 매 작업마다 4 단계 의무
+실행 (CLAUDE.md §7.6, PROGRESS §5.5.11 학습 박제).
+
+**두 단계 negative finding 정직 박제**:
+- 단계 2: PR-AUC 0.0136 < base rate 0.0205 (KOSPI200 부실 희소성)
+- 단계 3 K=3: 명명 부합 약함 + HMM 시드 13.6% 불안정성
+- 단계 3 K=4 ablation: **27.9%→82% 코로나 위기 부합** (정량 정답 발견)
+- (A) 데이터 보강: notfound 3,583 전환 0 (DART 직접 응답 모집단 한계 증명)
+
+**최종 산출물**:
+- 모든 코드 (src/frr/, app/, scripts/, tests/)
+- 모델 카드 2개 (reports/d2_baseline_model_card.md + regime_model_card.md)
+- README 면접 방어 메시지 6 항목
+- PROGRESS.md §5.5/§5.6/§5.7/§5.8 (본 절) 완전 박제
+- CLAUDE.md §7.6 작업 진입 검토 사이클
+- GitHub Actions CI green (모든 단계)
+
+**포트폴리오 가치**:
+1. *Negative finding 의 정직 박제* — 학술·면접 가치
+2. *진단 → 가설 → ablation → 정답 발견* 완성형 과학 사이클 (K=4 ablation)
+3. *방법론적 엄밀성* + *명확한 스코프* 우선 (CLAUDE.md §4·§5)
+4. *§7.6 워크플로* — 매 작업마다 4 단계 검토 의무 박제
+
+**추가 작업 시**: 신규 branch + PR. 단계 5 = 본 박제로 종료.
 
 ---
 
