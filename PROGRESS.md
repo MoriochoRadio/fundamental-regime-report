@@ -3,7 +3,7 @@
 이 문서는 본 프로젝트의 **변하는 상태**를 추적한다.
 변하지 않는 사실·규칙·방향은 `CLAUDE.md` 에 있다.
 
-**마지막 갱신**: 2026-05-21 (2단계 step 3·4·5 통합 완료 — features/baseline.py 4 ratio + (α) AST 화이트리스트 활성 + (β) 런타임 mock contract + α-fix (TYPE_CHECKING 정교화). 127 통과 + 1 skip. D2 정직성 사슬 격리 차원 완성)
+**마지막 갱신**: 2026-05-21 (§5.5.16 박제 — Stage-2 모델 진입 B-1 결과 + B-2 5 항목 결정. 지주 군 양성 3-5 종목 (학습 임계 미달), Code 권장 (c) 채택, LightGBM + Platt sigmoid + balanced/unweighted ablation + 0년 fold skip + fs_div as feature + 평가 분리 보고. B-3 모델 학습 코드 진입 청)
 
 ---
 
@@ -22,21 +22,18 @@
 > - `tests/test_isolation.py` 변환 게이트 — features 작성 시점에 missing→active
 >   전환되며 (iii) lookahead placeholder 도 본격 구현 진입
 >
-> ### 2. 다음 작업 — features 사전 토대 2단계 완료 ✅, 모델 단계 진입 검토
-> step 1 (spot-check 진단) ✅ + step 2 (fdr_ticker_key) ✅ + **step 3·4·5
-> 통합 (features/baseline.py + α+β 검증 활성) ✅** (2026-05-21).
-> 다음 단계 후보 (사용자 결정 게이트):
-> - (A) **3단계 별도 결정 게이트** — (β) 9 FY None refresh + (γ) notfound
->   2,719 OFS 재페치 (단계 2 모델 진입 전 부수 작업)
-> - (B) **단계 2 모델 진입** — §5.5.15 모델 단계 진입 결정 게이트 메모 2
->   항목 (fs_div 활용 방법 + 지주회사 군 양성 종목 수 사전 확인) 적용 →
->   walk-forward 통합 + class weight·bootstrap·시점별 가중치·0년 fold 처리
->   결정 (PROGRESS §5.5.10·§5.5.12·§5.5.13)
-> - (C) **features 확장** — baseline 4 ratio → 추가 비율 (성장률·이자보상비율
->   등) 또는 가격 기반 ratio (volatility·drawdown 단기). YAGNI 정신 적용 시
->   *모델 단계에서 baseline 평가 후 확장 결정*.
-> 자문 1차 권장: **(B) 모델 단계 진입** — baseline 4 ratio + walk-forward
-> + labels 모두 준비 완료. 확장은 모델 평가 후 결정.
+> ### 2. 다음 작업 — Stage-2 모델 진입 B-3 (모델 학습 코드)
+> B-1 (지주 군 양성 실측 3-5 종목) ✅ + B-2 (5 항목 결정 §5.5.16) ✅.
+> 다음: **B-3 모델 학습 코드 작성** — `src/frr/models/` 신규.
+> - LightGBM + Platt sigmoid 캘리브레이션
+> - class weight balanced + unweighted 2 가지 ablation
+> - 평가 함수 (PR-AUC + AUC + Brier + Calibration + Top-K precision)
+> - **§5.5.16 평가 함수 설계 결정 게이트 메모 2 항목 본격 결정**:
+>   (1) 양성 N=3 통계적 변동성 표시 (bootstrap CI)
+>   (2) fold 단위 vs 종목 단위 평가 단위 결정
+> - 단위 테스트 (학습 reproducibility 시드·fs_div 컬럼 처리·class weight 효과)
+> §7.6 검토 사이클 통과 후 진입 → B-4 (walk-forward 통합 학습 실행) → B-5
+> (모델 카드 + 단계 2 종료).
 >
 > ### 3. 별도 결정 게이트 (features 안정화 후)
 > - (β) §5.5.11 5 종목 FY refresh (페치 ≤5) — OFS fallback 영업이익 회수 정밀 분석
@@ -51,12 +48,12 @@
 
 ## 1. 현재 상태 (Current Status)
 
-- **단계**: 단계 2 진입 + labels.py ✅ + 격리 프레임워크 (i)(ii)(iii) 활성 ✅ +
-  D10 정정 ✅ + walk-forward 코드 ✅ + features 사전 토대 *전체 완료* ✅
-  (0단계 fs_div 백필 + 1단계 §5.5.14 합의 + 2단계 step 1·2·3·4·5 통합, 2026-
-  05-21). D2 정직성 사슬 4 차원 (변수·양성충분성·격리·시간) 모두 박힘.
-  다음: **단계 2 모델 진입** (자문 1차 권장) — §5.5.15 모델 진입 게이트 2
-  항목 + walk-forward 통합 + 모델 측 보완 (class weight·bootstrap·0년 fold).
+- **단계**: 단계 2 진입 + labels.py ✅ + 격리 프레임워크 (i)(ii)(iii) ✅ +
+  D10 정정 ✅ + walk-forward 코드 ✅ + features 사전 토대 전체 완료 ✅ +
+  **Stage-2 모델 진입 B-1·B-2 완료 ✅** (§5.5.16, 2026-05-21). 다음:
+  **B-3 모델 학습 코드** (`src/frr/models/`) — LightGBM + Platt sigmoid +
+  balanced/unweighted ablation + 평가 함수 (PR-AUC·AUC·Brier·Calibration·
+  Top-K) + §5.5.16 평가 함수 설계 결정 게이트 메모 2 항목 본격 결정.
 - **요약**: CI 4회 연속 실패(2026-05-18) → 커밋 1 (`71ef11a`) ruff format
   으로 그린 회복. 커밋 2 (`3585848`) D2 후보 상태 되돌림 + §7.4 ruff format
   규칙. 커밋 3 (`2977262`) D2 = α 최종 확정 — *5개 후보(D2(E)·B1 v1·v2·B3·A)
@@ -129,6 +126,7 @@
 - [x] **2단계 step 1 — 지주회사 CFS vs OFS spot-check 진단 (§5.5.15, 2026-05-21)** — `scripts/diagnose_holding_fs_div.py` 작성·실행. 양성 20 전체 (옵션 B) 200 cells 실측: 유사 78 + 증폭 41 + 둘 다 음수 39 + 부호 차이 9 + 희석 2. 명시 지주 (034730 SK 증폭 9/10·267250 HD현대 7/10·096770 SK이노베이션 6/10) 패턴 확인. 키워드 매칭 false negative 0 발견. §5.5.15 보완 커밋 (commit `689a4ec`) 으로 (A) 표현 정밀화 + (B) 모델 단계 진입 결정 게이트 메모 추가. §3 DoD "지주회사 점검" 항목 해소.
 - [x] **2단계 step 2 — `fdr_ticker_key` 추가 (2026-05-21)** — `src/frr/data/fdr.py` 에 module-level 함수 추가. `Code` (listing) / `Symbol` (delisting) 자동 탐지, 6자리 아닌 row → NaN + logger.warning, col override 지원. `tests/test_fdr.py` 단위 테스트 5건 (자동 탐지 2 + 8자리 NaN + override + ValueError). 전체 비-integration **112 통과 + 4 skip + 7 deselected**. §3 DoD "FDR ticker key 컬럼 불일치" 항목 해소.
 - [x] **2단계 step 3·4·5 통합 — features/baseline.py + (α)(β) 검증 활성 (2026-05-21)** — `src/frr/features/__init__.py` + `src/frr/features/baseline.py` 신규 (PROGRESS §5.5.14 (b-1) 시그니처 strict default + 4 baseline ratio). 4 비율: debt_ratio (BS) · current_ratio (BS) · op_margin (IS, 비율) · roa (IS×BS 결합). fs_div 컬럼 동행. labels.py `_get_op_income` 패턴 재사용. universe 멤버십 검증 + ValueError 경계. `tests/test_features_baseline.py` 단위 테스트 8건 + `tests/test_features_lookahead.py` 4건 (β 런타임 mock contract — 모든 시점 인자 ≤ as_of 검증). `tests/test_isolation.py` (iii) 활성화 — (α) AST 블랙리스트 (`finstate`/`finstate_all` 금지). **α-fix**: AST 검사가 `if TYPE_CHECKING:` 블록 내부 import + 타입 어노테이션 Name 노드를 제외 (런타임 0, false positive 회피). pyproject.toml 에 RUF002/RUF003 extend-ignore 추가 (한국어 docstring + α/β/× 박제 일관성). 전체 비-integration **127 통과 + 1 skip + 7 deselected**. §3 DoD "유니버스 변수 격리" + "상장폐지/관리 메타 격리" 항목 해소. **D2 정직성 사슬 격리 차원 완성** — features 모듈 작성 시점에 (i)(ii)(iii) 자동 활성으로 *시작 시점부터 격리 강제*.
+- [x] **Stage-2 모델 진입 B-1·B-2 완료 (§5.5.16, 2026-05-21)** — B-1 지주 군 양성 종목 수 실측: 명시 지주 3 (15%, 034730·267250·096770) + 의심 추가 1-2 (010690·008060), 학습 임계 미달 확인 → Code 권장 (c) (fs_div as feature 학습 + 군별 평가 분리 보고) 채택. B-2 5 항목 결정: (1) LightGBM + D8 평가 지표 유지 / (2) Platt sigmoid 캘리브레이션 / (3) balanced + unweighted ablation / (4) 0년 fold 평가 skip ("fold 수 28 → 25" 명시) / (5) fs_div as feature + 지주 군별 평가 분리. B-3 평가 함수 설계 결정 게이트 메모 2 항목 박제 (양성 N=3 통계적 변동성 + fold 단위 vs 종목 단위 평가).
 
 ---
 
@@ -1418,6 +1416,78 @@ labels.py 는 CFS 기반으로 *영업이익 양수→음수 전환* (B 신호) 
 fs_div 활용 결정의 *baseline 자료*. PROGRESS §3 DoD 의 점검 항목 해소.
 *모델 단계 진입 결정 게이트 메모 추가* (2026-05-21 보완): §7.6 검토 사이클
 정신 — 단계 2 모델 진입 시 *암묵 가정* 차단.
+
+---
+
+### 5.5.16. Stage-2 모델 진입 — B-1 결과 + B-2 5 항목 결정 (2026-05-21)
+
+> 단계 2 모델 진입 게이트 — §5.5.15 모델 단계 진입 결정 게이트 메모 2 항목
+> 적용. 작업을 5 작은 사이클 (B-1 ~ B-5) 로 세분화. 본 §5.5.16 은 B-1
+> (지주 군 양성 종목 수 실측) 결과 + B-2 (5 항목 결정) 박제. B-3 (모델 학습
+> 코드) 진입 입력.
+
+**B-1 결과 — 지주 군 양성 종목 수 실측**:
+
+§5.5.15 종목별 패턴 + 직전 spot-check 출력 종합:
+
+| 분류 | 종목 | 증폭 비율 | 통계적 의미 |
+|---|---|---|---|
+| 명시 지주 (도메인 확신) | 034730 SK·267250 HD현대·096770 SK이노베이션 | 9/10·7/10·6/10 | **3 종목 (15%)** |
+| 의심 추가 (도메인 검토 필요) | 010690 화신 (증폭 5 + 부호 차이 2 + 희석 1) | 5/10 | 1 종목 추가 가능 |
+| 경계 (의심 약함) | 008060 대덕 | 3/10 | 보류 |
+| 일반 패턴 | 나머지 15-16 종목 | 0-1/10 | 지주 아님 |
+
+→ **지주 군 양성 종목 수 = 최소 3 (확신) / 최대 4-5 (의심 포함)**.
+양성 20 의 15-25%. *어느 가정해도 §5.5.7 학습 임계 30 미달의 추가 임계
+미달*. fold별 학습 단독 fold 구성 불가능 — *모델 (b) stratification 학습
+불가능*. (a) fs_div as feature + 군별 *평가 분리 보고* 만 가능.
+
+**Code 권장 (c) 채택** — fs_div 컬럼 모델 입력 + 지주 군별 *평가 분리 보고*
+(학습 분리 X). 양성 희소성 한계는 §5.5.7 박제 한계 (KOSPI200 모집단의
+부실 사건 희소성) 의 *재확인*.
+
+---
+
+**B-2 결정 — 5 항목 (자문 1차 권장 그대로 채택, 2026-05-21)**:
+
+| # | 항목 | 결정 | 사유 |
+|---|---|---|---|
+| (1) | 모델 + 평가 지표 | **sklearn + LightGBM + PR-AUC + AUC + Brier + Calibration + Top-K precision** | D8 박제 유지 (§4 결정 로그, 2026-05-18 승인). 새 결정 X. |
+| (2) | 캘리브레이션 | **(i) sigmoid (Platt scaling)** | 양성 20 데이터 적어 safer. (ii) isotonic 과적합 위험. |
+| (3) | class weight | **(i) balanced + (iv) unweighted 2 가지 ablation** | 두 결과 비교로 class weight 효과 직접 측정. (iii) bootstrap/SMOTE 는 시계열 누수 위험 + baseline 후 결정. |
+| (4) | 0년 fold (2015·2021·2023) 처리 | **해당 fold 평가 skip + "fold 수 28 → 25" 명시** | bootstrap/SMOTE 채우기는 baseline 단계 과한 복잡도. 결과 본 뒤 추가 결정. |
+| (5) | fs_div 활용 + 평가 분리 | **(a) fs_div as feature 학습 + (b) 지주 군별 평가 분리 보고** | B-1 (c) Code 권장 채택. 학습 임계 미달이라 군별 학습 X, *평가만* 분리. |
+
+**0년 fold 처리 자세**:
+- 2015 fold 가 *3 fold* (2015 분기) 없음 (walk-forward 첫 fold 가 2018Q1, §5.5.13 박제) → 2015 0년 영향 실제로는 *fold 0* (이미 walk-forward 시작 후 발생)
+- 2021·2023 fold 는 *각각 4 fold = 8 fold* 가 양성 0 → 평가 skip 시 28 - 8 = **20 fold** 평가 가능
+
+(실측은 B-4 walk-forward 통합 시 정확 계산)
+
+---
+
+**B-3 평가 함수 설계 결정 게이트 메모** (자문 자기 점검, B-3 시점 본격 결정):
+
+본 짚을 점 2개를 B-3 평가 함수 설계 시 *명시 결정* 의무:
+
+1. **평가 분리 보고의 통계적 약함** — 지주 군 양성 3-4 종목으로 PR-AUC 등
+   별도 산출 시 *변동성 큼*. 결과 보고에 **"양성 N=3 으로 통계적 변동성
+   큼" 명시 필수**. **bootstrap 신뢰 구간** 같은 변동성 표시 적용 권장
+   (B-4 결과 보고 시점).
+2. **walk-forward fold 단위 vs 종목 단위 평가** — fold 별 양성 1건 이하가
+   다수일 가능성 (양성 20 / 25 fold ≈ 0.8). 대안: fold 별 예측 점수를
+   모아 **종목 단위 (또는 (ticker, as_of) 단위) 로 evaluation** —
+   PR-AUC·AUC·Brier 가 의미 있는 표본 수 확보. **B-3 평가 함수 설계 시점에
+   본격 결정**.
+
+**B-3 작업 진입 시 본 §5.5.16 의 평가 함수 설계 결정 게이트 메모 적용 의무**
+(§7.6 정신).
+
+---
+
+**남기는 이유**: B-2 5 항목 결정이 다음 작업 진입 시점에 *합의 외 결정 진입*
+차단. B-3 코드 작성이 본 §5.5.16 의 결정 5 항목 + 자기 점검 2개를 *명시*
+참조해야 모델 학습 코드의 정직성·재현성 보존.
 
 ---
 
