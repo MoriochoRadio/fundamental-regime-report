@@ -99,6 +99,32 @@ def test_app_no_llm_sdk_import() -> None:
     assert not violations, "app/ LLM SDK import 격리 위반:\n" + "\n".join(violations)
 
 
+def test_app_main_imports_under_streamlit_sys_path() -> None:
+    """app/main.py 가 *Streamlit entry point sys.path* 환경에서 import 가능.
+
+    `streamlit run app/main.py` 는 파일 디렉토리 (app/) 를 sys.path 첫 번째에
+    추가. 본 환경에서 `from app.data_loader` (절대 import) 는 ModuleNotFoundError.
+    sibling import (`from data_loader`) 또는 명시적 sys.path 처리 필수.
+
+    검증: subprocess 로 cwd=app + sys.path 시뮬 → import main 성공.
+    """
+    import subprocess
+    import sys
+
+    result = subprocess.run(
+        [sys.executable, "-c", "import main"],
+        capture_output=True,
+        text=True,
+        cwd=str(APP_DIR),
+        timeout=60,
+    )
+    assert result.returncode == 0, (
+        "app/main.py 가 Streamlit-like sys.path 에서 import 실패:\n"
+        f"stdout: {result.stdout}\n"
+        f"stderr: {result.stderr}"
+    )
+
+
 def test_app_no_training_code() -> None:
     """app/ 안에 *학습* 패턴 (sklearn fit·LightGBM train 등) 금지.
 

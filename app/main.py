@@ -15,8 +15,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
-
-from app.data_loader import (
+from data_loader import (
     load_d2_results,
     load_refetch_summary,
     load_regime_comparison,

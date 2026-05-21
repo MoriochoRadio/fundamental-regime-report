@@ -2052,6 +2052,55 @@ uv run streamlit run app/main.py
 
 ---
 
+### 5.9. 자문 측 검증 누락 정직 박제 — Streamlit entry point sys.path (2026-05-21)
+
+> 단계 4 완료 + main merge 후 사용자가 *로컬 실행 테스트* 시도 → `ModuleNotFoundError:
+> No module named 'app'` 발생. 자문 측 §7.6 *실측* 차원 누락 사례. §5.5.11 (D10
+> 가정 오류·Co-Authored-By 가정 학습) 패턴의 3 번째 사례 박제.
+
+**경위**:
+- 단계 4 작성 시 `app/main.py` 가 `from app.data_loader import ...` (절대 import)
+- 단위 테스트 `tests/test_app_no_llm_import.py` 는 *pytest 환경의 sys.path*
+  (프로젝트 루트 포함) 에서 import 검증 통과
+- *실제 `streamlit run app/main.py` 명령은 한 번도 실행 안 함* — 코드 작성 후
+  실측 검증 의무 누락
+
+**원인**:
+- Streamlit 의 `streamlit run app/main.py` 는 *해당 파일 디렉토리* (`app/`) 를
+  `sys.path` 첫 번째로 추가
+- 이 환경에서 `from app.data_loader` 는 *`app/` 의 부모 디렉토리가 sys.path 에
+  없으면* ModuleNotFoundError
+- pytest 는 *프로젝트 루트가 sys.path* 라 `from app.data_loader` 정상 동작 — 즉
+  단위 테스트는 *실행 환경 차이를 검출 못 함*
+
+**정정 (commit `fix(app): streamlit entry sibling import`)**:
+- `app/main.py`: `from app.data_loader import ...` → `from data_loader import ...`
+- `tests/test_app_no_llm_import.py` 신규 테스트 `test_app_main_imports_under_streamlit_sys_path`:
+  subprocess 로 `cwd=app + python -c "import main"` 시뮬 → import 성공 검증.
+  *streamlit-like sys.path 환경에서 실제 import 가능성을 단위 테스트로 강제*.
+
+**자문 측 학습 (§5.5.11 패턴 3 번째)**:
+- 1 번째 사례: Co-Authored-By 가정 오류 — git log 실측 정정 (§5.5.11)
+- 2 번째 사례: D10 가정 오류 — 작업 직전 dart.py 재읽기 정정 (§5.5.11)
+- **3 번째 사례 (본 절)**: Streamlit entry point sys.path 가정 오류 — *사용자
+  실행 시 발견*. 단위 테스트 sys.path 환경 ≠ 실행 환경 sys.path 환경.
+  → 향후: *코드 작성 후 실행 명령 자체* (streamlit run / uvicorn / docker run
+  등 entry point 명령) 를 *자문 측이 직접 실행* 또는 *동등 환경 단위 테스트*
+  로 보강 의무.
+
+**§7.6 검토 사이클 보강 (4 단계 + 본 사례)**:
+- 4 단계 (PROGRESS·git log·코드 재읽기·사용자 검토 게이트) 모두 통과해도
+  *entry point 명령 실측* 누락 시 본 사례 같은 사용자 발견 가능
+- 자문 권장: §7.6 *실측* 차원에 *"명시 entry point 명령 (있을 경우) 자문 측
+  최소 1회 실행 검증"* 항목 추가 — 본 박제로 정신 박힘. CLAUDE.md 본문 정식
+  편입은 별도 결정 게이트.
+
+**남기는 이유**: 단위 테스트 통과 ≠ 실제 실행 환경 검증. 본 사례가 *§7.6 검토
+사이클의 한계점* 정직 박제. 미래 자문 시스템 운용 시 *entry point 명령 직접
+실행* 패턴 의무화. §5.5.11 학습 사슬의 3 번째 사례 보존.
+
+---
+
 ### 5.5.5. 구버전 자료 (2026-05-18 초기 — 참고용 / 변경 추적)
 
 > 아래 (1)~(4)는 *진단 누적 이전*의 초기 사용자 요청 자료. 본 §5.5.1~5.5.4
