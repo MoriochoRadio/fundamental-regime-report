@@ -24,6 +24,7 @@ dependencies = [
     "setuptools>=70.0,<80.0",
     "lightgbm>=4.6.0",
     "scikit-learn>=1.8.0",
+    "hmmlearn>=0.3.3",
 ]
 
 [dependency-groups]
