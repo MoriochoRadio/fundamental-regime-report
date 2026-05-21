@@ -30,7 +30,7 @@ def render_overview() -> None:
     st.title("기업 펀더멘털 + 시장 국면 인지형 통합 분석 리포트")
     st.markdown(
         """
-        **포트폴리오 프로젝트** — 한국 KOSPI200 (point-in-time) 배치 분석.
+        **개인 ML 연구 프로젝트** — 한국 KOSPI200 (point-in-time) 배치 분석.
         D2 부실 라벨 스코어링 + HMM 시장 국면 분류 + 통합 시각화.
 
         본 대시보드는 *정적 산출물 전용 시각화* (CLAUDE.md §8.6).
@@ -218,12 +218,12 @@ def render_d2_results() -> None:
 
 
 def render_limitations() -> None:
-    """페이지 4: Limitations — 면접 방어 자산 핵심."""
-    st.title("⚠️ Limitations — 정직 박제 (면접 방어 자산)")
+    """페이지 4: Limitations — 방법론적 특징 핵심."""
+    st.title("⚠️ Limitations — 정직 박제 (방법론적 특징)")
 
     st.markdown(
         """
-        본 페이지는 본 프로젝트의 **포트폴리오·면접 방어 자산 핵심**.
+        본 페이지는 본 프로젝트의 **방법론적 특징 핵심**.
         모든 한계가 *정직 박제* 되어 있어 *negative finding 의 정직성* +
         *D2 정직성 사슬 4 차원* + *모집단 한계 정량 증명* 가치 제공.
         """
@@ -341,7 +341,7 @@ def render_limitations() -> None:
     st.markdown("---")
     st.markdown(
         """
-        ### 면접 방어 핵심 메시지
+        ### 프로젝트 핵심 메시지
 
         본 프로젝트는 *negative finding* 이지만 다음 가치 박제:
 
@@ -363,7 +363,7 @@ def main() -> None:
 
     page = st.sidebar.radio(
         "페이지 선택",
-        ["개요", "시장 국면 시계열", "D2 baseline 결과", "⚠️ Limitations (면접 방어)"],
+        ["개요", "시장 국면 시계열", "D2 baseline 결과", "⚠️ Limitations (방법론적 특징)"],
     )
 
     if page == "개요":
@@ -372,7 +372,7 @@ def main() -> None:
         render_regime_timeline()
     elif page == "D2 baseline 결과":
         render_d2_results()
-    elif page == "⚠️ Limitations (면접 방어)":
+    elif page == "⚠️ Limitations (방법론적 특징)":
         render_limitations()
 
 
