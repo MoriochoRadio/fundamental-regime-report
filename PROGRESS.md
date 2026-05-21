@@ -3,7 +3,7 @@
 이 문서는 본 프로젝트의 **변하는 상태**를 추적한다.
 변하지 않는 사실·규칙·방향은 `CLAUDE.md` 에 있다.
 
-**마지막 갱신**: 2026-05-21 (단계 3 종료 — §5.6.2 HMM/GMM/K-Means 비교 + K=2·3·4 진단. 자동 K=4 vs 도메인 K=3 tension + HMM 시드 불안정성 정직 박제. reports/regime_model_card.md. 단계 4 통합 대시보드 진입 게이트)
+**마지막 갱신**: 2026-05-21 (단계 4 종료 — Streamlit 대시보드 + Limitations 6 항목 정직 박제 + app/ LLM SDK import 0 CI 검사 (CLAUDE.md §3.4 강제 박제). §5.5.17 보완 (notfound 분해 + 재학습 미진행 사유). 단계 5 마무리 진입 게이트)
 
 ---
 
@@ -22,15 +22,15 @@
 > - `tests/test_isolation.py` 변환 게이트 — features 작성 시점에 missing→active
 >   전환되며 (iii) lookahead placeholder 도 본격 구현 진입
 >
-> ### 2. 다음 작업 — 단계 4 (통합 대시보드) 진입 게이트
-> 단계 3 시장 국면 모듈 ✅ 종료 (2026-05-21, §5.6/§5.6.1/§5.6.2/§5.6.3).
-> 다음: **단계 4 통합 대시보드** (CLAUDE.md §8.5 박제: Streamlit + plotly) —
-> - app/ 디렉토리 신규 (정적 읽기 전용, LLM SDK import 금지, CLAUDE.md §8.6)
-> - D2 baseline 결과 + regime state 시계열 동시 시각화
-> - **모든 limitations 명시** (D2 random 미만 + regime 명명 약함)
-> - 런타임 LLM 호출 0회 (CLAUDE.md §3.4 박제)
-> - 사용자 결정 게이트: 대시보드 layout / 시각화 우선순위 (state 시계열 +
->   D2 평가 metric + 종목 상세 etc.)
+> ### 2. 다음 작업 — 단계 5 (마무리·문서) 진입 게이트
+> 단계 4 통합 대시보드 ✅ 종료 (2026-05-21, §5.7). app/ 정적 + 4 페이지 +
+> Limitations 6 항목 + LLM SDK import 0 CI 검사.
+> 다음: **단계 5 마무리** —
+> - README 갱신 (단계 1~4 종합 + 실행 가이드)
+> - docs/methodology.md (선택, §6 deliverables)
+> - 단계 4 ablation 결정 게이트 (K=4 단계 3 ablation)
+> - main 으로 워크트리 브랜치 merge 결정
+> - 단계 5 종료 = 프로젝트 종료
 > §7.6 검토 사이클 적용.
 >
 > ### 3. 별도 결정 게이트 (features 안정화 후)
@@ -46,12 +46,10 @@
 
 ## 1. 현재 상태 (Current Status)
 
-- **단계**: 단계 2 ✅ 종료 + (A) 보강 negative 강한 증명 + **단계 3 시장
-  국면 모듈 ✅ 종료** (§5.6/5.6.1/5.6.2/5.6.3, 2026-05-21). HMM K=3 baseline +
-  GMM/K-Means 비교 + 시드 안정성 진단 + 자동 K=4 vs 도메인 K=3 tension +
-  학술 명명 부합 약함 정직 박제. reports/regime_model_card.md.
-  다음: **단계 4 (통합 대시보드)** — Streamlit + plotly. D2 + regime 동시
-  시각화 + 모든 limitations 명시. 런타임 LLM 호출 0.
+- **단계**: 단계 1~4 모두 ✅ 종료 (2026-05-21). 단계 2 negative finding +
+  단계 3 명명 부합 약함 + 단계 4 Limitations 6 항목 모두 *정직 박제*.
+  app/ 정적 + LLM SDK import 0 CI 검사 활성. 160 통과.
+  다음: **단계 5 (마무리·문서)** — README + ablation + main 머지 결정.
 - **요약**: CI 4회 연속 실패(2026-05-18) → 커밋 1 (`71ef11a`) ruff format
   으로 그린 회복. 커밋 2 (`3585848`) D2 후보 상태 되돌림 + §7.4 ruff format
   규칙. 커밋 3 (`2977262`) D2 = α 최종 확정 — *5개 후보(D2(E)·B1 v1·v2·B3·A)
@@ -131,6 +129,8 @@
 - [x] **(A) notfound OFS 재페치 시도 — 데이터 보강 결과 박제 (§5.5.17, 2026-05-21)** — `scripts/refetch_notfound_ofs.py` 실행: notfound 3,583 호출 (16분, 한도 36%) → **status 전환 0건·errors 0·fs_div 전환 0**. DART API 응답 모두 `{status: '013', message: '조회된 데이타가 없습니다.'}`. notfound 가 *D10 fetcher 미적용*이 아니라 *실제 데이터 부재* (CFS·OFS 모두 미공시) 임을 정량 증명. §5.5.17 향후 방향 (C) 의 결과: *실효 0* — 데이터 출처 변경으로 §5.5.7 KOSPI200 모집단 한계 극복 불가능. 보완 commit `1a0283e`: PROGRESS §5.5.17 base rate 0.0205 계산 맥락 명확화 + 모델 카드 §3a Intended Use 섹션 신설.
 - [x] **단계 3 — 시장 국면 모듈 (D3·D4) 작성 + HMM 학습 (§5.6, §5.6.1, 2026-05-21)** — `src/frr/regime/` 패키지 (`features.py` + `hmm_classifier.py`) + `tests/test_regime_*` 13 단위 테스트 + `scripts/train_regime.py`. D3 결정: HMM K=3 본 라인 + GMM/K-Means 비교. D4: 일간 + 3 피처 (ret_20d + vol_60d + vol_ratio_20_60) + rolling z-score. **forward-only filtering** (Viterbi backward smoothing 회피 — 룩어헤드 차단). State labeling 정정 (vol 순 → 위기 점수 vol_z − ret_z 순). 학습 결과 (§5.6.1): KS200 2,458 obs → 2,273 clean, log-likelihood -9442.92, 위험선호 57.8% + 중립 26.7% + 위험회피 15.5%. **학술 명명 부합 약함 정직 박제** — state 0 (위험회피) 가 *낮은 ret + 낮은 vol = 정체*. 2020 코로나 spot-check 위험회비 27.9% 만. hmmlearn>=0.3.3 의존성 추가.
 - [x] **단계 3 — HMM vs GMM vs K-Means 비교 + K=2·3·4 진단 + 모델 카드 + 단계 3 종료 (§5.6.2, §5.6.3, 2026-05-21)** — `src/frr/regime/comparison.py` + `scripts/compare_regime_models.py` 실측. **자동 K 선택**: HMM·GMM 모두 BIC·AIC 최소 K=4 (도메인 K=3 과 tension). **HMM 시드 불안정성**: 5 시드 log-lik 변동 13.6% (-9442 ~ -8312), local optima 의존. GMM 변동 0.06%, K-Means 0.007% — 매우 안정. **HMM 적합도 > GMM** (K=3): -9442 vs -10102 (전이 행렬 정보 우월). `reports/regime_model_card.md` 작성 (8 섹션: 명세·데이터·결과·Limitations 4·Intended use·향후·재현성·단계 4 진입). **단계 3 종료** — 단계 4 통합 대시보드 진입 게이트.
+- [x] **§5.5.17 보완 — notfound 분해 + 재학습 미진행 사유 (commit `adf3f80`, 2026-05-21)** — 자문 짚을 점 1 정직성 보강. 양성 20 종목 notfound 208 / 음성 종목 notfound 3,375 분해 + (A) 재페치 status 전환 0 → DART 캐시 변화 0 → 입력 변화 0 → 재학습 결과 변화 0 자명 → 재학습 미진행 사유 박제.
+- [x] **단계 4 — Streamlit 대시보드 + LLM SDK import 0 격리 (§5.7, 2026-05-21)** — `app/__init__.py` + `data_loader.py` + `main.py` (4 페이지: 개요·국면 시계열·D2 결과·Limitations 6 항목 강화). `tests/test_app_no_llm_import.py` 3 테스트 (디렉토리 존재·LLM SDK import 0·학습 코드 import 0, AST 검사 — CLAUDE.md §3.4 박제 *CI 강제*). `streamlit>=1.57.0` + plotly 의존성 추가. **app/ 정적 읽기 전용 — 런타임 LLM 호출 0회·학습·계산·페치 0회 박제** (CLAUDE.md §3.4·§8.6 강제). 전체 비-integration **160 통과 + 1 skip + 7 deselected**. 단계 4 종료 — 단계 5 마무리 진입 게이트.
 
 ---
 
@@ -1876,6 +1876,56 @@ GMM·K-Means 비교 작업 (별도 commit) 도 본 결과 기준점.
 - Intended use: 단계 4 대시보드 *맥락 시각화*. 트레이딩 신호 ❌.
 
 **단계 3 종료** — 단계 4 (통합 대시보드) 진입 게이트.
+
+---
+
+### 5.7. 단계 4 — Streamlit 통합 대시보드 + LLM import 0 격리 (2026-05-21)
+
+> CLAUDE.md §8.5 박제: Streamlit + plotly. §8.6: app/ 정적 읽기 전용,
+> LLM SDK import 금지 (CI 검사). §3.4: 런타임 LLM 호출 0회.
+
+**구조**:
+- `app/__init__.py` — 모듈 docstring (정적 읽기 전용 박제)
+- `app/data_loader.py` — yaml/parquet/md 정적 로드 layer (학습·페치 0회)
+- `app/main.py` — Streamlit entry point, 4 페이지:
+  1. 개요 (단계별 상태 표)
+  2. 시장 국면 시계열 (plotly scatter + 분포 pie + 전이 행렬)
+  3. D2 baseline 결과 (full pooled + balanced/unweighted ablation + 지주
+     군 분리 + (A) 데이터 보강 결과)
+  4. **⚠️ Limitations (면접 방어 자산)** — 6 항목 모두 정직 박제
+
+**Limitations 페이지 6 항목 (자문 짚을 점 3 모두 반영)**:
+1. 단계 2 negative finding (PR-AUC 0.0136 + class weight ablation)
+2. (A) 데이터 보강 결과 (notfound 3,583 전환 0)
+3. 단계 3 명명 부합 약함 + state means + 2020 spot-check
+4. HMM 시드 불안정성 (13.6% 변동)
+5. 자동 K=4 vs 도메인 K=3 tension
+6. KOSPI200 모집단 희소성 (§5.5.7 인용)
+
+**격리 검증 — `tests/test_app_no_llm_import.py` 3 테스트 (자문 짚을 점 4)**:
+- `test_app_dir_exists` — app/ 디렉토리 존재
+- `test_app_no_llm_sdk_import` — google.generativeai·openai·anthropic·
+  cohere·transformers·litellm·llama_cpp·frr.llm import 0 (AST 검사)
+- `test_app_no_training_code` — lightgbm·hmmlearn·sklearn.ensemble/linear_
+  model/tree import 0 (학습 코드 금지)
+
+→ CLAUDE.md §3.4 박제 (서비스 런타임 LLM 호출 0회) 의 **CI 강제 박제**.
+정직성 사슬 완성형.
+
+**의존성 추가**: `streamlit>=1.57.0` + `plotly` (관련 pkg).
+
+**실행**:
+```bash
+uv run streamlit run app/main.py
+```
+
+**산출물**: app/ 디렉토리 + tests/test_app_no_llm_import.py (모두 git 추적).
+
+**자동 K=4 ablation 메모 (자문 짚을 점)**:
+- 단계 5 마무리 시점에 K=4 ablation 추가 결정 게이트 — 단계 3 결과의
+  자산 강화 후보. *지금 강제 안 함*. PROGRESS §5.6.2 박제 그대로 유지.
+
+**단계 4 종료** — 단계 5 (마무리·문서) 진입 게이트.
 
 ---
 
