@@ -129,6 +129,16 @@ DELISTING_FORBIDDEN_COLUMNS: frozenset[str] = frozenset(
     }
 )
 
+# (iii) Lookahead 우회 — OpenDartReader 직접 호출 메서드 (활성화 2026-05-21)
+# DARTReporter 가 룩어헤드 차단의 공식 입구. features 모듈은 OpenDartReader
+# 직접 호출 시 *시점 정렬 우회 가능* → 차단.
+LOOKAHEAD_FORBIDDEN_METHODS: frozenset[str] = frozenset(
+    {
+        "finstate",
+        "finstate_all",
+    }
+)
+
 
 def _column_referenced(text: str, col: str) -> bool:
     """텍스트에서 컬럼 참조 패턴 검출 (literal string + 속성 접근).
@@ -137,6 +147,75 @@ def _column_referenced(text: str, col: str) -> bool:
     우연 등장하는 false positive 회피.
     """
     return f'"{col}"' in text or f"'{col}'" in text or f".{col}" in text
+
+
+def _is_type_checking_block(node: ast.AST) -> bool:
+    """노드가 `if TYPE_CHECKING:` 블록인지 판정.
+
+    TYPE_CHECKING 블록은 *런타임 실행 0* (mypy/IDE 만 본다) — import 가
+    그 안에 있으면 런타임 누수 위험 본질적으로 없음. AST 검사에서 false
+    positive 회피용.
+    """
+    if not isinstance(node, ast.If):
+        return False
+    test = node.test
+    # `if TYPE_CHECKING:` 또는 `if typing.TYPE_CHECKING:` 패턴
+    if isinstance(test, ast.Name) and test.id == "TYPE_CHECKING":
+        return True
+    return (
+        isinstance(test, ast.Attribute)
+        and test.attr == "TYPE_CHECKING"
+        and isinstance(test.value, ast.Name)
+        and test.value.id == "typing"
+    )
+
+
+def _collect_type_checking_imports(tree: ast.AST) -> set[int]:
+    """TYPE_CHECKING 블록 내부의 import 노드의 lineno 집합.
+
+    AST walk 가 TYPE_CHECKING 안의 import 도 평탄하게 순회하므로, 본 helper 가
+    *TYPE_CHECKING 안에 속한 lineno* 를 미리 수집해 격리 검사에서 제외.
+    """
+    type_checking_linenos: set[int] = set()
+    for node in ast.walk(tree):
+        if _is_type_checking_block(node):
+            for child in ast.walk(node):
+                if isinstance(child, (ast.Import, ast.ImportFrom)):
+                    type_checking_linenos.add(child.lineno)
+                # ast.Name 노드 (심볼 참조) 도 TYPE_CHECKING 블록 내부면 제외 —
+                # 하지만 TYPE_CHECKING 블록 본체는 import 만 있는 게 관례이므로
+                # 본 helper 는 import lineno 만 추적. 타입 *어노테이션* 의 Name
+                # 참조 (예: `reporter: DARTReporter`) 는 별도 처리 필요 — 다음
+                # helper 가 ast.AnnAssign·arg.annotation 등을 식별.
+    return type_checking_linenos
+
+
+def _collect_annotation_name_linenos(tree: ast.AST) -> set[int]:
+    """타입 어노테이션 안의 Name 노드 lineno 집합.
+
+    `def f(x: KOSPI200QuarterlyLoader)` 의 KOSPI200QuarterlyLoader 같은
+    어노테이션 Name 은 *런타임 평가 0* (from __future__ import annotations
+    적용 시) — false positive 회피.
+    """
+    annotation_linenos: set[int] = set()
+
+    def _walk_annotation(annot: ast.AST | None) -> None:
+        if annot is None:
+            return
+        for sub in ast.walk(annot):
+            if isinstance(sub, ast.Name):
+                annotation_linenos.add(sub.lineno)
+
+    for node in ast.walk(tree):
+        # def f(x: T) → arg.annotation
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+            for arg in node.args.args + node.args.kwonlyargs + node.args.posonlyargs:
+                _walk_annotation(arg.annotation)
+            _walk_annotation(node.returns)
+        # x: T = ... 또는 x: T (AnnAssign)
+        if isinstance(node, ast.AnnAssign):
+            _walk_annotation(node.annotation)
+    return annotation_linenos
 
 
 # ============================================================================
@@ -169,17 +248,33 @@ def test_features_module_does_not_import_universe_vars() -> None:
             violations.append(f"{rel}: SyntaxError {e}")
             continue
 
+        # TYPE_CHECKING 블록 내부 import / 타입 어노테이션 Name 은 *런타임 0* —
+        # 격리 누수 본질 없음. 제외 lineno 수집 (α-fix, 2026-05-21).
+        type_checking_linenos = _collect_type_checking_imports(tree)
+        annotation_linenos = _collect_annotation_name_linenos(tree)
+
         for node in ast.walk(tree):
-            # ImportFrom
-            if isinstance(node, ast.ImportFrom) and node.module in UNIVERSE_FORBIDDEN_IMPORTS:
+            # ImportFrom (TYPE_CHECKING 안은 제외)
+            if (
+                isinstance(node, ast.ImportFrom)
+                and node.module in UNIVERSE_FORBIDDEN_IMPORTS
+                and node.lineno not in type_checking_linenos
+            ):
                 violations.append(f"{rel}:{node.lineno} from {node.module} import ... 금지")
-            # Import
+            # Import (TYPE_CHECKING 안은 제외)
             if isinstance(node, ast.Import):
                 for alias in node.names:
-                    if alias.name in UNIVERSE_FORBIDDEN_IMPORTS:
+                    if (
+                        alias.name in UNIVERSE_FORBIDDEN_IMPORTS
+                        and node.lineno not in type_checking_linenos
+                    ):
                         violations.append(f"{rel}:{node.lineno} import {alias.name} 금지")
-            # 심볼 참조 (Name 노드)
-            if isinstance(node, ast.Name) and node.id in UNIVERSE_FORBIDDEN_SYMBOLS:
+            # 심볼 참조 Name (타입 어노테이션 안은 제외)
+            if (
+                isinstance(node, ast.Name)
+                and node.id in UNIVERSE_FORBIDDEN_SYMBOLS
+                and node.lineno not in annotation_linenos
+            ):
                 violations.append(f"{rel}:{node.lineno} 심볼 {node.id} 참조 금지")
 
         # 금지 컬럼 이름 텍스트 참조
@@ -247,21 +342,41 @@ def test_features_module_does_not_access_delisting_meta() -> None:
 
 
 def test_features_lookahead_blocked() -> None:
-    """룩어헤드 차단 격리 — features 작업 시점에 구체화.
+    """룩어헤드 차단 격리 — (α) AST 화이트리스트/블랙리스트 (2026-05-21 활성화).
 
-    features 모듈의 시간 정렬 호출 검증:
-    - `dart.available_at(t)` / `dart.latest_available(t)` 만 사용
-    - `fetch_report(...)` 직접 호출 시 시점 인자가 *t 이후* 를 가리키지 않음
+    features 모듈은 *OpenDartReader 직접 호출 금지* — DARTReporter 의 시점
+    정렬 메서드 (available_at / latest_available / fetch_report) 만 사용.
+    OpenDartReader 의 finstate / finstate_all 직접 호출은 *룩어헤드 차단의
+    공식 입구 우회* 라 금지.
 
-    구체 검증 방식 (AST vs 런타임 mock vs features contract) 결정은 features
-    모듈 작성 시점의 설계 결정과 함께. 현재는 placeholder — features 작업
-    시점에 본격 구현 필수.
+    YAGNI: 본 (α) 는 *최소 블랙리스트* — OpenDartReader 직접 호출만 차단.
+    *시점 인자 정확성* 은 (β) 런타임 mock contract (tests/test_features_
+    lookahead.py) 가 보완.
 
-    본 placeholder 가 skip 으로 남아 있는 동안 features 작업이 진행되면
-    *skip 알림이 지속적으로 떠서* envelope 를 닫게 됨 — vacuous placeholder
-    가 무한 skip 으로 남는 것을 자연스럽게 차단.
+    의도적 우회 (getattr·동적 attribute·메서드 reference 저장) 검출 X —
+    코드 리뷰가 보완.
     """
-    state = _check_features_dir_state()
-    if state == "missing":
-        pytest.skip("features 모듈 미생성 — 작성 시점에 자동 활성")
-    pytest.skip("features 작업 시점에 본격 구현 필수 — TODO (test_isolation.py iii)")
+    _gate_or_run()
+
+    violations: list[str] = []
+    for py_file in _iter_features_modules():
+        text = py_file.read_text(encoding="utf-8")
+        rel = py_file.relative_to(PROJECT_ROOT)
+        try:
+            tree = ast.parse(text)
+        except SyntaxError as e:
+            violations.append(f"{rel}: SyntaxError {e}")
+            continue
+
+        for node in ast.walk(tree):
+            if (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
+                and node.func.attr in LOOKAHEAD_FORBIDDEN_METHODS
+            ):
+                violations.append(
+                    f"{rel}:{node.lineno} OpenDartReader 직접 호출 {node.func.attr}() "
+                    "금지 — DARTReporter.{available_at, latest_available, fetch_report} 사용"
+                )
+
+    assert not violations, "룩어헤드 우회 위반:\n" + "\n".join(violations)

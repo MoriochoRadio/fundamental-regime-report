@@ -3,7 +3,7 @@
 이 문서는 본 프로젝트의 **변하는 상태**를 추적한다.
 변하지 않는 사실·규칙·방향은 `CLAUDE.md` 에 있다.
 
-**마지막 갱신**: 2026-05-21 (2단계 step 2 완료 — fdr_ticker_key 추가 + 단위 테스트 5건. 112 통과 + 4 skip. step 3 (features 첫 모듈 사용자 결정 게이트) 진입 청)
+**마지막 갱신**: 2026-05-21 (2단계 step 3·4·5 통합 완료 — features/baseline.py 4 ratio + (α) AST 화이트리스트 활성 + (β) 런타임 mock contract + α-fix (TYPE_CHECKING 정교화). 127 통과 + 1 skip. D2 정직성 사슬 격리 차원 완성)
 
 ---
 
@@ -22,16 +22,21 @@
 > - `tests/test_isolation.py` 변환 게이트 — features 작성 시점에 missing→active
 >   전환되며 (iii) lookahead placeholder 도 본격 구현 진입
 >
-> ### 2. 다음 작업 — features 사전 토대 2단계 step 3 (features 첫 모듈)
-> step 1 (spot-check 진단) ✅ — §5.5.15 (200 cells, 명시 지주 증폭 패턴
-> 확인, 부호 차이 9 cells, §3 DoD 지주 점검 해소).
-> step 2 (fdr_ticker_key) ✅ — fdr.py module-level + 5 단위 테스트 + §3 DoD
-> FDR ticker key 항목 해소.
-> 다음: **step 3 — features 첫 모듈 작성** (`src/frr/features/`). §5.5.14
-> (b-1) build_features 시그니처 strict default + (b-2) lookahead 검증 (α+β)
-> + (c) fs_div 컬럼 동행 cfs_preferred 적용. **사용자 결정 게이트**: 재무
-> 비율 baseline 군 (balance sheet / income statement / 둘 다). §7.6 검토
-> 사이클 통과 후 코드 작성 → step 4 (test_features_lookahead.py) 진입.
+> ### 2. 다음 작업 — features 사전 토대 2단계 완료 ✅, 모델 단계 진입 검토
+> step 1 (spot-check 진단) ✅ + step 2 (fdr_ticker_key) ✅ + **step 3·4·5
+> 통합 (features/baseline.py + α+β 검증 활성) ✅** (2026-05-21).
+> 다음 단계 후보 (사용자 결정 게이트):
+> - (A) **3단계 별도 결정 게이트** — (β) 9 FY None refresh + (γ) notfound
+>   2,719 OFS 재페치 (단계 2 모델 진입 전 부수 작업)
+> - (B) **단계 2 모델 진입** — §5.5.15 모델 단계 진입 결정 게이트 메모 2
+>   항목 (fs_div 활용 방법 + 지주회사 군 양성 종목 수 사전 확인) 적용 →
+>   walk-forward 통합 + class weight·bootstrap·시점별 가중치·0년 fold 처리
+>   결정 (PROGRESS §5.5.10·§5.5.12·§5.5.13)
+> - (C) **features 확장** — baseline 4 ratio → 추가 비율 (성장률·이자보상비율
+>   등) 또는 가격 기반 ratio (volatility·drawdown 단기). YAGNI 정신 적용 시
+>   *모델 단계에서 baseline 평가 후 확장 결정*.
+> 자문 1차 권장: **(B) 모델 단계 진입** — baseline 4 ratio + walk-forward
+> + labels 모두 준비 완료. 확장은 모델 평가 후 결정.
 >
 > ### 3. 별도 결정 게이트 (features 안정화 후)
 > - (β) §5.5.11 5 종목 FY refresh (페치 ≤5) — OFS fallback 영업이익 회수 정밀 분석
@@ -46,12 +51,12 @@
 
 ## 1. 현재 상태 (Current Status)
 
-- **단계**: 단계 2 진입 + labels.py ✅ + 격리 프레임워크 ✅ + D10 정정 ✅ +
-  walk-forward 코드 ✅ + features 사전 토대 0단계 (fs_div 라벨 백필) ✅ +
-  1단계 4 항목 설계 합의 (§5.5.14) ✅ + §7.6 작업 진입 검토 사이클 박제 ✅ +
-  2단계 step 1 spot-check 진단 (§5.5.15) ✅ + **step 2 fdr_ticker_key 완료 ✅**
-  (2026-05-21). 다음: **step 3 — features 첫 모듈** (`src/frr/features/`).
-  사용자 결정 게이트: 재무비율 baseline 군.
+- **단계**: 단계 2 진입 + labels.py ✅ + 격리 프레임워크 (i)(ii)(iii) 활성 ✅ +
+  D10 정정 ✅ + walk-forward 코드 ✅ + features 사전 토대 *전체 완료* ✅
+  (0단계 fs_div 백필 + 1단계 §5.5.14 합의 + 2단계 step 1·2·3·4·5 통합, 2026-
+  05-21). D2 정직성 사슬 4 차원 (변수·양성충분성·격리·시간) 모두 박힘.
+  다음: **단계 2 모델 진입** (자문 1차 권장) — §5.5.15 모델 진입 게이트 2
+  항목 + walk-forward 통합 + 모델 측 보완 (class weight·bootstrap·0년 fold).
 - **요약**: CI 4회 연속 실패(2026-05-18) → 커밋 1 (`71ef11a`) ruff format
   으로 그린 회복. 커밋 2 (`3585848`) D2 후보 상태 되돌림 + §7.4 ruff format
   규칙. 커밋 3 (`2977262`) D2 = α 최종 확정 — *5개 후보(D2(E)·B1 v1·v2·B3·A)
@@ -123,6 +128,7 @@
 - [x] **CLAUDE.md §7.6 작업 진입 검토 사이클 박제 (2026-05-20, commit `a094edf`)** — 4 단계 (PROGRESS 점검 / git log / 코드 실측 / 사용자 검토 게이트). §7.2 + §7.5 + §5.5.11 정신의 명시 강화. 자문·실행 양측 적용, 예외 없음.
 - [x] **2단계 step 1 — 지주회사 CFS vs OFS spot-check 진단 (§5.5.15, 2026-05-21)** — `scripts/diagnose_holding_fs_div.py` 작성·실행. 양성 20 전체 (옵션 B) 200 cells 실측: 유사 78 + 증폭 41 + 둘 다 음수 39 + 부호 차이 9 + 희석 2. 명시 지주 (034730 SK 증폭 9/10·267250 HD현대 7/10·096770 SK이노베이션 6/10) 패턴 확인. 키워드 매칭 false negative 0 발견. §5.5.15 보완 커밋 (commit `689a4ec`) 으로 (A) 표현 정밀화 + (B) 모델 단계 진입 결정 게이트 메모 추가. §3 DoD "지주회사 점검" 항목 해소.
 - [x] **2단계 step 2 — `fdr_ticker_key` 추가 (2026-05-21)** — `src/frr/data/fdr.py` 에 module-level 함수 추가. `Code` (listing) / `Symbol` (delisting) 자동 탐지, 6자리 아닌 row → NaN + logger.warning, col override 지원. `tests/test_fdr.py` 단위 테스트 5건 (자동 탐지 2 + 8자리 NaN + override + ValueError). 전체 비-integration **112 통과 + 4 skip + 7 deselected**. §3 DoD "FDR ticker key 컬럼 불일치" 항목 해소.
+- [x] **2단계 step 3·4·5 통합 — features/baseline.py + (α)(β) 검증 활성 (2026-05-21)** — `src/frr/features/__init__.py` + `src/frr/features/baseline.py` 신규 (PROGRESS §5.5.14 (b-1) 시그니처 strict default + 4 baseline ratio). 4 비율: debt_ratio (BS) · current_ratio (BS) · op_margin (IS, 비율) · roa (IS×BS 결합). fs_div 컬럼 동행. labels.py `_get_op_income` 패턴 재사용. universe 멤버십 검증 + ValueError 경계. `tests/test_features_baseline.py` 단위 테스트 8건 + `tests/test_features_lookahead.py` 4건 (β 런타임 mock contract — 모든 시점 인자 ≤ as_of 검증). `tests/test_isolation.py` (iii) 활성화 — (α) AST 블랙리스트 (`finstate`/`finstate_all` 금지). **α-fix**: AST 검사가 `if TYPE_CHECKING:` 블록 내부 import + 타입 어노테이션 Name 노드를 제외 (런타임 0, false positive 회피). pyproject.toml 에 RUF002/RUF003 extend-ignore 추가 (한국어 docstring + α/β/× 박제 일관성). 전체 비-integration **127 통과 + 1 skip + 7 deselected**. §3 DoD "유니버스 변수 격리" + "상장폐지/관리 메타 격리" 항목 해소. **D2 정직성 사슬 격리 차원 완성** — features 모듈 작성 시점에 (i)(ii)(iii) 자동 활성으로 *시작 시점부터 격리 강제*.
 
 ---
 
