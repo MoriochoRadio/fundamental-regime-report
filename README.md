@@ -173,4 +173,4 @@ uv run pytest -m "not integration"
 
 ---
 
-🤖 Claude 와 함께 진행한 프로젝트 (73 커밋, 진행 중). 모든 결정이 PROGRESS 박제·실측·자문 검토 통과. [Claude Code](https://claude.com/claude-code).
+🤖 Claude 와 함께 진행한 프로젝트 (70+ 커밋, 진행 중). 모든 결정이 PROGRESS 박제·실측·자문 검토 통과. [Claude Code](https://claude.com/claude-code).
