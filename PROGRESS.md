@@ -2391,6 +2391,17 @@ self-defining 규칙* 에 내재한 한계.
 self-defining / 박제 본문 명확성 / 워크플로 본질적 역할 분담) 의 워크플로
 한계를 정직 박제로 시연.
 
+**chain 작동 효과 검증 누적 (자문 보강, 2026-05-22 — 3 단계 outline 단계)**:
+
+3 단계 outline 단계에서 `Code` 자기 발견 2 건 (컴포넌트 이름 정정 4 항목 —
+`RegimeCard` → `StateCard` 외 3 + `ModelLimitWarning` 본문 ML 수치 정정) 이
+*사례 4호 (박제 본문 명확성) + 5호 (§7.7 (2) grep 사전 자기 점검) 연쇄 적용
+효과* 로 본 사이클 내 자동 해소. *새 patrón 아님* — 기존 chain 의 깊이
+적용 효과. **6호 자리 공석 유지** (`Code` 가 *새* patrón 발견 시까지 예약).
+
+본 메타 박제는 *chain 의 작동 메커니즘이 본 시점부터 자연 작동 검증*. 워크
+플로 자기 학습의 작동 시연 자산.
+
 #### 사례 4호 — `docs/requirements.md` § 1 본문 verbatim vs §7.7 (2) 충돌 (2026-05-22, 1 단계 §7.6.5 (e) 자기 적발)
 
 `Code` 가 1 단계 (`docs/requirements.md` 본문 작성) 진입 직전 §7.6.5 (e)
