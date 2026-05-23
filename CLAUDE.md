@@ -262,6 +262,8 @@ message 불일치 *3 회 누적*이 박제 계기 (2026-05-22, 사용자 요청)
 - `README.md`
 - `CLAUDE.md §1·§2·§3` (프로젝트 정체성·목표·핵심 모듈)
 - `reports/*.md` (모델 카드)
+- `docs/*.md` (`requirements`·`ux_design`·`ui_design`·`tech_architecture`·
+  `qa_checklist` — 모두 외부 노출 표면, `PROGRESS.md` 와 *명시 분리*)
 - GitHub PR / Issue 본문
 - *향후* commit 메시지 (과거 commit 메시지는 §7.7 (3) 면제)
 
