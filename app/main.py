@@ -17,16 +17,11 @@ import plotly.graph_objects as go
 import streamlit as st
 from data_loader import (
     load_as_of_grid,
-    load_d2_results,
-    load_features_timeseries,
-    load_predictions,
-    load_refetch_summary,
-    load_regime_comparison,
-    load_regime_results,
-    load_regime_state_series,
-    load_ticker_marcap_map,
-    load_ticker_name_map,
-    load_ticker_ohlcv,
+    load_d2_features,
+    load_d2_predictions,
+    load_ohlcv,
+    load_state_series,
+    load_universe,
 )
 
 
@@ -58,14 +53,18 @@ def render_overview() -> None:
 
 
 def render_regime_timeline() -> None:
-    """페이지 2: 시장 국면 시계열 (HMM K=3)."""
-    st.title("시장 국면 시계열 (HMM K=3)")
+    """페이지 2: 시장 상태 시계열.
 
-    state_series = load_regime_state_series()
-    regime_results = load_regime_results()
+    단위 (b): 정정된 load_state_series 호출 + 전이 행렬 블록 제거 (FR-9
+    Won't 매핑, 검증 3 직접 매핑). 페이지 *완전 재구성* 은 단위 (i)~(l)
+    의 시장 상태 페이지 신규 작성에서.
+    """
+    st.title("시장 상태 시계열")
 
-    if state_series is None or regime_results is None:
-        st.warning("⚠️ regime 산출물 없음. `scripts/train_regime.py` 먼저 실행.")
+    state_series = load_state_series()
+
+    if state_series is None or state_series.empty:
+        st.warning("⚠️ 시장 상태 산출물 없음. `scripts/train_regime.py` 먼저 실행.")
         return
 
     state_series["date"] = pd.to_datetime(state_series["date"])
@@ -88,13 +87,13 @@ def render_regime_timeline() -> None:
         y="state_label",
         color="state_label",
         color_discrete_map=color_map,
-        title="국면 시계열 (forward filter argmax)",
+        title="시장 상태 시계열",
     )
     fig.update_traces(marker={"size": 4})
     st.plotly_chart(fig, use_container_width=True)
 
     # State 분포
-    st.markdown("### State 분포")
+    st.markdown("### 상태 분포")
     dist = state_series["state_label"].value_counts()
     fig_pie = go.Figure(
         data=[
@@ -107,119 +106,23 @@ def render_regime_timeline() -> None:
     )
     st.plotly_chart(fig_pie, use_container_width=True)
 
-    # 전이 행렬
-    st.markdown("### 전이 행렬")
-    model_summary = regime_results.get("model_summary", {})
-    transmat = model_summary.get("transmat", [])
-    state_labels = model_summary.get("state_labels", {})
-    if transmat and state_labels:
-        # state_labels 키가 str 가능
-        labels = [state_labels.get(str(k), state_labels.get(k, f"state_{k}")) for k in range(3)]
-        transmat_df = pd.DataFrame(transmat, index=labels, columns=labels)
-        st.dataframe(transmat_df.style.format("{:.3f}"))
-        st.caption(
-            "전이 행렬 — 자기 지속성 강함 (위험선호 0.976·위험회피 0.997). "
-            "중립이 위험회피로 전환 자주 (0.925)."
-        )
+    # 단위 (b) 폐기: 전이 행렬 블록 (검증 3 직접 매핑, FR-9 Won't).
+    # 페이지 *완전 재구성* 은 단위 (i)~(l) 의 시장 상태 페이지 신규 작성.
 
 
 def render_d2_results() -> None:
-    """페이지 3: D2 baseline 결과 (§5.5.17)."""
-    st.title("D2 부실 라벨 baseline 결과")
+    """페이지 3: D2 baseline 결과 — 단위 (b) stub.
 
-    d2 = load_d2_results()
-    refetch = load_refetch_summary()
-
-    if d2 is None:
-        st.warning("⚠️ D2 산출물 없음. `scripts/train_d2_baseline.py` 먼저 실행.")
-        return
-
-    # 데이터 통계
-    data_summary = d2.get("data_summary", {})
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("features cells", f"{data_summary.get('merged_rows', '—'):,}")
-    col2.metric("양성 cells", data_summary.get("merged_positives", "—"))
-    col3.metric("fold 평가", data_summary.get("fold_evaluated", "—"))
-    col4.metric("fold skip", len(data_summary.get("fold_skipped_ids", [])))
-
-    st.markdown(
-        """
-        > **Negative Finding 정직 박제** — 모델 random 보다 나쁨.
-        > §5.5.7 박제 *KOSPI200 부실 사건 희소성* 의 경험적 정량 증거.
-        """
+    검증 2 직접 매핑 (D2 baseline 별도 페이지 폐기 + 모델 카드 link 만).
+    페이지 *완전 폐기* (메뉴 항목 제거 포함) 는 단위 (i)~(l) 의 한계 페이지
+    재구성에서.
+    """
+    st.title("D2 baseline 결과")
+    st.warning(
+        "⚠️ 본 페이지는 단위 (i)~(l) 에서 폐기 예정 (검증 2 직접 매핑, "
+        "FR-9 Won't). 기술 차원 별도 자료는 모델 카드 참조: "
+        "`reports/d2_baseline_model_card.md`."
     )
-
-    # full pooled 결과 (balanced)
-    results = d2.get("results", {})
-    if "balanced" in results:
-        st.markdown("### Full pooled — balanced (class weight)")
-        full = results["balanced"].get("full", {})
-        rows = []
-        for metric in ("pr_auc", "roc_auc", "brier", "ece", "top_k_precision"):
-            v = full.get(metric, float("nan"))
-            ci = full.get(f"{metric}_ci95")
-            ci_str = f"[{ci[0]:.4f}, {ci[1]:.4f}]" if ci else "—"
-            rows.append({"metric": metric, "value": f"{v:.4f}", "95% CI": ci_str})
-        st.dataframe(pd.DataFrame(rows))
-        st.caption(
-            f"base rate = n_positive {full.get('n_positive', '—')} / n_total "
-            f"{full.get('n_total', '—')} ≈ "
-            f"{(full.get('n_positive', 0) / max(full.get('n_total', 1), 1)) * 100:.2f}%. "
-            "PR-AUC < base rate + ROC-AUC < 0.5 → 모델 random 미만."
-        )
-
-    # balanced vs unweighted ablation
-    if "unweighted" in results:
-        st.markdown("### Class weight ablation — balanced vs unweighted")
-        ablation_rows = []
-        for cw in ("balanced", "unweighted"):
-            full = results[cw].get("full", {})
-            ablation_rows.append(
-                {
-                    "class_weight": cw,
-                    "pr_auc": f"{full.get('pr_auc', float('nan')):.4f}",
-                    "roc_auc": f"{full.get('roc_auc', float('nan')):.4f}",
-                    "brier": f"{full.get('brier', float('nan')):.4f}",
-                }
-            )
-        st.dataframe(pd.DataFrame(ablation_rows))
-        st.caption(
-            "balanced vs unweighted 차이 < 0.001 → class weight 효과 양성 절대 수 부족 앞에서 무력."
-        )
-
-    # 지주 군 분리 평가
-    if "balanced" in results:
-        st.markdown("### 지주 군 분리 평가 (§5.5.16 (5))")
-        holding = results["balanced"].get("holding", {})
-        non_holding = results["balanced"].get("non_holding", {})
-        col_h, col_n = st.columns(2)
-        with col_h:
-            st.markdown("**지주 군 (034730·267250·096770)**")
-            st.metric("n_positive", holding.get("n_positive", "—"))
-            st.metric("pr_auc", f"{holding.get('pr_auc', float('nan')):.4f}")
-            st.metric("roc_auc", f"{holding.get('roc_auc', float('nan')):.4f}")
-        with col_n:
-            st.markdown("**일반 군 (지주 제외)**")
-            st.metric("n_positive", non_holding.get("n_positive", "—"))
-            st.metric("pr_auc", f"{non_holding.get('pr_auc', float('nan')):.4f}")
-            st.metric("roc_auc", f"{non_holding.get('roc_auc', float('nan')):.4f}")
-        st.caption(
-            "지주 군 N=12 (cells) — top_k_precision CI [0.0000, 1.0000] 완전 변동 = "
-            "§5.5.16 짚을 점 1 의 경험적 확인."
-        )
-
-    # (A) 데이터 보강 시도 결과
-    if refetch:
-        st.markdown("### (A) 데이터 보강 시도 결과 (§5.5.17)")
-        col_a, col_b, col_c, col_d = st.columns(4)
-        col_a.metric("총 호출", refetch.get("total_targets", "—"))
-        col_b.metric("status 전환", refetch.get("status_changed_to_ok", "—"))
-        col_c.metric("errors", refetch.get("errors", "—"))
-        col_d.metric("elapsed (s)", refetch.get("elapsed_seconds", "—"))
-        st.caption(
-            "notfound 3,583 OFS 재페치 → status 전환 0건. DART 응답 모두 *조회 데이터 없음*. "
-            "→ notfound 가 실제 데이터 부재 (D10 fetcher 미적용 아님). 모집단 한계 강한 증명."
-        )
 
 
 def render_limitations() -> None:
@@ -263,50 +166,48 @@ def render_limitations() -> None:
         """
     )
 
-    # 3. 단계 3 명명 부합 약함
+    # 3. 단계 3 명명 부합 약함 (정적 본문, 단위 (b) stub: load_regime_results
+    # 폐기로 동적 데이터 호출 제거)
     st.markdown("### 3. 단계 3 — Regime 학술 명명 부합 약함")
-    regime = load_regime_results()
-    if regime:
-        st.markdown(
-            """
-            HMM K=3 상태별 means (rolling z-score):
+    st.markdown(
+        """
+        HMM K=3 상태별 means (rolling z-score):
 
-            | state | 명명 | ret_20d | vol_60d | 위기 점수 |
-            |---|---|---|---|---|
-            | 2 | 위험선호 | +0.549 | +0.309 | -0.240 (낮음) |
-            | 1 | 중립 | -0.752 | -0.008 | +0.744 |
-            | 0 | 위험회피 | -0.809 | -0.015 | +0.794 (높음) |
+        | state | 명명 | ret_20d | vol_60d | 위기 점수 |
+        |---|---|---|---|---|
+        | 2 | 위험선호 | +0.549 | +0.309 | -0.240 (낮음) |
+        | 1 | 중립 | -0.752 | -0.008 | +0.744 |
+        | 0 | 위험회피 | -0.809 | -0.015 | +0.794 (높음) |
 
-            - **state 0 (위험회피)** = *낮은 ret + 낮은 vol = 정체 패턴*
-              (학술 정의 부합 약함)
-            - **2020 코로나 spot-check**: 위험회피 27.9% 만 (중립 42.6% 더 많음)
-            - 모델은 *3 분리* 했으나 *학술 표준 위험회피·위험선호 와 정확히
-              매칭 안 됨*
+        - **state 0 (위험회피)** = *낮은 ret + 낮은 vol = 정체 패턴*
+          (학술 정의 부합 약함)
+        - **2020 코로나 spot-check**: 위험회피 27.9% 만 (중립 42.6% 더 많음)
+        - 모델은 *3 분리* 했으나 *학술 표준 위험회피·위험선호 와 정확히
+          매칭 안 됨*
 
-            ★ 박제 권위: PROGRESS §5.6.1
-            """
-        )
+        ★ 박제 권위: PROGRESS §5.6.1
+        """
+    )
 
-    # 4. HMM 시드 불안정성
+    # 4. HMM 시드 불안정성 (정적 본문, 단위 (b) stub: load_regime_comparison
+    # 폐기로 동적 데이터 호출 제거)
     st.markdown("### 4. HMM 시드 불안정성")
-    comparison = load_regime_comparison()
-    if comparison:
-        st.markdown(
-            """
-            5 시드 (42, 123, 7, 2024, 999) log-likelihood 변동:
+    st.markdown(
+        """
+        5 시드 (42, 123, 7, 2024, 999) log-likelihood 변동:
 
-            | 모델 | 변동 폭 |
-            |---|---|
-            | **HMM** | **-9442 ~ -8312 (13.6%)** ⚠️ |
-            | GMM | -10101 ~ -10107 (0.06%) |
-            | K-Means inertia | 5436.5 ~ 5436.9 (0.007%) |
+        | 모델 | 변동 폭 |
+        |---|---|
+        | **HMM** | **-9442 ~ -8312 (13.6%)** ⚠️ |
+        | GMM | -10101 ~ -10107 (0.06%) |
+        | K-Means inertia | 5436.5 ~ 5436.9 (0.007%) |
 
-            → **HMM EM 알고리즘 local optima 의존성**. 단일 시드 (random_state=42)
-            결과 권위 — 다른 시드는 *다른 결과* 가능.
+        → **HMM EM 알고리즘 local optima 의존성**. 단일 시드 (random_state=42)
+        결과 권위 — 다른 시드는 *다른 결과* 가능.
 
-            ★ 박제 권위: PROGRESS §5.6.2 + `reports/regime_model_card.md`
-            """
-        )
+        ★ 박제 권위: PROGRESS §5.6.2 + `reports/regime_model_card.md`
+        """
+    )
 
     # 5. 자동 K=4 vs 도메인 K=3 tension
     st.markdown("### 5. 자동 K=4 vs 도메인 K=3 Tension")
@@ -372,9 +273,14 @@ _REGIME_COLOR_MAP = {
 }
 
 
-def _lookup_regime_at(date_val: pd.Timestamp) -> str | None:
-    """state_series 에서 *가장 가까운 영업일 ≤ date* 의 regime label."""
-    state = load_regime_state_series()
+def _lookup_state_at(date_val: pd.Timestamp) -> str | None:
+    """state_series 에서 *가장 가까운 영업일 ≤ date* 의 state label.
+
+    단위 (b) 정정: load_regime_state_series → load_state_series.
+    단위 (i)~(l) 에서 app/utils/state_mapper.py 의 lookup_state_at 으로
+    완전 교체 예정.
+    """
+    state = load_state_series()
     if state is None or state.empty:
         return None
     state = state.copy()
@@ -397,7 +303,7 @@ def _format_won(value: float | None) -> str:
     return f"{val:,.0f} 원"
 
 
-def _regime_conditional_text(
+def _state_conditional_text(
     regime: str | None,
     ticker_features: pd.Series | None,
 ) -> str:
@@ -462,17 +368,20 @@ def render_ticker_analysis() -> None:
     st.title("종목 분석 — 통합 리포트")
 
     # === 1. 사이드바: 종목 선택 / 시점 / ablation ===
-    name_map = load_ticker_name_map()
-    feats_all = load_features_timeseries()
-    preds_all = load_predictions()
+    universe = load_universe()
+    feats_all = load_d2_features()
+    preds_all = load_d2_predictions()
     grid = load_as_of_grid()
 
-    if not name_map or feats_all is None:
+    if universe.empty or feats_all is None:
         st.warning(
             "⚠️ 산출물 없음. `scripts/train_d2_baseline.py` 실행 (predictions.parquet + "
             "features.parquet 생성) 후 사용."
         )
         return
+
+    name_map: dict[str, str] = dict(zip(universe["ticker"], universe["name"], strict=True))
+    marcap_map: dict[str, float] = dict(zip(universe["ticker"], universe["marcap"], strict=True))
 
     tickers = sorted(name_map.keys())
     ticker = st.sidebar.selectbox(
@@ -490,7 +399,6 @@ def render_ticker_analysis() -> None:
     cw = st.sidebar.radio("class_weight ablation", ["balanced", "unweighted"])
 
     # === 2. 헤더 ===
-    marcap_map = load_ticker_marcap_map()
     col1, col2, col3 = st.columns(3)
     col1.metric("종목코드", ticker)
     col2.metric("종목명", name_map.get(ticker, "—"))
@@ -519,8 +427,8 @@ def render_ticker_analysis() -> None:
     if not sel_f.empty:
         feat_row = sel_f.iloc[0]
 
-    # 해당 시점 regime
-    regime_label = _lookup_regime_at(as_of)
+    # 해당 시점 시장 상태
+    regime_label = _lookup_state_at(as_of)
 
     col_a, col_b, col_c, col_d = st.columns(4)
     if pred_row is not None:
@@ -539,12 +447,12 @@ def render_ticker_analysis() -> None:
 
     # === 4. 국면 조건부 해석 ===
     st.markdown("### 국면 조건부 해석")
-    st.info(_regime_conditional_text(regime_label, feat_row))
+    st.info(_state_conditional_text(regime_label, feat_row))
 
     # === 5. 주가 차트 + state overlay ===
     st.markdown("### 주가 + 시장 국면 overlay")
-    ohlcv = load_ticker_ohlcv(ticker)
-    state_series = load_regime_state_series()
+    ohlcv = load_ohlcv(ticker)
+    state_series = load_state_series()
 
     if ohlcv is None or ohlcv.empty:
         st.warning(f"⚠️ {ticker} OHLCV 캐시 없음.")
