@@ -10,8 +10,8 @@ Phase 4 자산 변환:
   render_ratio_grid → RatioGrid (검증 1)
 - (C) 재사용: find_close_column·compute_state_blocks·state_color·
   find_date_column_or_index (단위 a)
-- (D) 의존성 처리: render_empty_state (warning.py 미작성) → inline st.info
-  (Q1, 단위 f warning.py 작성 후 EmptyState 컴포넌트로 교체 예정)
+- (D) 의존성 처리: 빈 상태 → EmptyState 위임 (단위 f warning.py 작성 완료,
+  Q2 (A) 로 inline st.info 5 곳 교체)
 """
 
 from __future__ import annotations
@@ -21,6 +21,7 @@ import plotly.graph_objects as go
 import plotly.subplots as sp
 import streamlit as st
 
+from app.components.warning import EmptyState
 from app.utils.formatters import state_color
 from app.utils.state_mapper import (
     compute_state_blocks,
@@ -53,19 +54,22 @@ def PriceChartWithStateOverlay(
         state_series: 시장 상태 시계열 (None → overlay 없이 주가만).
         as_of: 분석 시점.
     """
-    # 빈 상태 (Q1: inline st.info — 단위 f EmptyState 컴포넌트로 교체 예정)
+    # 빈 상태 (Q2 (A): EmptyState 위임 — 단위 f warning.py)
     if ohlcv is None or ohlcv.empty:
-        st.info(f"ℹ️ {ticker} 의 일간 시세 데이터가 없습니다.")
+        EmptyState(
+            message=f"{ticker} 의 일간 시세 데이터가 없습니다.",
+            suggestion="다른 종목 또는 다른 시점을 선택해 보세요.",
+        )
         return
 
     close_col = find_close_column(ohlcv)
     if close_col is None:
-        st.info("ℹ️ 종가 컬럼을 찾지 못했습니다.")
+        EmptyState(message="종가 컬럼을 찾지 못했습니다.")
         return
 
     date_key = find_date_column_or_index(ohlcv)
     if date_key is None:
-        st.info("ℹ️ 날짜 정보를 찾지 못했습니다.")
+        EmptyState(message="날짜 정보를 찾지 못했습니다.")
         return
 
     # Q2 (A): 단위 a find_date_column_or_index 시그너처 (str | "__index__")
@@ -141,10 +145,13 @@ def RatioGrid(
         as_of: 분석 시점.
     """
     if ticker_features is None or ticker_features.empty:
-        st.info(f"ℹ️ {ticker} 의 재무 비율 시계열 데이터가 없습니다.")
+        EmptyState(
+            message=f"{ticker} 의 재무 비율 시계열 데이터가 없습니다.",
+            suggestion="다른 종목 또는 다른 시점을 선택해 보세요.",
+        )
         return
     if "as_of" not in ticker_features.columns:
-        st.info("ℹ️ 분석 시점 정보를 찾지 못했습니다.")
+        EmptyState(message="분석 시점 정보를 찾지 못했습니다.")
         return
 
     df = ticker_features.sort_values("as_of").copy()
