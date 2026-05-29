@@ -10,6 +10,7 @@ from app.components.chart import PriceChartWithStateOverlay, RatioGrid
 from app.components.header import PageHeader, TickerHeader
 from app.components.interpretation import StateInterpretBox
 from app.components.metric_card import RiskScoreCard, StateCard
+from app.components.navigation import SidebarNav
 from app.components.warning import EmptyState, ModelLimitBadge
 
 __all__ = [
@@ -19,6 +20,7 @@ __all__ = [
     "PriceChartWithStateOverlay",
     "RatioGrid",
     "RiskScoreCard",
+    "SidebarNav",
     "StateCard",
     "StateInterpretBox",
     "TickerHeader",
