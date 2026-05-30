@@ -162,6 +162,23 @@ def main() -> int:
     merged["fs_div_code"] = merged["fs_div"].map(fs_div_map).fillna(0).astype(int)
     print(f"   merged rows: {len(merged)} (양성 {int(merged['label'].sum())})")
 
+    # 5a. features.parquet export (종목 페이지의 *재무 비율 추이* 시각화 입력)
+    features_out = OUTPUT_DIR / "features.parquet"
+    merged[
+        [
+            "ticker",
+            "as_of",
+            "debt_ratio",
+            "current_ratio",
+            "op_margin",
+            "roa",
+            "fs_div",
+            "fs_div_code",
+            "label",
+        ]
+    ].to_parquet(features_out, index=False)
+    print(f"   features.parquet 저장: {features_out} ({len(merged)} rows)")
+
     # 6. walk-forward folds
     print("\n6. walk-forward folds (min_train=8, embargo=365)...")
     folds = walk_forward_expanding(
@@ -253,6 +270,18 @@ def main() -> int:
     evaluated_folds = len(folds) - len(skipped_folds)
     print(f"   fold 수 {len(folds)} → 평가 {evaluated_folds} (skip {len(skipped_folds)})")
     print(f"   skipped fold_ids: {skipped_folds}")
+
+    # 7a. predictions.parquet export (종목 페이지의 *위험 점수* 시각화 입력)
+    pred_rows: list[dict] = []
+    for cw_label, rows in pooled.items():
+        for r in rows:
+            pred_rows.append({**r, "class_weight": cw_label})
+    pred_df = pd.DataFrame(pred_rows)
+    pred_out = OUTPUT_DIR / "predictions.parquet"
+    pred_df.to_parquet(pred_out, index=False)
+    print(
+        f"   predictions.parquet 저장: {pred_out} ({len(pred_df)} rows = 2 ablation × 평가 cells)"
+    )
 
     # 8. 종목 단위 pooled 평가 (balanced·unweighted) + bootstrap CI
     print("\n8. 종목 단위 pooled 평가 (bootstrap_n=1000)...")
