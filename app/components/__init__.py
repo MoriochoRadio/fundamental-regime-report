@@ -6,7 +6,7 @@
 data layer (app/data_loader.py) 와 utility (app/utils/) 와 분리 (검증 6).
 """
 
-from app.components.chart import PriceChartWithStateOverlay, RatioGrid
+from app.components.chart import PriceChartWithStateOverlay, RatioGrid, StateStripeChart
 from app.components.header import PageHeader, TickerHeader
 from app.components.interpretation import StateInterpretBox
 from app.components.metric_card import RiskScoreCard, StateCard
@@ -23,5 +23,6 @@ __all__ = [
     "SidebarNav",
     "StateCard",
     "StateInterpretBox",
+    "StateStripeChart",
     "TickerHeader",
 ]

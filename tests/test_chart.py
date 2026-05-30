@@ -17,7 +17,7 @@ from unittest.mock import MagicMock, patch
 
 import pandas as pd
 
-from app.components.chart import PriceChartWithStateOverlay, RatioGrid
+from app.components.chart import PriceChartWithStateOverlay, RatioGrid, StateStripeChart
 
 
 def _make_ohlcv() -> pd.DataFrame:
@@ -199,6 +199,31 @@ def test_empty_state_delegation_message() -> None:
         kwargs = mock_empty.call_args.kwargs
         assert "005930" in kwargs["message"]
         assert kwargs.get("suggestion")  # 다음 행동 제안 전달
+
+
+# ---- StateStripeChart (단위 k) ---------------------------------------------
+
+
+def test_state_stripe_normal() -> None:
+    """정상 state_series → st.plotly_chart 호출, EmptyState 미호출."""
+    with (
+        patch("app.components.chart.st") as mock_st,
+        patch("app.components.chart.EmptyState") as mock_empty,
+    ):
+        StateStripeChart(_make_state_series())
+        mock_st.plotly_chart.assert_called_once()
+        mock_empty.assert_not_called()
+
+
+def test_state_stripe_none_emptystate() -> None:
+    """None/empty state_series → EmptyState 위임, 차트 미호출."""
+    with (
+        patch("app.components.chart.st") as mock_st,
+        patch("app.components.chart.EmptyState") as mock_empty,
+    ):
+        StateStripeChart(None)
+        mock_empty.assert_called_once()
+        mock_st.plotly_chart.assert_not_called()
 
 
 # ---- 검증 1: 함수명 정정 ---------------------------------------------------

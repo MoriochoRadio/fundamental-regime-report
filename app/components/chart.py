@@ -17,6 +17,7 @@ Phase 4 자산 변환:
 from __future__ import annotations
 
 import pandas as pd
+import plotly.express as px
 import plotly.graph_objects as go
 import plotly.subplots as sp
 import streamlit as st
@@ -203,3 +204,48 @@ def RatioGrid(
     )
     st.plotly_chart(fig, use_container_width=True)
     st.caption("점선: 선택한 분석 시점. 값이 없는 구간은 빈칸으로 표시됩니다.")
+
+
+def StateStripeChart(state_series: pd.DataFrame | None) -> None:
+    """시장 상태 시계열 가로 색 띠 (주가 없음 — docs/ui_design.md §1.3).
+
+    compute_state_blocks 로 연속 상태 구간을 묶어 plotly px.timeline 색 띠로
+    렌더. PriceChartWithStateOverlay (주가 + overlay) 와 달리 *순수
+    state-over-time* 시각화. None/empty → EmptyState 위임 (단위 e/f 정합).
+
+    Args:
+        state_series: 시장 상태 시계열 (columns date·state_label).
+    """
+    if state_series is None or state_series.empty:
+        EmptyState(
+            message="시장 상태 시계열 데이터가 없습니다.",
+            suggestion="데이터 파이프라인 생성 후 다시 시도해 주세요.",
+        )
+        return
+
+    blocks = compute_state_blocks(state_series)
+    if blocks.empty:
+        EmptyState(message="시장 상태 구간을 계산할 수 없습니다.")
+        return
+
+    blocks = blocks.copy()
+    blocks["축"] = "시장 상태"  # 단일 행 stripe
+    color_map = {label: state_color(label) for label in blocks["label"].unique()}
+    fig = px.timeline(
+        blocks,
+        x_start="start",
+        x_end="end",
+        y="축",
+        color="label",
+        color_discrete_map=color_map,
+    )
+    fig.update_yaxes(title="")
+    fig.update_layout(
+        title="시장 상태 시계열 (색상 = 상태)",
+        xaxis_title="기간",
+        height=240,
+        legend_title="시장 상태",
+        margin={"t": 50, "b": 40, "l": 40, "r": 20},
+    )
+    st.plotly_chart(fig, use_container_width=True)
+    st.caption(f"색상: {_STATE_LEGEND}.")

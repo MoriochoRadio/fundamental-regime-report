@@ -29,12 +29,13 @@ if _REPO_ROOT not in sys.path:
 import streamlit as st  # noqa: E402
 
 from app.components import ModelLimitBadge, SidebarNav  # noqa: E402
-from app.pages import overview, ticker_analysis  # noqa: E402
+from app.pages import market_state, overview, ticker_analysis  # noqa: E402
 
-# 페이지 key → 렌더러. 단위 (k)/(l) 에서 state/limitations 등록.
+# 페이지 key → 렌더러. 단위 (l) 에서 limitations 등록.
 _PAGE_RENDERERS = {
     "overview": overview.render,
     "ticker": ticker_analysis.render,
+    "state": market_state.render,
 }
 
 
