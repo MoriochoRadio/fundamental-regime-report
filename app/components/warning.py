@@ -3,14 +3,14 @@
 docs/ui_design.md §2.8·§2.9·§3.4·§1.4. pure 렌더링 함수 (st.* 직접 호출,
 반환 None). 토큰 추상 미구현 → 단위 d/e 동형 직접 st.* 사용.
 
-★ docs §2.8 박제: 원본 ML 수치 (PR-AUC·base rate 등) 노출 *금지*.
+★ docs §2.8 박제: 원본 ML 평가 수치 노출 *금지*.
 일반인 친화 정직 문구만 사용 (test_warning.py 비노출 회귀로 박제).
 
 Phase 4 자산 변환:
 - (B) 정정: render_model_limit_warning(context) → ModelLimitBadge(variant),
   render_empty_state(title, description, action, icon) →
   EmptyState(message, suggestion) (검증 1, PascalCase 통일)
-- (D) 폐기: LIMIT_MESSAGES dict 의 PR-AUC 수치 문구 전부 (§2.8 금지) +
+- (D) 폐기: LIMIT_MESSAGES dict 의 원본 ML 수치 문구 전부 (§2.8 금지) +
   context 4 키 (ticker/regime/d2/limitations) → variant 3 종 재설계 +
   render_empty_state 의 (title, description, action, icon) 4-인자 시그너처
 - (E) 신규: variant 분기 본문 (docs §3.4·§1.4 verbatim) +
@@ -55,7 +55,7 @@ def ModelLimitBadge(variant: str = "badge") -> None:
 
     docs/ui_design.md §2.8 spec + §3.4 문구.
 
-    ★ 원본 ML 수치 (PR-AUC·base rate 등) 노출 금지 (docs §2.8) — 일반인
+    ★ 원본 ML 평가 수치 노출 금지 (docs §2.8) — 일반인
     친화 정직 문구만 (test_warning.py 비노출 회귀로 박제).
 
     Args:

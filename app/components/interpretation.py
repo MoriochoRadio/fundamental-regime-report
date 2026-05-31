@@ -7,13 +7,13 @@ docs/ui_design.md §2.7·§3.5·§3.1. 프로젝트 정체성 핵심 (CLAUDE.md 
 받는다. 컴포넌트 런타임 LLM 호출 0회 (정적 텍스트 렌더만).
 
 ★ docs §2.7·§5(1) 박제: ML 차원 의미가 사라진 *일반 차원 표현* 만 사용.
-"random 미만"·raw ratio 수치·전이확률 등 ML 문구 노출 금지 (회귀 테스트).
+원본 ML 평가 문구·raw ratio 수치·전이확률 등 노출 금지 (회귀 테스트).
 한계 고백은 단위 f ModelLimitBadge 책임 (역할 분리).
 
 Phase 4 자산 변환:
 - (B) 정정: render_regime_conditional_box → StateInterpretBox,
   regime → state, "국면" → "시장 상태" (검증 1)
-- (D) 폐기: _CAVEAT ("random 미만" 성능) + raw ratio 수치 부착 (:.4f) +
+- (D) 폐기: _CAVEAT (원본 ML 성능 문구) + raw ratio 수치 부착 (:.4f) +
   전이확률 "0.925" + ticker_features·ticker_name 파라미터 +
   regime-only 3-template
 - (E) 신규: state × risk 9 조합 template (docs §3.5 verbatim) +

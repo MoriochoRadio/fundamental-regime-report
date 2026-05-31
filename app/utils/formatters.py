@@ -100,8 +100,8 @@ def format_proba(value: float | None) -> str:
     (참고: UI 차원에서는 일반적으로 format_percent + classify_risk 사용 권장.
     본 함수는 모델 카드·내부 디버깅 차원 4 자리 정밀 표기.)
 
-    >>> format_proba(0.013564)
-    '0.0136'
+    >>> format_proba(0.123456)
+    '0.1235'
     >>> format_proba(0.5)
     '0.5000'
     >>> format_proba(None)

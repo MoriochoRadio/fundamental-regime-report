@@ -8,6 +8,6 @@ CLAUDE.md §8.6 박제:
 단계 4 본 라인:
 - D2 baseline 결과 + regime state 시계열 동시 시각화
 - 모든 limitations 정직 표시 (§5.5.17 + §5.6.1 + §5.6.2)
-- 면접 방어 자료 — *negative finding 의 정직성 + D2 정직성 사슬 4 차원
-  + 모집단 한계 정량 증명*
+- 방법론 정직성 시연 자료 — *negative finding 의 정직성 + D2 정직성 사슬
+  4 차원 + 모집단 한계 정량 증명*
 """
