@@ -3,47 +3,45 @@
 이 문서는 본 프로젝트의 **변하는 상태**를 추적한다.
 변하지 않는 사실·규칙·방향은 `CLAUDE.md` 에 있다.
 
-**마지막 갱신**: 2026-05-21 (★ **단계 5 종료 = 프로젝트 종료**. 단계 1~5 모두 완료. main merge commit 진행)
+**마지막 갱신**: 2026-05-31 (단계 5 UI 재구축 — Phase 4 reset 후 app/ 재구성: 컴포넌트 8종 + 페이지 통합 4/4 완성 + QA 1·2. 대시보드 실 데이터 정상 작동. 다음: 문서 정리 → main 병합. ※ 2026-05-21 "단계 5 종료"는 Phase 4 reset 으로 재진입 — §5.9 참조)
 
 ---
 
 ## ★ 다음 세션 시작 지점 (Resume Marker)
 
-> **다음 세션은 이 지점부터 이어간다 — features 모듈 작업 진입**:
+> **다음 세션은 이 지점부터 이어간다 — 문서 정리 → main 병합**:
 >
-> ### 1. 첫 메시지로 사전 점검할 항목 (§5.5.11 학습의 자문/실행 양측 게이트)
-> - `git log --oneline -25` — 본 세션 walk-forward 커밋 + 그 직전 커밋 확인
-> - **PROGRESS §5.5.13** — walk-forward 실측 결과 (fold 28 박제 예상 일치) +
->   universe_loader.reference_date 추가 경위 + 합성·실제 grid 차이의 의미
-> - **PROGRESS §5.5.12** — walk-forward 합의 박제 (실측은 §5.5.13)
-> - **PROGRESS §5.5.11** — 자문 측 정직성 사슬 2 사례
-> - **PROGRESS §3 단계 2 DoD** — CFS/OFS 일관성·지주 희석/증폭·FDR ticker key 통일
-> - CLAUDE.md §5 (격리 원칙) / §7.2 (코드 작성 전 절차) / §8.6 (점진 생성)
-> - `tests/test_isolation.py` 변환 게이트 — features 작성 시점에 missing→active
->   전환되며 (iii) lookahead placeholder 도 본격 구현 진입
+> ### 1. 현재 위치 (2026-05-31)
+> Phase 4 reset 후 단계 5 app/ UI **재구축 완료** — 컴포넌트 8종(단위 a~h)
+> + 페이지 통합 4/4(단위 i~l: 개요·종목 분석·시장 상태·한계) + QA 1·2
+> (실 데이터 부팅 점검·통합 smoke). 대시보드가 실 산출물로 정상 작동
+> (CASE A full, 버그 0, ML 원본 수치 화면 비노출). 작업 브랜치
+> `claude/competent-jackson-a02ec0` (HEAD `efde5ea`, origin/main 대비 ahead).
 >
-> ### 2. ★ 프로젝트 종료
-> 단계 1~5 모두 ✅ 종료 (2026-05-21). main merge commit 완료 후 프로젝트
-> 종료. 추가 작업 시 신규 PR.
+> ### 2. 다음 할 일 (잔여 2 건)
+> - **README/문서 §7.7 외부 노출 정리** — 일반인 5초 이해 표면 정돈
+> - **main 병합 PR** — 작업 브랜치 → origin/main
 >
-> ### 3. 별도 결정 게이트 (features 안정화 후)
-> - (β) §5.5.11 5 종목 FY refresh (페치 ≤5) — OFS fallback 영업이익 회수 정밀 분석
-> - (γ) notfound 2,719 OFS 재페치 (페치 ≤2,719, DART 한도 27%) — D10 효과 ablation 측정
->
-> ### 3. 다음 세션 후속 (features 후)
-> 모델 (class weight·forward window ablation·bootstrap·시점별 가중치·0년 fold
-> 처리, §5.5.10 결정으로 라벨 측 보강 안 함·모델 측 보완 우선) → D8 평가
-> (walk-forward 본 모듈 사용) → LLM 빌드타임 배치 → Streamlit 통합.
+> ### 3. 진입 전 점검 (§7.6 게이트 + 사례 6호)
+> - 매 Bash `cd <worktree> &&` 단일 compound + `git fetch origin` + `pwd`
+>   (사례 6호 cwd 함정 방어)
+> - PROGRESS §5.9/§5.10 (Phase 4 reset 경위·외부 노출 규칙) + 본 §5 최상단
+> - CLAUDE.md §7.7 (외부 노출 금지 단어) / §7.8 (3 역할 분담)
 
 ---
 
 ## 1. 현재 상태 (Current Status)
 
-- **단계**: ★ **단계 1~5 모두 ✅ 종료 = 프로젝트 종료** (2026-05-21).
-  단계 2 negative finding + 단계 3 K=4 ablation 정량 정답 발견
-  (코로나 27.9%→82% 3배 개선) + Limitations 6 항목 + 정직성 사슬 5 차원 +
-  §7.6 검토 사이클 + 39+ commit 자기 점검. main merge commit 으로 PR #1
-  마무리.
+- **단계**: ★ **단계 5 UI 재구축 진행** (2026-05-31). 2026-05-21 "단계 1~5
+  종료" 이후 Phase 4(구 app/ UI) 가 사용자 로컬 실측에서 TypeError·저친화·
+  렉으로 reset (§5.9) → app/ UI 레이어 **컴포넌트 우선 재구축**. 모델·데이터
+  단(단계 1~3 산출물)은 그대로 재사용.
+- **재구축 현황 (단위 a~l + QA)**: 컴포넌트 8종(utils·data_loader·header·
+  metric_card·chart·warning·interpretation·navigation) + 페이지 통합 4/4
+  (개요·종목 분석·시장 상태·한계) + QA 1·2. 대시보드가 **실 산출물로 정상
+  작동** (CASE A full, 버그 0), ML 원본 수치 화면 비노출(§7.7), streamlit 풀
+  부팅 검증. 비-integration **382 통과** + integration smoke 4. 상세: §2 Done
+  말미 + 본 §5 최상단.
 - **요약**: CI 4회 연속 실패(2026-05-18) → 커밋 1 (`71ef11a`) ruff format
   으로 그린 회복. 커밋 2 (`3585848`) D2 후보 상태 되돌림 + §7.4 ruff format
   규칙. 커밋 3 (`2977262`) D2 = α 최종 확정 — *5개 후보(D2(E)·B1 v1·v2·B3·A)
@@ -125,12 +123,24 @@
 - [x] **단계 3 — HMM vs GMM vs K-Means 비교 + K=2·3·4 진단 + 모델 카드 + 단계 3 종료 (§5.6.2, §5.6.3, 2026-05-21)** — `src/frr/regime/comparison.py` + `scripts/compare_regime_models.py` 실측. **자동 K 선택**: HMM·GMM 모두 BIC·AIC 최소 K=4 (도메인 K=3 과 tension). **HMM 시드 불안정성**: 5 시드 log-lik 변동 13.6% (-9442 ~ -8312), local optima 의존. GMM 변동 0.06%, K-Means 0.007% — 매우 안정. **HMM 적합도 > GMM** (K=3): -9442 vs -10102 (전이 행렬 정보 우월). `reports/regime_model_card.md` 작성 (8 섹션: 명세·데이터·결과·Limitations 4·Intended use·향후·재현성·단계 4 진입). **단계 3 종료** — 단계 4 통합 대시보드 진입 게이트.
 - [x] **§5.5.17 보완 — notfound 분해 + 재학습 미진행 사유 (commit `adf3f80`, 2026-05-21)** — 자문 짚을 점 1 정직성 보강. 양성 20 종목 notfound 208 / 음성 종목 notfound 3,375 분해 + (A) 재페치 status 전환 0 → DART 캐시 변화 0 → 입력 변화 0 → 재학습 결과 변화 0 자명 → 재학습 미진행 사유 박제.
 - [x] **단계 4 — Streamlit 대시보드 + LLM SDK import 0 격리 (§5.7, 2026-05-21)** — `app/__init__.py` + `data_loader.py` + `main.py` (4 페이지: 개요·국면 시계열·D2 결과·Limitations 6 항목 강화). `tests/test_app_no_llm_import.py` 3 테스트 (디렉토리 존재·LLM SDK import 0·학습 코드 import 0, AST 검사 — CLAUDE.md §3.4 박제 *CI 강제*). `streamlit>=1.57.0` + plotly 의존성 추가. **app/ 정적 읽기 전용 — 런타임 LLM 호출 0회·학습·계산·페치 0회 박제** (CLAUDE.md §3.4·§8.6 강제). 전체 비-integration **160 통과 + 1 skip + 7 deselected**. 단계 4 종료 — 단계 5 마무리 진입 게이트.
+- [x] **Phase 4 reset (2026-05-22, §5.9)** — 구 app/ UI 레이어가 사용자 로컬 실측에서 TypeError·UI 저친화·렉 → `86cda44` 로 app/utils·components·pages·slim main 폐기 (구 자산은 `phase4-discarded-ref` 브랜치 보존). 모델·데이터 단(단계 1~3 산출물)은 유지. 이후 app/ UI **컴포넌트 우선 재구축** 진입.
+- [x] **단계 5 재구축 — 컴포넌트 8종 (단위 a~h)** — `app/utils/`(formatters·state_mapper, 단위 a) + `data_loader.py`(b) + `app/components/` 6종: header(c)·metric_card(d)·chart(e)·warning(f)·interpretation(g)·navigation(h). 각 단위 grep + mock 단위 테스트 + ruff + 사용자 결정 게이트(Q) 통과. 검증 1(regime→state 명명 정정) + §7.7(ML 원본 수치 비노출) 박제. 커밋 `729b01a`(a) ~ `b954087`(h).
+- [x] **단계 5 페이지 통합 4/4 (단위 i~l)** — main.py thin shell(SidebarNav dispatch + ModelLimitBadge 전역 + sys.path repo-root 주입) + `app/pages/` 4종: overview(i `92cad8c`) · ticker_analysis(j `4778f4e`) · market_state(k `3e38d14`) · limitations(l `a36f9d0`). ML 원본 수치 직접 노출 제거(→ModelLimitBadge 위임) + 5→4 페이지 + "국면"→"상태" 정정. 각 단위 streamlit 풀 부팅 실측(HTTP 200·ERROR 0). 컴포넌트 8종 전부 실 페이지 연결.
+- [x] **QA-1 실 데이터 부팅 점검 (2026-05-31)** — 산출물 인벤토리 **CASE A full**(universe 321·predictions 3,602·features 8,008·state 2,273·ohlcv 321·model card 2; LLM interpretation 만 의도적 stub). throwaway smoke 로 4 페이지 전부 *실 내용 분기* 도달 확인(종목 분석 실 proba 렌더·차트 2·카드 2 / 시장 상태 stripe / 한계 카드 내용 미렌더). 버그 0. commit 없음(검증 전용).
+- [x] **QA-2 실 데이터 통합 smoke 박제 (2026-05-31, `efde5ea`)** — `tests/test_real_data_smoke.py` 신규 4 테스트(@pytest.mark.integration, 산출물 부재 graceful skip, ticker/as_of 동적 결정적 선택). 한계 페이지 실 model card(PR-AUC 포함) 내용 렌더 미노출 = §7.7 실 데이터 입증. 비-integration **382 통과**(11 deselect) + integration **11 통과**(기존 7 + 신규 4).
 
 ---
 
 ## 3. 다음 할 일 (Next)
 
 > 모두 사용자 확인을 받은 뒤 진행한다.
+
+### 3.★ 현재 다음 (2026-05-31) — 단계 5 마무리 잔여 2 건
+
+- **README/문서 §7.7 외부 노출 정리** — 일반인 5초 이해 표면 정돈 (README + docs/*.md).
+- **main 병합 PR** — 작업 브랜치 `claude/competent-jackson-a02ec0` → origin/main.
+
+> 아래 3.0~ 항목은 단계 2 시점의 과거 "다음 할 일" 기록 (보존).
 
 ### 3.0. 커밋 1~4 적용 완료 (2026-05-19) — **단계 2 진입 3 조건 충족**
 
@@ -2660,6 +2670,17 @@ KOSPI200 + 상폐 유니버스 기준 추정 *10~30건* 가능 (자본잠식·�
 
 > 확정되면 시간 역순으로 누적. 동시에 CLAUDE.md에도 반영한다.
 
+- **2026-05-31** — 단계 5 UI 재구축 + 페이지 통합 + QA (요지):
+  - **Phase 4 reset**(§5.9) 후 app/ UI 컴포넌트 우선 재구축 — 단위 a~l.
+  - **페이지 통합 Q 결정 (모두 A)**: app/pages/ 모듈 분리 · 절대 import +
+    sys.path repo-root 주입(streamlit + cwd=app 양립) · class_weight ablation
+    selector 제거(일반인 표면) · risk_level 한국어 어휘 · 시장 상태 페이지는
+    StateInterpretBox 대신 일반 info(종목 risk 부재로 state×risk 부적합) ·
+    한계 페이지는 ModelLimitBadge(page_full) + 모델 카드 *링크만*(내용 미렌더,
+    §7.7 격리).
+  - **QA-1/2**: 실 산출물 CASE A full → 4 페이지 실 내용 분기 도달·버그 0.
+    실 model card(ML 수치 포함) 내용 화면 미노출 = §7.7 실 데이터 입증.
+    `tests/test_real_data_smoke.py`(integration 4) 박제. SHA `efde5ea`.
 - **2026-05-19** — ★★ **D2 최종 확정** (입증된 최선):
   - D2 = α (상폐 부실 ∪ B1', 1년 forward). 양성 27 (8.4%), 0년 2 (2021·2023).
   - **확정의 성격**: α 는 *5개 후보(D2(E)·B1 v1·v2·B3·A) 전수 검증·기각
