@@ -29,13 +29,14 @@ if _REPO_ROOT not in sys.path:
 import streamlit as st  # noqa: E402
 
 from app.components import ModelLimitBadge, SidebarNav  # noqa: E402
-from app.pages import market_state, overview, ticker_analysis  # noqa: E402
+from app.pages import limitations, market_state, overview, ticker_analysis  # noqa: E402
 
-# 페이지 key → 렌더러. 단위 (l) 에서 limitations 등록.
+# 페이지 key → 렌더러 (SidebarNav 4 페이지 전부 등록 — 페이지 통합 4/4 완성).
 _PAGE_RENDERERS = {
     "overview": overview.render,
     "ticker": ticker_analysis.render,
     "state": market_state.render,
+    "limitations": limitations.render,
 }
 
 
@@ -55,7 +56,7 @@ def main() -> None:
     if renderer is not None:
         renderer()
     else:
-        # 단위 (j)/(k)/(l) 에서 구현 예정 페이지 — 임시 안내
+        # 방어 fallback — SidebarNav 4 페이지 전부 등록되어 정상 흐름엔 미도달
         st.info("이 페이지는 준비 중입니다. 왼쪽에서 **개요** 메뉴를 먼저 둘러보세요.")
 
 
