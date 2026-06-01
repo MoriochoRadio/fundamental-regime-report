@@ -82,17 +82,32 @@ def PriceChartWithStateOverlay(
 
     fig = go.Figure()
 
-    # 시장 상태 배경 shading (vrect blocks) — ★ to_pydatetime (검증 5.1)
+    # 시장 상태 배경 shading — ★ 배치 shapes 1회 할당 (perf)
+    # add_vrect 를 block 마다 호출하면 호출마다 layout.shapes 전체 복사·재검증
+    # → O(n²) (블록 수백 개 시 수십~수백 초). 동일 shape dict 리스트를 모아
+    # update_layout(shapes=...) 1회 할당 → O(n). 시각 결과 동일 (add_vrect 가
+    # 만드는 rect·xref x·yref paper·layer below·line 0 구조 그대로 재현).
+    # ★ 검증 5.1: x0·x1 에 to_pydatetime (pandas Timestamp 산술 회피).
     if state_series is not None and not state_series.empty:
         blocks = compute_state_blocks(state_series)
-        for _, block in blocks.iterrows():
-            fig.add_vrect(
-                x0=pd.Timestamp(block["start"]).to_pydatetime(),
-                x1=pd.Timestamp(block["end"]).to_pydatetime(),
-                fillcolor=state_color(block["label"]),
-                opacity=0.12,
-                line_width=0,
-            )
+        shapes = [
+            {
+                "type": "rect",
+                "xref": "x",
+                "yref": "paper",
+                "x0": pd.Timestamp(block["start"]).to_pydatetime(),
+                "x1": pd.Timestamp(block["end"]).to_pydatetime(),
+                "y0": 0,
+                "y1": 1,
+                "fillcolor": state_color(block["label"]),
+                "opacity": 0.12,
+                "line": {"width": 0},
+                "layer": "below",
+            }
+            for _, block in blocks.iterrows()
+        ]
+        if shapes:
+            fig.update_layout(shapes=shapes)
 
     # 주가 line
     fig.add_trace(
