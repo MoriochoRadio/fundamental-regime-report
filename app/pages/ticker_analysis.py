@@ -29,6 +29,7 @@ from app.data_loader import (
     load_as_of_grid,
     load_d2_features,
     load_d2_predictions,
+    load_delisting,
     load_llm_interpretation,
     load_ohlcv,
     load_state_series,
@@ -57,6 +58,22 @@ def _lookup_proba(
     return float(sel.iloc[0]["proba"])
 
 
+def _evaluable_as_ofs(preds: pd.DataFrame | None, ticker: str) -> list[pd.Timestamp]:
+    """그 종목의 위험 평가가 존재하는 test_as_of 목록 (오름차순).
+
+    walk-forward 평가 가능 fold 만 예측이 존재 → 종목별 평가 시점은 제한적.
+    UX: 종목 선택 시 최신 평가 시점으로 자동 점프 + 이유 안내에 사용.
+    """
+    if preds is None or preds.empty:
+        return []
+    sel = preds[preds["ticker"] == ticker]
+    if "class_weight" in sel.columns:
+        sel = sel[sel["class_weight"] == _CLASS_WEIGHT]
+    if sel.empty:
+        return []
+    return sorted(pd.Timestamp(d) for d in sel["test_as_of"].unique())
+
+
 def render() -> None:
     """종목 분석 페이지 렌더 — 7 컴포넌트 조립 (docs §1.2)."""
     universe = load_universe()
@@ -80,12 +97,29 @@ def render() -> None:
         tickers,
         format_func=lambda t: format_ticker_option(t, name_map.get(t, "")),
     )
+
+    # 예측 먼저 로드 → 그 종목 평가 시점으로 자동 점프 (Q1·Q2 A)
+    preds_all = load_d2_predictions()
+    eval_dates = _evaluable_as_ofs(preds_all, ticker)
+
     grid = load_as_of_grid()
     as_of: pd.Timestamp | None = None
     if grid:
+        options = grid[::-1]  # 최신부터
+        # 기본 = 그 종목 최신 평가 시점 (없으면 최신 grid 시점 fallback)
+        default_index = 0
+        if eval_dates:
+            latest_eval = eval_dates[-1].normalize()
+            for i, d in enumerate(options):
+                if pd.Timestamp(d).normalize() == latest_eval:
+                    default_index = i
+                    break
+        # key 에 ticker 포함 → 종목 변경 시 리셋되어 평가 시점으로 자동 점프
         as_of = st.sidebar.selectbox(
             "분석 시점",
-            grid[::-1],  # 최신부터
+            options,
+            index=default_index,
+            key=f"asof_{ticker}",
             format_func=lambda d: pd.Timestamp(d).strftime("%Y-%m-%d"),
         )
 
@@ -93,7 +127,6 @@ def render() -> None:
     TickerHeader(ticker, name_map.get(ticker, ticker), marcap_map.get(ticker))
 
     # === 3. 위험 점수 + 시장 상태 카드 ===
-    preds_all = load_d2_predictions()
     state_series = load_state_series()
     proba = _lookup_proba(preds_all, ticker, as_of)
     state = lookup_state_at(as_of, state_series)
@@ -104,6 +137,21 @@ def render() -> None:
     with col2:
         StateCard(state)
 
+    # 위험 평가 시점 안내 (희소 이유 — 일반어, ML 수치/jargon 비노출)
+    if eval_dates:
+        dates_str = ", ".join(d.strftime("%Y-%m-%d") for d in reversed(eval_dates))
+        st.info(
+            f"이 종목은 {len(eval_dates)}개 시점({dates_str})에 위험 평가가 있습니다. "
+            "위험 평가는 실제 재무 충격 사건이 관측된 시점에서만 가능해 시점이 "
+            "제한적입니다 (한국 대형주에선 그런 사건이 드뭅니다)."
+        )
+    else:
+        st.info(
+            "이 종목은 위험 평가가 가능한 시점이 없습니다. 위험 평가는 실제 재무 충격 "
+            "사건이 관측된 시점에서만 가능해 시점이 제한적입니다 "
+            "(한국 대형주에선 그런 사건이 드뭅니다)."
+        )
+
     # === 4. 시장 상태 조건부 해석 (프로젝트 정체성) ===
     risk_level, _ = classify_risk(proba)
     llm_text: str | None = None
@@ -113,9 +161,17 @@ def render() -> None:
             llm_text = interp.get("text")
     StateInterpretBox(state, risk_level, llm_text)
 
-    # === 5. 주가 + 시장 상태 overlay ===
+    # === 5. 주가 + 시장 상태 overlay (상폐 종목이면 거래 종료 안내) ===
     ohlcv = load_ohlcv(ticker)
-    PriceChartWithStateOverlay(ticker, name_map.get(ticker, ""), ohlcv, state_series, as_of)
+    delisting_date = load_delisting().get(ticker)
+    PriceChartWithStateOverlay(
+        ticker,
+        name_map.get(ticker, ""),
+        ohlcv,
+        state_series,
+        as_of,
+        delisting_date=delisting_date,
+    )
 
     # === 6. 재무 비율 추이 ===
     ticker_feats = feats_all[feats_all["ticker"] == ticker]

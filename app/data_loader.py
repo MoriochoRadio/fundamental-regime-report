@@ -48,6 +48,7 @@ D2_FEATURES_PATH = PROJECT_ROOT / "data" / "interim" / "train_d2_baseline" / "fe
 KOSPI200_DIR = PROJECT_ROOT / "data" / "external" / "kospi200_quarterly"
 KRX_OHLCV_DIR = PROJECT_ROOT / "data" / "raw" / "krx" / "ohlcv"
 FDR_LISTING_PATH = PROJECT_ROOT / "data" / "raw" / "fdr" / "stocklisting_kospi.parquet"
+FDR_DELISTING_PATH = PROJECT_ROOT / "data" / "raw" / "fdr" / "stocklisting_delisting.parquet"
 # 신규 (future-ready): LLM 빌드타임 배치 서술 정적 산출물
 LLM_INTERPRETATION_DIR = PROJECT_ROOT / "data" / "interim" / "llm_interpretations"
 
@@ -214,3 +215,29 @@ def load_as_of_grid() -> list[pd.Timestamp]:
     if feats is None or feats.empty or "as_of" not in feats.columns:
         return []
     return sorted(feats["as_of"].unique().tolist())
+
+
+@st.cache_data
+def load_delisting() -> dict[str, pd.Timestamp]:
+    """상장폐지 종목 → 상폐일 맵 (ticker 6자리 → DelistingDate).
+
+    종목 분석 페이지에서 *상폐 종목 차트 거래 종료 안내 caption* 표시 전용.
+
+    ★ §5 격리 무관: 상장폐지 메타데이터의 *모델 피처 격리* 원칙은 `src/frr`
+    피처 모듈 대상이다. 본 함수는 app 레이어 *UI 표시 전용* 이며 피처 계산에
+    관여하지 않는다. `Reason`·`ArrantEnforceDate` 등은 읽지 않고 *상폐일만*
+    사용 (일반인 안내, Reason 원문 미노출).
+    """
+    if not FDR_DELISTING_PATH.exists():
+        return {}
+    df = pd.read_parquet(FDR_DELISTING_PATH)
+    if "Symbol" not in df.columns or "DelistingDate" not in df.columns:
+        return {}
+    df = df.copy()
+    df["_t6"] = df["Symbol"].astype(str).str.extract(r"(\d{6})")[0]
+    df["_dd"] = pd.to_datetime(df["DelistingDate"], errors="coerce")
+    out: dict[str, pd.Timestamp] = {}
+    for _, row in df.iterrows():
+        if pd.notna(row["_t6"]) and pd.notna(row["_dd"]):
+            out[str(row["_t6"])] = pd.Timestamp(row["_dd"])
+    return out

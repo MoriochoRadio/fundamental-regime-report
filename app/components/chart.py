@@ -40,6 +40,7 @@ def PriceChartWithStateOverlay(
     ohlcv: pd.DataFrame | None,
     state_series: pd.DataFrame | None,
     as_of: pd.Timestamp,
+    delisting_date: pd.Timestamp | None = None,
 ) -> None:
     """주가 line + 시장 상태 배경 overlay + 분석 시점 vline.
 
@@ -54,6 +55,8 @@ def PriceChartWithStateOverlay(
         ohlcv: KRX OHLCV DataFrame (None/empty → 빈 상태 안내).
         state_series: 시장 상태 시계열 (None → overlay 없이 주가만).
         as_of: 분석 시점.
+        delisting_date: 상장폐지일 (상폐 종목이면 거래 종료 caption 표시,
+            None 이면 미표시). 일반인 안내 — 상폐 사유 원문은 노출하지 않음.
     """
     # 빈 상태 (Q2 (A): EmptyState 위임 — 단위 f warning.py)
     if ohlcv is None or ohlcv.empty:
@@ -82,17 +85,32 @@ def PriceChartWithStateOverlay(
 
     fig = go.Figure()
 
-    # 시장 상태 배경 shading (vrect blocks) — ★ to_pydatetime (검증 5.1)
+    # 시장 상태 배경 shading — ★ 배치 shapes 1회 할당 (perf)
+    # add_vrect 를 block 마다 호출하면 호출마다 layout.shapes 전체 복사·재검증
+    # → O(n²) (블록 수백 개 시 수십~수백 초). 동일 shape dict 리스트를 모아
+    # update_layout(shapes=...) 1회 할당 → O(n). 시각 결과 동일 (add_vrect 가
+    # 만드는 rect·xref x·yref paper·layer below·line 0 구조 그대로 재현).
+    # ★ 검증 5.1: x0·x1 에 to_pydatetime (pandas Timestamp 산술 회피).
     if state_series is not None and not state_series.empty:
         blocks = compute_state_blocks(state_series)
-        for _, block in blocks.iterrows():
-            fig.add_vrect(
-                x0=pd.Timestamp(block["start"]).to_pydatetime(),
-                x1=pd.Timestamp(block["end"]).to_pydatetime(),
-                fillcolor=state_color(block["label"]),
-                opacity=0.12,
-                line_width=0,
-            )
+        shapes = [
+            {
+                "type": "rect",
+                "xref": "x",
+                "yref": "paper",
+                "x0": pd.Timestamp(block["start"]).to_pydatetime(),
+                "x1": pd.Timestamp(block["end"]).to_pydatetime(),
+                "y0": 0,
+                "y1": 1,
+                "fillcolor": state_color(block["label"]),
+                "opacity": 0.12,
+                "line": {"width": 0},
+                "layer": "below",
+            }
+            for _, block in blocks.iterrows()
+        ]
+        if shapes:
+            fig.update_layout(shapes=shapes)
 
     # 주가 line
     fig.add_trace(
@@ -129,6 +147,8 @@ def PriceChartWithStateOverlay(
     )
     st.plotly_chart(fig, use_container_width=True)
     st.caption(f"배경 색상: {_STATE_LEGEND}. 점선: 선택한 분석 시점.")
+    if delisting_date is not None:
+        st.caption(f"⚠️ 상장폐지로 거래 종료 ({pd.Timestamp(delisting_date).strftime('%Y-%m-%d')}).")
 
 
 def RatioGrid(

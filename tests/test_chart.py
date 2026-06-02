@@ -115,6 +115,32 @@ def test_price_chart_state_none_overlay_skipped() -> None:
         mock_st.plotly_chart.assert_called_once()
 
 
+def test_price_chart_delisting_caption() -> None:
+    """UX #2: delisting_date 제공 → 상장폐지 거래 종료 caption (날짜) 표시."""
+    with patch("app.components.chart.st") as mock_st:
+        PriceChartWithStateOverlay(
+            "005930",
+            "삼성전자",
+            _make_ohlcv(),
+            _make_state_series(),
+            pd.Timestamp("2020-01-05"),
+            delisting_date=pd.Timestamp("2020-02-10"),
+        )
+        text = " ".join(str(a) for c in mock_st.caption.call_args_list for a in c.args)
+        assert "상장폐지로 거래 종료" in text
+        assert "2020-02-10" in text
+
+
+def test_price_chart_no_delisting_caption() -> None:
+    """delisting_date None(기본) → 상장폐지 caption 미표시 (기존 동작 보존)."""
+    with patch("app.components.chart.st") as mock_st:
+        PriceChartWithStateOverlay(
+            "005930", "삼성전자", _make_ohlcv(), _make_state_series(), pd.Timestamp("2020-01-05")
+        )
+        text = " ".join(str(a) for c in mock_st.caption.call_args_list for a in c.args)
+        assert "상장폐지" not in text
+
+
 # ---- ★ 검증 5.1 Timestamp+plotly 회귀 -------------------------------------
 
 

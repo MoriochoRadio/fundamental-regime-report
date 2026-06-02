@@ -30,6 +30,7 @@ _TARGETS = dict(
     load_ohlcv=DEFAULT,
     load_llm_interpretation=DEFAULT,
     load_as_of_grid=DEFAULT,
+    load_delisting=DEFAULT,
     TickerHeader=DEFAULT,
     RiskScoreCard=DEFAULT,
     StateCard=DEFAULT,
@@ -98,6 +99,7 @@ def _setup(
     m["load_ohlcv"].return_value = ohlcv
     m["load_state_series"].return_value = state
     m["load_llm_interpretation"].return_value = llm
+    m["load_delisting"].return_value = {}
     sel_as_of = pd.Timestamp("2024-12-31") if as_of is _UNSET else as_of
     m["st"].sidebar.selectbox.side_effect = [ticker, sel_as_of]
     m["st"].columns.return_value = [MagicMock(), MagicMock()]
@@ -177,3 +179,85 @@ def test_no_ml_numbers_in_source() -> None:
     src = _SRC.read_text(encoding="utf-8")
     for token in ["PR-AUC", "0.0136", "base rate", "0.0205", "ROC-AUC", "random 미만"]:
         assert token not in src, f"'{token}' 노출됨"
+
+
+# ---- UX 보완 #1: 자동 점프 + 이유 안내 -------------------------------------
+
+
+def test_evaluable_as_ofs() -> None:
+    """_evaluable_as_ofs: 종목별 평가 시점 목록 (정렬) + 빈 fallback."""
+    p = pd.DataFrame(
+        {
+            "ticker": ["005930", "005930", "000660"],
+            "test_as_of": pd.to_datetime(["2024-12-31", "2024-03-29", "2024-06-28"]),
+            "class_weight": ["balanced", "balanced", "balanced"],
+        }
+    )
+    assert ta._evaluable_as_ofs(p, "005930") == [
+        pd.Timestamp("2024-03-29"),
+        pd.Timestamp("2024-12-31"),
+    ]
+    assert ta._evaluable_as_ofs(p, "999999") == []
+    assert ta._evaluable_as_ofs(None, "005930") == []
+
+
+def test_auto_jump_to_latest_eval() -> None:
+    """Q1·Q2 (A): 종목 평가 시점이 grid 최신이 아니어도 그 시점으로 기본 점프."""
+    preds = pd.DataFrame(
+        {
+            "ticker": ["005930"],
+            "test_as_of": pd.to_datetime(["2024-03-29"]),  # grid 최신(12-31) 아님
+            "proba": [0.2],
+            "label": [0],
+            "class_weight": ["balanced"],
+        }
+    )
+    grid = [pd.Timestamp("2024-03-29"), pd.Timestamp("2024-12-31")]
+    with patch.multiple("app.pages.ticker_analysis", **_TARGETS) as m:
+        _setup(m, preds=preds, grid=grid, as_of=pd.Timestamp("2024-03-29"))
+        ta.render()
+        # 2번째 selectbox = 분석 시점. options=[12-31, 03-29] → 평가 03-29 = index 1
+        asof_call = m["st"].sidebar.selectbox.call_args_list[1]
+        assert asof_call.kwargs["index"] == 1
+        assert asof_call.kwargs["key"] == "asof_005930"
+
+
+def test_eval_info_shown() -> None:
+    """Q3 (A): 평가 있는 종목 → 평가 시점·이유 st.info 노출."""
+    with patch.multiple("app.pages.ticker_analysis", **_TARGETS) as m:
+        _setup(m)
+        ta.render()
+        info_text = " ".join(str(a) for c in m["st"].info.call_args_list for a in c.args)
+        assert "위험 평가" in info_text
+        assert "2024-12-31" in info_text
+
+
+def test_eval_info_empty() -> None:
+    """평가 0 종목 → '평가가 가능한 시점이 없습니다' 안내."""
+    with patch.multiple("app.pages.ticker_analysis", **_TARGETS) as m:
+        _setup(m, preds=_preds().iloc[0:0])
+        ta.render()
+        info_text = " ".join(str(a) for c in m["st"].info.call_args_list for a in c.args)
+        assert "평가가 가능한 시점이 없습니다" in info_text
+
+
+# ---- UX 보완 #2: 상폐 차트 caption 연결 ------------------------------------
+
+
+def test_delisting_date_passed_when_delisted() -> None:
+    """Q4 (A): 상폐 종목 → PriceChartWithStateOverlay 에 delisting_date 전달."""
+    with patch.multiple("app.pages.ticker_analysis", **_TARGETS) as m:
+        _setup(m)
+        m["load_delisting"].return_value = {"005930": pd.Timestamp("2020-01-15")}
+        ta.render()
+        _, kwargs = m["PriceChartWithStateOverlay"].call_args
+        assert kwargs.get("delisting_date") == pd.Timestamp("2020-01-15")
+
+
+def test_no_delisting_date_when_active() -> None:
+    """비상폐 종목 → delisting_date None."""
+    with patch.multiple("app.pages.ticker_analysis", **_TARGETS) as m:
+        _setup(m)  # load_delisting {} 기본
+        ta.render()
+        _, kwargs = m["PriceChartWithStateOverlay"].call_args
+        assert kwargs.get("delisting_date") is None
