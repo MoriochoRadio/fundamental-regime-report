@@ -40,6 +40,7 @@ def PriceChartWithStateOverlay(
     ohlcv: pd.DataFrame | None,
     state_series: pd.DataFrame | None,
     as_of: pd.Timestamp,
+    delisting_date: pd.Timestamp | None = None,
 ) -> None:
     """주가 line + 시장 상태 배경 overlay + 분석 시점 vline.
 
@@ -54,6 +55,8 @@ def PriceChartWithStateOverlay(
         ohlcv: KRX OHLCV DataFrame (None/empty → 빈 상태 안내).
         state_series: 시장 상태 시계열 (None → overlay 없이 주가만).
         as_of: 분석 시점.
+        delisting_date: 상장폐지일 (상폐 종목이면 거래 종료 caption 표시,
+            None 이면 미표시). 일반인 안내 — 상폐 사유 원문은 노출하지 않음.
     """
     # 빈 상태 (Q2 (A): EmptyState 위임 — 단위 f warning.py)
     if ohlcv is None or ohlcv.empty:
@@ -144,6 +147,8 @@ def PriceChartWithStateOverlay(
     )
     st.plotly_chart(fig, use_container_width=True)
     st.caption(f"배경 색상: {_STATE_LEGEND}. 점선: 선택한 분석 시점.")
+    if delisting_date is not None:
+        st.caption(f"⚠️ 상장폐지로 거래 종료 ({pd.Timestamp(delisting_date).strftime('%Y-%m-%d')}).")
 
 
 def RatioGrid(

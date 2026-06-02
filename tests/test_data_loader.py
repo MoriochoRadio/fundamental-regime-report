@@ -24,6 +24,7 @@ from app import data_loader
 from app.data_loader import (
     D2_FEATURES_PATH,
     D2_PREDICTIONS_PATH,
+    FDR_DELISTING_PATH,
     FDR_LISTING_PATH,
     KOSPI200_DIR,
     KRX_OHLCV_DIR,
@@ -34,6 +35,7 @@ from app.data_loader import (
     load_as_of_grid,
     load_d2_features,
     load_d2_predictions,
+    load_delisting,
     load_llm_interpretation,
     load_model_card,
     load_ohlcv,
@@ -357,6 +359,46 @@ def test_path_constants_renamed() -> None:
     assert not hasattr(data_loader, "FDR_LISTING")
 
 
+# ---- load_delisting (UX #2 — UI caption 전용, 피처 격리 무관) --------------
+
+
+def test_load_delisting_missing(tmp_path: Path) -> None:
+    """FDR_DELISTING_PATH 부재 → 빈 dict."""
+    load_delisting.clear()
+    with patch.object(data_loader, "FDR_DELISTING_PATH", tmp_path / "missing.parquet"):
+        assert load_delisting() == {}
+
+
+def test_load_delisting_maps_symbol_to_date(tmp_path: Path) -> None:
+    """Symbol(6자리 정규화) → DelistingDate Timestamp 맵. Reason 미사용."""
+    load_delisting.clear()
+    p = tmp_path / "deli.parquet"
+    pd.DataFrame(
+        {
+            "Symbol": ["000030", "0006602", "badsym"],
+            "DelistingDate": ["2019-02-13", "2023-02-21", None],
+            "Reason": ["합병", "관리종목", "x"],
+        }
+    ).to_parquet(p)
+    with patch.object(data_loader, "FDR_DELISTING_PATH", p):
+        out = load_delisting()
+    load_delisting.clear()
+    assert out["000030"] == pd.Timestamp("2019-02-13")
+    assert out["000660"] == pd.Timestamp("2023-02-21")  # 0006602 → 6자리 추출
+    assert "badsym" not in out  # 6자리 추출 실패·날짜 결측 제외
+
+
+def test_load_delisting_existing_returns_dict() -> None:
+    """실 캐시 존재 시 dict 반환 (상폐 ticker→Timestamp)."""
+    load_delisting.clear()
+    out = load_delisting()
+    assert isinstance(out, dict)
+    if out:
+        k = next(iter(out))
+        assert isinstance(k, str) and len(k) == 6
+        assert isinstance(out[k], pd.Timestamp)
+
+
 # ---- path 상수 값 검증 (구조 정합) ----------------------------------------
 
 
@@ -369,6 +411,7 @@ def test_path_constants_under_project_root() -> None:
         KOSPI200_DIR,
         KRX_OHLCV_DIR,
         FDR_LISTING_PATH,
+        FDR_DELISTING_PATH,
         LLM_INTERPRETATION_DIR,
         REPORTS_DIR,
     ]
