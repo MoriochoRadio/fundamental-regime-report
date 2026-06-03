@@ -1,0 +1,20 @@
+ticker: '000660'
+as_of: '2024-03-29'
+text: SK하이닉스의 2024년 3월 29일 기준 위험 점수는 0.8%로, 1년 내 재무 충격 가능성이 낮은 수준입니다. 현재 시장이 위험선호
+  국면임을 감안할 때, 부채비율 87.52%와 유동비율 145.03%는 기업의 단기 지급 능력이 양호하다고 해석될 수 있습니다. 다만, 영업이익률
+  -23.59%와 총자산이익률 -9.11%는 수익성 측면에서 개선이 필요한 상황입니다.
+inputs:
+  name: SK하이닉스
+  proba_pct: 0.8%
+  risk_level: 낮음
+  state: 위험선호
+  ratios:
+    debt_ratio: 0.8752
+    current_ratio: 1.4503
+    op_margin: -0.2359
+    roa: -0.0911
+meta:
+  provider: gemini
+  model: gemini-2.5-flash-lite
+  prompt_version: v2
+  generated_at: '2026-06-03T09:24:00.607325+00:00'

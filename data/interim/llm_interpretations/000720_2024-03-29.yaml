@@ -1,0 +1,20 @@
+ticker: '000720'
+as_of: '2024-03-29'
+text: 현대건설의 1년 내 재무 충격 가능성은 0.8%로 위험 수준이 '낮음'입니다. 부채비율은 118.66%이며, 유동비율은 186.56%로
+  단기적인 지급 능력은 양호한 편입니다. 영업이익률은 3.10%, 총자산이익률은 0.79%를 기록했습니다. 현재 시장 상황이 위험선호 국면임을 감안할
+  때, 이러한 재무 비율은 기업의 성장 잠재력에 대한 긍정적인 신호로 해석될 수 있습니다.
+inputs:
+  name: 현대건설
+  proba_pct: 0.8%
+  risk_level: 낮음
+  state: 위험선호
+  ratios:
+    debt_ratio: 1.1866
+    current_ratio: 1.8656
+    op_margin: 0.031
+    roa: 0.0079
+meta:
+  provider: gemini
+  model: gemini-2.5-flash-lite
+  prompt_version: v2
+  generated_at: '2026-06-03T09:30:52.862941+00:00'

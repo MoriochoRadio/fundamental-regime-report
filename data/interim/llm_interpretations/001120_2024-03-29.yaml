@@ -1,0 +1,20 @@
+ticker: '001120'
+as_of: '2024-03-29'
+text: LX인터내셔널의 2024년 3월 29일 기준 위험 점수는 0.8%로, 1년 내 재무 충격 가능성이 '낮음' 수준입니다. 부채비율은 160.01%로
+  다소 높지만, 유동비율이 154.64%로 단기 지급 능력은 양호한 편입니다. 현재 시장이 위험선호 국면이므로, 다소 높은 부채비율에도 불구하고
+  기업의 영업 활동을 통한 수익 창출 능력(영업이익률 2.98%, 총자산이익률 2.42%)을 긍정적으로 평가할 수 있습니다.
+inputs:
+  name: LX인터내셔널
+  proba_pct: 0.8%
+  risk_level: 낮음
+  state: 위험선호
+  ratios:
+    debt_ratio: 1.6001
+    current_ratio: 1.5464
+    op_margin: 0.0298
+    roa: 0.0242
+meta:
+  provider: gemini
+  model: gemini-2.5-flash-lite
+  prompt_version: v2
+  generated_at: '2026-06-03T09:31:31.631123+00:00'

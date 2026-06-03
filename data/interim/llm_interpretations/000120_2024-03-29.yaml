@@ -1,0 +1,20 @@
+ticker: '000120'
+as_of: '2024-03-29'
+text: CJ대한통운의 1년 내 재무 충격 가능성은 0.8%로 위험 수준이 '낮음'입니다. 부채비율은 131.45%로 다소 높은 편이지만, 유동비율은
+  94.89%로 단기 지급 능력은 양호한 편입니다. 영업이익률은 4.08%, 총자산이익률은 2.60%를 기록했습니다. 현재 시장 상태가 위험선호
+  국면임을 감안할 때, 부채비율이 다소 높더라도 기업의 수익성과 자산 활용 능력을 긍정적으로 평가해 볼 수 있습니다.
+inputs:
+  name: CJ대한통운
+  proba_pct: 0.8%
+  risk_level: 낮음
+  state: 위험선호
+  ratios:
+    debt_ratio: 1.3145
+    current_ratio: 0.9489
+    op_margin: 0.0408
+    roa: 0.026
+meta:
+  provider: gemini
+  model: gemini-2.5-flash-lite
+  prompt_version: v2
+  generated_at: '2026-06-03T09:30:33.363384+00:00'

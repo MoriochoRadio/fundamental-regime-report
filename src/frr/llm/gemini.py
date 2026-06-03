@@ -18,8 +18,9 @@ from google.genai import types
 
 from frr.llm.base import LLMProvider
 
-# 현행 무료 Flash 모델 (2.0 폐기 → 2.5-flash). 필요 시 생성자 model 인자로 교체.
-_DEFAULT_MODEL = "gemini-2.5-flash"
+# 기본 무료 모델 — flash-lite (gemini-2.5-flash 는 free 일일 20req 제약, lite 는
+# 일일 한도 여유 + 품질 동등 확인, 단계 5a'). 필요 시 생성자 model 인자로 교체.
+_DEFAULT_MODEL = "gemini-2.5-flash-lite"
 # 일시적 오류 (503 과부하·429 rate limit) — 재시도 (free 티어 503 빈발).
 _TRANSIENT_CODES = (429, 503)
 _MAX_ATTEMPTS = 4
