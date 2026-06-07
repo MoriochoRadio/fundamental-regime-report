@@ -1,0 +1,20 @@
+ticker: '402340'
+as_of: '2024-03-29'
+text: SK스퀘어의 1년 내 재무 충격 가능성은 0.8%로 위험 수준이 '낮음'입니다. 부채비율은 11.20%로 낮고 유동비율은 220.10%로
+  높아 단기 지급 능력이 우수합니다. 다만, 영업이익률이 -1386.13%로 매우 낮은 점은 수익성 측면에서 우려 요인입니다. 시장 상황이 위험선호
+  국면이므로, 이러한 낮은 수익성에도 불구하고 투자자들은 미래 성장 가능성에 주목할 수 있습니다.
+inputs:
+  name: SK스퀘어
+  proba_pct: 0.8%
+  risk_level: 낮음
+  state: 위험선호
+  ratios:
+    debt_ratio: 0.112
+    current_ratio: 2.201
+    op_margin: -13.8613
+    roa: 0.0242
+meta:
+  provider: gemini
+  model: gemini-2.5-flash-lite
+  prompt_version: v2
+  generated_at: '2026-06-07T13:39:06.379764+00:00'

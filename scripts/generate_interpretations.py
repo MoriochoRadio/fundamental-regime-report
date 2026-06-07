@@ -15,6 +15,7 @@ CLAUDE.md §3.4: LLM 호출은 *빌드타임 배치 1회* → YAML 고정 → �
 from __future__ import annotations
 
 import argparse
+import math
 import sys
 import time
 from pathlib import Path
@@ -35,8 +36,17 @@ from frr.llm.interpretation import generate_interpretation  # noqa: E402
 OUT_DIR = _ROOT / "data" / "interim" / "llm_interpretations"
 
 
-def _targets(scope: str) -> list[tuple[str, pd.Timestamp]]:
-    """평가 가능 (ticker, test_as_of) 목록. scope=latest → 종목별 최신 시점만."""
+def _targets(
+    scope: str,
+    order: str = "ticker",
+    marcap_map: dict[str, float] | None = None,
+) -> list[tuple[str, pd.Timestamp]]:
+    """평가 가능 (ticker, test_as_of) 목록. scope=latest → 종목별 최신 시점만.
+
+    order="marcap" + marcap_map 제공 시 시가총액 내림차순(동률 ticker 오름차순,
+    결측은 후순위)으로 정렬 — --limit 와 결합해 대형주(헤드라인) 우선 충원.
+    기본 order="ticker" 는 기존 동작(ticker 오름차순) 보존 — 재현성.
+    """
     preds = dl.load_d2_predictions()
     if preds is None or preds.empty:
         return []
@@ -50,12 +60,27 @@ def _targets(scope: str) -> list[tuple[str, pd.Timestamp]]:
         (str(t), pd.Timestamp(a))
         for t, a in zip(combos["ticker"], combos["test_as_of"], strict=True)
     ]
+    if order == "marcap" and marcap_map:
+
+        def _mc(ticker: str) -> float:
+            v = marcap_map.get(ticker)
+            if v is None or (isinstance(v, float) and math.isnan(v)):
+                return float("-inf")
+            return float(v)
+
+        return sorted(pairs, key=lambda p: (-_mc(p[0]), p[0]))
     return sorted(pairs)
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="LLM 해석 빌드타임 배치 생성")
     ap.add_argument("--scope", choices=["latest", "all"], default="latest")
+    ap.add_argument(
+        "--order",
+        choices=["ticker", "marcap"],
+        default="ticker",
+        help="marcap=시가총액 상위 우선 (대형주/헤드라인 충원). 기본 ticker.",
+    )
     ap.add_argument("--limit", type=int, default=0, help="0=무제한 (앞에서 N개만)")
     ap.add_argument("--throttle", type=float, default=6.0, help="호출 간 간격(초)")
     ap.add_argument("--model", default=_DEFAULT_MODEL)
@@ -66,12 +91,13 @@ def main() -> None:
 
     uni = dl.load_universe()
     name_map = dict(zip(uni["ticker"], uni["name"], strict=False))
+    marcap_map = dict(zip(uni["ticker"].astype(str), uni["marcap"], strict=False))
     preds = dl.load_d2_predictions()
     pb = preds[preds["class_weight"] == "balanced"]
     feats = dl.load_d2_features()
     state_series = dl.load_state_series()
 
-    targets = _targets(args.scope)
+    targets = _targets(args.scope, args.order, marcap_map)
     if args.limit:
         targets = targets[: args.limit]
 

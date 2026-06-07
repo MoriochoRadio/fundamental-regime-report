@@ -1,0 +1,20 @@
+ticker: 032830
+as_of: '2024-03-29'
+text: 삼성생명은 2024년 3월 29일 기준, 1년 내 재무 충격 가능성을 나타내는 위험 점수가 0.7%로 '낮음' 수준입니다. 다만, 부채비율이
+  565.18%로 높게 나타났으며, 총자산이익률은 0.17%로 낮은 편입니다. 현재 시장 상황이 위험선호 국면임을 감안할 때, 높은 부채비율에도
+  불구하고 기업의 재무 건전성에 대한 시장의 우려가 상대적으로 적을 수 있습니다.
+inputs:
+  name: 삼성생명
+  proba_pct: 0.7%
+  risk_level: 낮음
+  state: 위험선호
+  ratios:
+    debt_ratio: 5.6518
+    current_ratio: null
+    op_margin: null
+    roa: 0.0017
+meta:
+  provider: gemini
+  model: gemini-2.5-flash-lite
+  prompt_version: v2
+  generated_at: '2026-06-07T13:39:58.266232+00:00'

@@ -1,0 +1,20 @@
+ticker: '373220'
+as_of: '2024-03-29'
+text: LG에너지솔루션은 2024년 3월 29일 기준, 1년 내 재무 충격 가능성을 나타내는 위험 점수가 0.8%로 '낮음' 수준입니다. 부채비율은
+  86.42%이며, 유동비율은 157.34%로 단기 지급 능력이 양호한 편입니다. 또한, 영업이익률은 6.41%, 총자산이익률은 3.60%를 기록했습니다.
+  현재 시장 상태가 위험선호 국면임을 감안할 때, 이러한 재무 비율은 기업의 안정성과 수익성을 긍정적으로 평가하는 데 도움이 될 수 있습니다.
+inputs:
+  name: LG에너지솔루션
+  proba_pct: 0.8%
+  risk_level: 낮음
+  state: 위험선호
+  ratios:
+    debt_ratio: 0.8642
+    current_ratio: 1.5734
+    op_margin: 0.0641
+    roa: 0.036
+meta:
+  provider: gemini
+  model: gemini-2.5-flash-lite
+  prompt_version: v2
+  generated_at: '2026-06-07T13:39:21.246041+00:00'
