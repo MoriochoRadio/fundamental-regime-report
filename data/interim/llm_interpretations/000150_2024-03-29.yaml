@@ -1,0 +1,20 @@
+ticker: '000150'
+as_of: '2024-03-29'
+text: 두산의 2024년 3월 29일 기준 위험 점수는 0.7%로 재무 충격 가능성이 낮은 수준입니다. 부채비율은 152.41%로 다소 높지만,
+  유동비율이 100.07%로 단기 지급 능력을 갖추고 있습니다. 영업이익률은 7.51%, 총자산이익률은 0.96%를 기록했습니다. 현재 시장이 위험선호
+  국면임을 감안할 때, 투자자들은 이러한 재무 상태를 상대적으로 긍정적으로 평가할 수 있습니다.
+inputs:
+  name: 두산
+  proba_pct: 0.7%
+  risk_level: 낮음
+  state: 위험선호
+  ratios:
+    debt_ratio: 1.5241
+    current_ratio: 1.0007
+    op_margin: 0.0751
+    roa: 0.0096
+meta:
+  provider: gemini
+  model: gemini-2.5-flash-lite
+  prompt_version: v2
+  generated_at: '2026-06-03T09:30:40.040238+00:00'

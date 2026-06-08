@@ -1,0 +1,20 @@
+ticker: 028260
+as_of: '2024-03-29'
+text: 삼성물산의 1년 내 재무 충격 가능성은 0.8%로 위험 수준이 '낮음'입니다. 부채비율은 69.13%로 안정적인 편이며, 유동비율은 125.94%로
+  단기 지급 능력이 양호합니다. 영업이익률은 7.57%, 총자산이익률은 1.12%를 기록했습니다. 현재 시장이 위험선호 국면임을 감안할 때, 이러한
+  재무 상태는 기업의 안정성을 뒷받침하는 긍정적인 신호로 해석될 수 있습니다.
+inputs:
+  name: 삼성물산
+  proba_pct: 0.8%
+  risk_level: 낮음
+  state: 위험선호
+  ratios:
+    debt_ratio: 0.6913
+    current_ratio: 1.2594
+    op_margin: 0.0757
+    roa: 0.0112
+meta:
+  provider: gemini
+  model: gemini-2.5-flash-lite
+  prompt_version: v2
+  generated_at: '2026-06-07T13:40:12.811776+00:00'

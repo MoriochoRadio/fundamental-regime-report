@@ -1,0 +1,20 @@
+ticker: 005380
+as_of: '2024-03-29'
+text: 현대차의 2024년 3월 29일 기준 위험 점수는 0.8%로, 1년 내 재무 충격 가능성이 낮다고 평가됩니다. 부채비율은 177.44%로
+  다소 높지만, 유동비율이 138.66%로 단기 지급 능력을 갖추고 있습니다. 영업이익률은 9.30%, 총자산이익률은 4.34%를 기록했습니다.
+  현재 시장이 위험선호 국면임을 감안할 때, 이러한 재무 비율은 기업의 성장 잠재력에 대한 긍정적인 신호로 해석될 수 있습니다.
+inputs:
+  name: 현대차
+  proba_pct: 0.8%
+  risk_level: 낮음
+  state: 위험선호
+  ratios:
+    debt_ratio: 1.7744
+    current_ratio: 1.3866
+    op_margin: 0.093
+    roa: 0.0434
+meta:
+  provider: gemini
+  model: gemini-2.5-flash-lite
+  prompt_version: v2
+  generated_at: '2026-06-07T13:39:13.759170+00:00'

@@ -27,6 +27,8 @@ dependencies = [
     "hmmlearn>=0.3.3",
     "streamlit>=1.57.0",
     "plotly>=6.7.0",
+    # --- LLM (빌드타임 배치 전용 — src/frr/llm/ 단일 출구, 런타임 0, §3.4·§8.6) ---
+    "google-genai>=1.0",
 ]
 
 [dependency-groups]

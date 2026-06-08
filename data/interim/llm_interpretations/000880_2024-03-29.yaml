@@ -1,0 +1,20 @@
+ticker: 000880
+as_of: '2024-03-29'
+text: 한화의 2024년 3월 29일 기준 위험 점수는 0.8%로, 1년 내 재무 충격 가능성이 낮은 수준입니다. 부채비율은 481.73%로 다소
+  높지만, 유동비율은 100.45%로 단기 지급 능력이 양호한 편입니다. 영업이익률은 3.20%, 총자산이익률은 0.05%로 수익성은 낮은 편이나,
+  현재 시장 상황이 위험선호 국면임을 감안하면 이러한 재무 상태가 투자자들에게는 오히려 기회로 해석될 수도 있습니다.
+inputs:
+  name: 한화
+  proba_pct: 0.8%
+  risk_level: 낮음
+  state: 위험선호
+  ratios:
+    debt_ratio: 4.8173
+    current_ratio: 1.0045
+    op_margin: 0.032
+    roa: 0.0005
+meta:
+  provider: gemini
+  model: gemini-2.5-flash-lite
+  prompt_version: v2
+  generated_at: '2026-06-03T09:31:05.762019+00:00'

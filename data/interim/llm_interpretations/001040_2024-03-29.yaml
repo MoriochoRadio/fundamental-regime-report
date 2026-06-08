@@ -1,0 +1,20 @@
+ticker: '001040'
+as_of: '2024-03-29'
+text: CJ의 2024년 3월 29일 기준 위험 점수는 0.7%로, 1년 내 재무 충격 가능성이 '낮음' 수준입니다. 현재 시장 상황이 위험선호
+  국면임을 감안할 때, 부채비율 163.81%와 유동비율 90.02%는 다소 높은 부채 부담에도 불구하고 단기적인 지급 능력은 양호하다고 해석될
+  수 있습니다. 또한, 영업이익률 4.93%와 총자산이익률 1.11%는 기업의 수익 창출 능력을 보여줍니다.
+inputs:
+  name: CJ
+  proba_pct: 0.7%
+  risk_level: 낮음
+  state: 위험선호
+  ratios:
+    debt_ratio: 1.6381
+    current_ratio: 0.9002
+    op_margin: 0.0493
+    roa: 0.0111
+meta:
+  provider: gemini
+  model: gemini-2.5-flash-lite
+  prompt_version: v2
+  generated_at: '2026-06-03T09:31:18.580824+00:00'

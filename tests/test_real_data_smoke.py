@@ -138,3 +138,71 @@ def test_limitations_real_card_isolation(real_data: dict) -> None:
     assert "reports/d2_baseline_model_card.md" in t  # 링크는 표시
     assert "PR-AUC" not in t  # 카드 내용은 렌더 미노출
     assert "0.0136" not in t
+
+
+# ---- 단계 6: StateInterpretBox 실 LLM 텍스트 연결 -------------------------
+
+
+def _gen_ungen(preds: pd.DataFrame) -> tuple[dict[str, str], list[str], list[str]]:
+    """LLM 해석 보유/미보유 종목 동적 추출 (하드코딩 회피).
+
+    Returns: (gen{ticker→as_of}, 평가보유∩생성 목록, 평가보유∩미생성 목록).
+    """
+    d = dl.LLM_INTERPRETATION_DIR
+    gen = {f.name.split("_")[0]: f.name[7:-5] for f in d.glob("*.yaml")} if d.exists() else {}
+    pb = preds[preds["class_weight"] == "balanced"].dropna(subset=["proba"])
+    ev = set(pb["ticker"])
+    return gen, sorted(t for t in gen if t in ev), sorted(ev - set(gen))
+
+
+def _capture_interpret_args(ticker: str, as_of: pd.Timestamp) -> tuple:
+    """ticker_analysis.render 실행 → StateInterpretBox 호출 위치 인자 캡처."""
+    st = _fresh_st()
+    st.sidebar.selectbox.side_effect = [ticker, as_of]
+    captured: dict[str, tuple] = {}
+    with ExitStack() as es:
+        for mod in _ST_MODULES:
+            es.enter_context(patch(f"{mod}.st", st))
+        es.enter_context(
+            patch(
+                "app.pages.ticker_analysis.StateInterpretBox",
+                lambda *a, **k: captured.update(args=a),
+            )
+        )
+        importlib.import_module("app.pages.ticker_analysis").render()
+    return captured.get("args", ())
+
+
+def test_llm_text_rendered_for_generated(real_data: dict) -> None:
+    """생성 보유 종목 → StateInterpretBox 가 실 LLM 텍스트(비어있지 않음) 받음."""
+    from app.pages.ticker_analysis import _evaluable_as_ofs
+
+    preds = dl.load_d2_predictions()
+    _gen, gen_in_ev, _ungen = _gen_ungen(preds)
+    if not gen_in_ev:
+        pytest.skip("생성된 해석 보유 종목 없음")
+    tk = gen_in_ev[0]
+    latest = _evaluable_as_ofs(preds, tk)[-1]
+    expected = dl.load_llm_interpretation(tk, latest.strftime("%Y-%m-%d"))
+    assert isinstance(expected, dict) and expected.get("text")  # YAML 실재
+    args = _capture_interpret_args(tk, latest)
+    # StateInterpretBox(state, risk_level, llm_text) — 3번째 위치 인자
+    assert args[2] == expected["text"]  # 실 LLM 텍스트 (template 아님)
+    assert args[2]  # 비어있지 않음
+
+
+def test_template_fallback_for_ungenerated(real_data: dict) -> None:
+    """미생성 종목 → llm_text None (StateInterpretBox template fallback)."""
+    from app.pages.ticker_analysis import _evaluable_as_ofs
+
+    preds = dl.load_d2_predictions()
+    feats = dl.load_d2_features()
+    feat_tk = set(feats["ticker"].unique())
+    _gen, _gen_in_ev, ungen = _gen_ungen(preds)
+    cand = [t for t in ungen if t in feat_tk and dl.load_ohlcv(t) is not None]
+    if not cand:
+        pytest.skip("미생성 + 데이터 보유 종목 없음")
+    tk = cand[0]
+    latest = _evaluable_as_ofs(preds, tk)[-1]
+    args = _capture_interpret_args(tk, latest)
+    assert args[2] is None  # llm_text None → 9 template fallback

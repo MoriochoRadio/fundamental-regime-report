@@ -1,0 +1,20 @@
+ticker: '000270'
+as_of: '2024-03-29'
+text: 기아의 2024년 3월 29일 기준 위험 점수는 0.8%로 재무 충격 가능성이 낮다고 평가되었습니다. 부채비율은 73.18%로 안정적인
+  수준이며, 유동비율은 145.93%로 단기 지급 능력이 양호합니다. 영업이익률 11.63%와 총자산이익률 10.89%는 수익성이 좋음을 보여줍니다.
+  현재 시장이 위험선호 국면임을 감안할 때, 이러한 재무 건전성은 투자 매력도를 더욱 높일 수 있습니다.
+inputs:
+  name: 기아
+  proba_pct: 0.8%
+  risk_level: 낮음
+  state: 위험선호
+  ratios:
+    debt_ratio: 0.7318
+    current_ratio: 1.4593
+    op_margin: 0.1163
+    roa: 0.1089
+meta:
+  provider: gemini
+  model: gemini-2.5-flash-lite
+  prompt_version: v2
+  generated_at: '2026-06-03T09:23:47.663298+00:00'

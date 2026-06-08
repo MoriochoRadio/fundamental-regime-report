@@ -1,0 +1,20 @@
+ticker: '001450'
+as_of: '2024-03-29'
+text: 현대해상(001450)은 2024년 3월 29일 기준, 1년 내 재무 충격 가능성을 나타내는 위험 점수가 0.7%로 '낮음' 수준입니다.
+  총자산이익률은 1.38%를 기록했습니다. 현재 시장 상황이 위험선호 국면임을 감안할 때, 높은 부채비율(628.08%)에도 불구하고 기업의 수익성이
+  시장의 위험 감수 심리와 맞물려 긍정적으로 해석될 여지가 있습니다.
+inputs:
+  name: 현대해상
+  proba_pct: 0.7%
+  risk_level: 낮음
+  state: 위험선호
+  ratios:
+    debt_ratio: 6.2808
+    current_ratio: null
+    op_margin: null
+    roa: 0.0138
+meta:
+  provider: gemini
+  model: gemini-2.5-flash-lite
+  prompt_version: v2
+  generated_at: '2026-06-03T09:32:06.700050+00:00'

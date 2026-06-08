@@ -3,7 +3,7 @@
 이 문서는 본 프로젝트의 **변하는 상태**를 추적한다.
 변하지 않는 사실·규칙·방향은 `CLAUDE.md` 에 있다.
 
-**마지막 갱신**: 2026-06-02 (단계 5 대시보드 + **성능 수정·UX 보완** 반영 — UI 재구축 main 병합(PR #3) 후 QA 진단으로 차트 성능 병목 해소(배치 shapes) + 위험 평가 시점 자동 surface·상폐 차트 안내 UX 보완. 다음: 후속(LLM 해석/국면 안정화/클라 렌더/폴리시, 모두 선택). ※ 2026-05-21 "단계 5 종료"는 Phase 4 reset 으로 재진입 — §5.9 참조)
+**마지막 갱신**: 2026-06-03 (**LLM 해석 파이프라인 단계 1~6** end-to-end 작동·검증 반영 — LLMProvider/Gemini → 프롬프트 v2 → 배치 스크립트(resume) → flash-lite 24개 생성 → StateInterpretBox 실 LLM 텍스트 연결 검증 + keeper 테스트 2. ★ 핵심 제약: 무료 Gemini 2.5 flash·flash-lite 둘 다 일일 20 req/day/모델 → 24/260 생성(저시총 위주), 헤드라인 top-40 우선 충원 계획. 직전 2026-06-02: 차트 성능 배치 shapes + UX 보완. 다음: 시총 상위 커버리지 + 누적분 main 병합. ※ 2026-05-21 "단계 5 종료"는 Phase 4 reset 으로 재진입 — §5.9 참조)
 
 ---
 
@@ -51,6 +51,14 @@
   (상태 배경 741× add_vrect, ~115초) 을 배치 shapes 1회 할당(~0.16초)으로 해소,
   (2) 위험 평가 시점 자동 surface·희소 이유 안내·상폐 차트 caption UX 보완.
   비-integration **395 통과**. 모두 UI/page 차원 (데이터/모델 무변경).
+- **LLM 해석 파이프라인 (2026-06-03)**: 단계 1~6 end-to-end 작동·검증. `src/frr/llm/`
+  단일 출구(§8.6) — `LLMProvider` ABC + `GeminiProvider`(google-genai, 503/429 재시도) →
+  `interpretation.py`(SYSTEM_INSTRUCTION: §3.4 검증 수치 *서술만*·환각 가드, v2 비율 %
+  사전포맷) → `scripts/generate_interpretations.py`(resume/idempotent·항목 실패 계속) →
+  flash-lite **24개 생성**(빌드타임 배치, YAML git 추적) → 대시보드 StateInterpretBox 가
+  **실 LLM 텍스트 렌더**(미보유 종목 template fallback) 통합 테스트 박제. ★ 무료 Gemini
+  2.5 flash·flash-lite **둘 다 일일 20 req/day/모델** → 24/260(저시총 위주), 헤드라인
+  top-40 우선 충원 계획. 비-integration **403 통과** + integration **6**(기존 4 + LLM 연결 2).
 - **요약**: CI 4회 연속 실패(2026-05-18) → 커밋 1 (`71ef11a`) ruff format
   으로 그린 회복. 커밋 2 (`3585848`) D2 후보 상태 되돌림 + §7.4 ruff format
   규칙. 커밋 3 (`2977262`) D2 = α 최종 확정 — *5개 후보(D2(E)·B1 v1·v2·B3·A)
@@ -137,6 +145,12 @@
 - [x] **단계 5 페이지 통합 4/4 (단위 i~l)** — main.py thin shell(SidebarNav dispatch + ModelLimitBadge 전역 + sys.path repo-root 주입) + `app/pages/` 4종: overview(i `92cad8c`) · ticker_analysis(j `4778f4e`) · market_state(k `3e38d14`) · limitations(l `a36f9d0`). ML 원본 수치 직접 노출 제거(→ModelLimitBadge 위임) + 5→4 페이지 + "국면"→"상태" 정정. 각 단위 streamlit 풀 부팅 실측(HTTP 200·ERROR 0). 컴포넌트 8종 전부 실 페이지 연결.
 - [x] **QA-1 실 데이터 부팅 점검 (2026-05-31)** — 산출물 인벤토리 **CASE A full**(universe 321·predictions 3,602·features 8,008·state 2,273·ohlcv 321·model card 2; LLM interpretation 만 의도적 stub). throwaway smoke 로 4 페이지 전부 *실 내용 분기* 도달 확인(종목 분석 실 proba 렌더·차트 2·카드 2 / 시장 상태 stripe / 한계 카드 내용 미렌더). 버그 0. commit 없음(검증 전용).
 - [x] **QA-2 실 데이터 통합 smoke 박제 (2026-05-31, `efde5ea`)** — `tests/test_real_data_smoke.py` 신규 4 테스트(@pytest.mark.integration, 산출물 부재 graceful skip, ticker/as_of 동적 결정적 선택). 한계 페이지 실 model card(PR-AUC 포함) 내용 렌더 미노출 = §7.7 실 데이터 입증. 비-integration **382 통과**(11 deselect) + integration **11 통과**(기존 7 + 신규 4).
+- [x] **§7.7 소스 코드 외부 노출 정리 (2026-06-02, `a036c02`)** — `app/` 금지 단어("면접"→"방법론 정직성 시연 자료")·ML 리터럴(doctest `0.0136`→`0.123456`) 제거 + 가드 테스트 `tests/test_app_exposure_guard.py` 신규(소스 표면 금지 단어 회귀 차단). README/문서 §7.7 정리와 함께.
+- [x] **LLM 단계 2~3 — Provider 인터페이스 + Gemini (2026-06-03, `ceb16d0`)** — `src/frr/llm/` 단일 출구(§8.6): `base.py` `LLMProvider(ABC)`(`generate(prompt, *, system, temperature)`), `gemini.py` `GeminiProvider`(google-genai SDK, GEMINI_API_KEY env, 503/429 지수 백오프 재시도), `__init__.py` 는 `LLMProvider` 만 export(SDK 패키지 import 시 비로드). `tests/test_llm.py`(추상·계약·단일 export 단위 + 키 부재 graceful skip 통합).
+- [x] **LLM 단계 4 — 해석 프롬프트 v2 (2026-06-03, `dcbddd7`)** — `src/frr/llm/interpretation.py`: `SYSTEM_INSTRUCTION`(§3.4 박제 — 검증된 수치·라벨 *서술만*, 새 수치 생성 금지, 국면-조건부 해석, 투자 권유 금지, 일반어, 2~4문장), `build_prompt`(비율 **% 사전포맷** = v1 비율 표기 불일치 교정), `generate_interpretation`(text+inputs(raw)+meta(provider/model/prompt_version/generated_at) 반환). `tests/test_llm_interpretation.py` 5 단위.
+- [x] **LLM 단계 5a — 배치 스크립트 (2026-06-03, `6138e54`)** — `scripts/generate_interpretations.py`: `--scope latest|all --limit --throttle --model`, 종목별 최신 평가 시점 대상, **idempotent**(기존 YAML skip → resume 가능), 항목 실패 시 log+continue, `load_dotenv()` + lazy provider. `data/interim/llm_interpretations/{ticker}_{YYYY-MM-DD}.yaml` 출력. `.gitignore` `data/interim/` → `data/interim/*` + `!.../llm_interpretations/`(빌드타임 YAML 산출물만 추적).
+- [x] **LLM 단계 5b — flash-lite 24개 생성 (2026-06-03, `e8d6f4a`)** — 종목별 최신 평가 시점 해석 배치 생성. ★ **무료 Gemini 2.5 flash·flash-lite 둘 다 일일 20 req/day/모델** 한도 실측(flash 20 소진 → flash-lite 전환했으나 lite 도 동일 20/day) → 24/260 부분 생성(저시총 위주, resume 가능). 전부 `model=gemini-2.5-flash-lite`·`prompt_version=v2`·§7.7-clean. 환각 0·국면 조건부 서술 확인.
+- [x] **LLM 단계 6 — StateInterpretBox 실 LLM 텍스트 연결 검증 (2026-06-03, `e282586`)** — 생성 보유 종목 → 대시보드가 **실 LLM 텍스트 렌더**(template 아님), 미보유 → template fallback 통합 테스트 2 박제(`tests/test_real_data_smoke.py`, @integration, 동적 선택·graceful skip). 배선 실측: 24/24 YAML `as_of == page latest eval` 일치(auto-jump 정합). 연결 코드 기존(`load_llm_interpretation`→ticker_analysis→StateInterpretBox) 무변경. 비-integration **403** + integration **6**.
 
 ---
 
@@ -150,7 +164,11 @@
 - [x] **단계 5 UI 재구축 main 병합** — 완료 (PR #3, `dac49b3`).
 - [x] **차트 성능 수정** — 상태 배경 배치 shapes (~115초→~0.16초, `8e4092e`).
 - [x] **종목 분석 UX 보완** — 위험 평가 시점 자동 surface·이유 info·상폐 caption (`17fde0a`).
-- 후속(모두 선택 — 결정 게이트): **LLM 해석 산출물 채우기**(`data/interim/llm_interpretations/`, 빌드타임 배치) · **국면(시장 상태) 안정화** · **(B) 상태 배경 클라이언트 렌더**(741 shapes 브라우저 부담) · **자잘 폴리시 / 브랜치·워크트리 정리**.
+- [x] **LLM 해석 파이프라인 단계 1~6** — Provider/Gemini → 프롬프트 v2 → 배치 스크립트 → flash-lite 24개 생성 → 대시보드 연결 검증 (`ceb16d0`~`e282586`). §2 Done 참조.
+- 후속(모두 선택 — 결정 게이트):
+  - **LLM 해석 시총 상위 커버리지** — 무료 티어 20 req/day/모델 한도 → 두 모델(flash·flash-lite) 병행 시 40/day. 헤드라인 **top-40**(삼성전자 005930·SK 034730 등 36 신규) 우선 충원. *KOSPI200 전체(260)는 무료 티어 한도로 점진* — 헤드라인 우선 시연. ★ 시총순 옵션(`--order marcap` 또는 `--tickers`) 소폭 추가 필요(현재 ticker 정렬). 단, **marcap 절대값 부풀림(상대 순위 proxy 로만)** 주의.
+  - **누적분 main 병합** — perf·UX·§7.7·LLM 1~6 (`8e4092e`~`e282586`) PR.
+  - **국면(시장 상태) 안정화** · **(B) 상태 배경 클라이언트 렌더**(741 shapes 브라우저 부담) · **자잘 폴리시 / 브랜치·워크트리 정리**.
 
 > 아래 3.0~ 항목은 단계 2 시점의 과거 "다음 할 일" 기록 (보존).
 
@@ -2682,6 +2700,31 @@ KOSPI200 + 상폐 유니버스 기준 추정 *10~30건* 가능 (자본잠식·�
 
 > 확정되면 시간 역순으로 누적. 동시에 CLAUDE.md에도 반영한다.
 
+- **2026-06-03** — **LLM 해석 파이프라인 단계 1~6** end-to-end 작동·검증
+  (`ceb16d0`~`e282586`). `src/frr/llm/` 단일 출구(§8.6): `LLMProvider` ABC +
+  `GeminiProvider`(google-genai, 503/429 재시도) → `interpretation.py`
+  (SYSTEM_INSTRUCTION 으로 §3.4 박제 — *검증된 수치·라벨의 서술만*, 새 수치
+  생성·투자 권유 금지·국면 조건부, v2 비율 % 사전포맷) → 배치 스크립트
+  (resume/idempotent·항목 실패 계속) → flash-lite **24개 생성**(빌드타임 1회,
+  YAML git 추적) → StateInterpretBox 가 **실 LLM 텍스트 렌더**(미보유 template
+  fallback) 연결 검증 + keeper 테스트 2. **§3.4 런타임 LLM 호출 0회** 유지
+  (대시보드는 정적 YAML 만 읽음).
+  ★ **핵심 제약 (정직 기록)**: 무료 Gemini 2.5 **flash·flash-lite 둘 다 일일
+  20 req/day/모델** (GenerateRequestsPerDayPerProjectPerModel-FreeTier). flash
+  20 소진 → lite 전환했으나 동일 20/day 확인 → **24/260 부분 생성(저시총
+  위주)**. 두 모델 병행 시 40/day → 헤드라인 top-40 은 ~2일. *KOSPI200 전체는
+  무료 티어 한도로 점진 — 헤드라인 우선 시연* 방침. 시총순 옵션은 미구현
+  (현 ticker 정렬, `--order marcap`/`--tickers` 소폭 추가 예정; **marcap
+  절대값 부풀림 → 상대 순위 proxy 로만** 사용 주의 — 우선순위 산정 시 NaN
+  truthy 정렬 오류 자가 교정 경위 포함).
+  연결 검증 배선 실측: 24/24 YAML `as_of == page latest eval` 일치(auto-jump
+  가 생성 시점에 정착 → 정합). 연결 코드 자체는 기존(`load_llm_interpretation`)
+  무변경 — 단계 6 은 *검증·테스트 박제* 차원(app/ 무변경, tests 만).
+- **2026-06-02** — §7.7 소스 코드 외부 노출 정리 (`a036c02`). `app/` 표면에서
+  금지 단어("면접")·ML 리터럴(doctest 확률값) 제거 + 가드 테스트
+  `test_app_exposure_guard.py` 박제(소스 표면 회귀 차단). §7.7 README/문서
+  정리와 동반. *외부 노출 규칙(§7.7)을 문서뿐 아니라 소스 표면까지 CI 차원
+  강제* 사례.
 - **2026-06-02** — 종목 분석 UX 보완 (`17fde0a`). QA 진단으로 **#1 위험 점수
   희소**(walk-forward 초기 training-only + 부실 사건 희소 → 평가 9 시점, 날짜
   mismatch 0) · **#2 차트 조기 종료**(상폐 14종목 거래 중단, 수집 gap 0) 둘 다
