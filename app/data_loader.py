@@ -62,13 +62,18 @@ def _load_yaml(path: Path) -> dict[str, Any] | None:
 
 @st.cache_data
 def load_universe() -> pd.DataFrame:
-    """KOSPI200 universe 메타: ticker · name · marcap (321 종목 통합).
+    """KOSPI200 universe 메타: ticker · name · marcap · marcap_rank (321 종목 통합).
 
     - name: kospi200_quarterly CSV 들의 *가장 최근 분기* 종목명
-    - marcap: FDR listing *현 시점* 시가총액 (과거 시점 추적 X)
+    - marcap: FDR listing *현 시점* 시가총액 (과거 시점 추적 X).
+      ★ 절대 금액은 출처 검증 한계로 *화면 미노출* — 정렬·순위 산출 전용.
+    - marcap_rank: 동일 스냅샷 내 시가총액 내림차순 순위 (결측 = NaN).
+      절대값 신뢰 한계와 무관하게 *같은 소스 내 상대 비교* 는 유효 —
+      화면 표기는 순위만 사용.
 
     Returns:
-        DataFrame[ticker, name, marcap] (321 rows 예상). 빈 입력 시 빈 DataFrame.
+        DataFrame[ticker, name, marcap, marcap_rank] (321 rows 예상).
+        빈 입력 시 빈 DataFrame.
     """
     name_map: dict[str, str] = {}
     if KOSPI200_DIR.exists():
@@ -91,10 +96,12 @@ def load_universe() -> pd.DataFrame:
             marcap_map = dict(zip(marcap_df["Code"].astype(str), marcap_df["Marcap"], strict=True))
 
     if not name_map:
-        return pd.DataFrame(columns=["ticker", "name", "marcap"])
+        return pd.DataFrame(columns=["ticker", "name", "marcap", "marcap_rank"])
 
     rows = [{"ticker": t, "name": n, "marcap": marcap_map.get(t)} for t, n in name_map.items()]
-    return pd.DataFrame(rows).sort_values("ticker").reset_index(drop=True)
+    out = pd.DataFrame(rows).sort_values("ticker").reset_index(drop=True)
+    out["marcap_rank"] = out["marcap"].rank(ascending=False, method="min")
+    return out
 
 
 @st.cache_data

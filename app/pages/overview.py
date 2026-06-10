@@ -28,15 +28,15 @@ def render() -> None:
     st.markdown("## 예시 종목")
     universe = load_universe()
     name_map: dict[str, str] = {}
-    marcap_map: dict[str, float] = {}
+    rank_map: dict[str, float] = {}
     if not universe.empty:
         name_map = dict(zip(universe["ticker"], universe["name"], strict=False))
-        marcap_map = dict(zip(universe["ticker"], universe["marcap"], strict=False))
+        rank_map = dict(zip(universe["ticker"], universe["marcap_rank"], strict=False))
 
     cols = st.columns(len(_EXAMPLE_TICKERS))
     for col, ticker in zip(cols, _EXAMPLE_TICKERS, strict=True):
         with col:
-            TickerHeader(ticker, name_map.get(ticker, ticker), marcap_map.get(ticker))
+            TickerHeader(ticker, name_map.get(ticker, ticker), rank_map.get(ticker))
 
     st.markdown("## 메뉴 둘러보기")
     st.markdown(

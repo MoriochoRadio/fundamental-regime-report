@@ -45,7 +45,7 @@ def test_modal_variant() -> None:
 
 
 def test_page_full_variant() -> None:
-    """variant=page_full → 한계 페이지 전체 (3 한계 항목 + 데모 명시)."""
+    """variant=page_full → 한계 페이지 전체 (4 한계 항목 + 데모 명시)."""
     with patch("app.components.warning.st") as mock_st:
         ModelLimitBadge("page_full")
         text = _collect_text(mock_st)
@@ -53,6 +53,7 @@ def test_page_full_variant() -> None:
         assert "모델 위험 예측 정확도" in text
         assert "시장 상태 분류 초기 9 개월" in text
         assert "분석 범위" in text
+        assert "시장 상태 전환 빈도" in text  # choppiness 한계 (일반어, 날 수치 0)
         mock_st.warning.assert_called_once()  # 데모 명시 line
 
 

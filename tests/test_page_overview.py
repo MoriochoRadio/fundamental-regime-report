@@ -19,6 +19,7 @@ def _universe() -> pd.DataFrame:
             "ticker": ["005930", "000660", "034730"],
             "name": ["삼성전자", "SK하이닉스", "SK"],
             "marcap": [4.0e14, 1.0e14, 2.0e13],
+            "marcap_rank": [1.0, 2.0, 3.0],
         }
     )
 
@@ -53,7 +54,7 @@ def test_overview_example_ticker_codes() -> None:
 
 def test_overview_empty_universe_no_crash() -> None:
     """universe 빈 DataFrame → 예외 없이 렌더 (ticker 코드 자체를 name fallback)."""
-    empty = pd.DataFrame(columns=["ticker", "name", "marcap"])
+    empty = pd.DataFrame(columns=["ticker", "name", "marcap", "marcap_rank"])
     with (
         patch("app.pages.overview.st") as mock_st,
         patch("app.pages.overview.load_universe", return_value=empty),

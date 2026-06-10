@@ -2,14 +2,16 @@
 
 docs/ui_design.md §2 컴포넌트 spec + §3 UI Copy 매핑.
 
-7 함수 + helper + 상수. 모든 출력 일반인 5 초 이해 (§5 (1) 부속 박제 부합).
+6 함수 + helper + 상수. 모든 출력 일반인 5 초 이해 (§5 (1) 부속 박제 부합).
 
 Phase 4 자산 변환:
-- (C) 그대로 재사용: format_won·format_percent·format_proba·classify_risk·
+- (C) 그대로 재사용: format_percent·format_proba·classify_risk·
   _is_missing·RISK_HIGH_THRESHOLD·RISK_MEDIUM_THRESHOLD·RISK_COLORS
 - (B) 정정: REGIME_COLORS → STATE_COLORS, regime_color → state_color
   (검증 1 매핑)
 - (신규): format_ratio·format_ticker_option·format_date
+- (제거): format_won — 시가총액 절대 금액 화면 미노출 결정 (출처 검증
+  한계, 상대 순위 표기로 대체) 으로 dead code 화 → 삭제
 """
 
 from __future__ import annotations
@@ -44,36 +46,6 @@ def _is_missing(value: object) -> bool:
         return bool(pd.isna(value))
     except (TypeError, ValueError):
         return False
-
-
-def format_won(value: float | None) -> str:
-    """원 단위 → 조/억 한국어 표기.
-
-    >>> format_won(1_625_000_000_000_000)
-    '1,625.00 조원'
-    >>> format_won(145_790_000_000_000)
-    '145.79 조원'
-    >>> format_won(50_000_000_000)
-    '500.0 억원'
-    >>> format_won(12_345_678)
-    '12,345,678 원'
-    >>> format_won(None)
-    '—'
-    >>> format_won(float('nan'))
-    '—'
-    >>> format_won(float('inf'))
-    '—'
-    """
-    if _is_missing(value):
-        return "—"
-    val = float(value)  # type: ignore[arg-type]
-    if math.isinf(val) or math.isnan(val):
-        return "—"
-    if abs(val) >= 1e12:
-        return f"{val / 1e12:,.2f} 조원"
-    if abs(val) >= 1e8:
-        return f"{val / 1e8:,.1f} 억원"
-    return f"{val:,.0f} 원"
 
 
 def format_percent(value: float | None, decimal: int = 2) -> str:

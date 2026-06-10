@@ -18,7 +18,6 @@ from app.utils.formatters import (
     format_proba,
     format_ratio,
     format_ticker_option,
-    format_won,
     state_color,
 )
 from app.utils.state_mapper import (
@@ -42,7 +41,6 @@ __all__ = [
     "format_proba",
     "format_ratio",
     "format_ticker_option",
-    "format_won",
     "lookup_state_at",
     "state_color",
 ]

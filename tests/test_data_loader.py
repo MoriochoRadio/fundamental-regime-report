@@ -68,7 +68,7 @@ def test_load_universe_returns_dataframe() -> None:
     load_universe.clear()
     df = load_universe()
     assert isinstance(df, pd.DataFrame)
-    assert set(df.columns) == {"ticker", "name", "marcap"}
+    assert set(df.columns) == {"ticker", "name", "marcap", "marcap_rank"}
 
 
 def test_load_universe_kospi200_dir_missing(tmp_path: Path) -> None:
@@ -77,7 +77,7 @@ def test_load_universe_kospi200_dir_missing(tmp_path: Path) -> None:
     with patch.object(data_loader, "KOSPI200_DIR", tmp_path / "missing"):
         df = load_universe()
         assert df.empty
-        assert set(df.columns) == {"ticker", "name", "marcap"}
+        assert set(df.columns) == {"ticker", "name", "marcap", "marcap_rank"}
 
 
 def test_load_universe_321_tickers_when_data_available() -> None:
