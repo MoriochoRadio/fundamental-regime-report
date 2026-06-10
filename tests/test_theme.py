@@ -80,6 +80,35 @@ def test_state_risk_colors_3_keys() -> None:
     assert theme.STATE_COLORS["위험선호"] == theme.RISK_COLORS["낮음"]
 
 
+def test_config_named_colors_match_theme() -> None:
+    """U3: toml 의 red/green/orange/grayColor == THEME_NAMED_COLORS (badge 정렬)."""
+    cfg = _theme_section()
+    for key, hexval in theme.THEME_NAMED_COLORS.items():
+        assert cfg[key] == hexval, f"{key} 불일치"
+
+
+def test_config_metric_value_font_size() -> None:
+    """U3 헌법 2: 숫자 크게 — metricValueFontSize 2.5rem."""
+    assert _theme_section()["metricValueFontSize"] == "2.5rem"
+
+
+def test_badge_color_map_aligned_with_palette() -> None:
+    """U3: badge 색 이름 ↔ 탈채도 팔레트 hex 정렬 + 라벨 전수 4색 안."""
+    assert (
+        theme.THEME_NAMED_COLORS["redColor"]
+        == theme.STATE_COLORS["위험회피"]
+        == theme.RISK_COLORS["높음"]
+    )
+    assert (
+        theme.THEME_NAMED_COLORS["greenColor"]
+        == theme.STATE_COLORS["위험선호"]
+        == theme.RISK_COLORS["낮음"]
+    )
+    assert theme.THEME_NAMED_COLORS["orangeColor"] == theme.RISK_COLORS["중간"]
+    assert theme.THEME_NAMED_COLORS["grayColor"] == theme.STATE_COLORS["중립"]
+    assert set(theme.BADGE_COLOR_MAP.values()) <= {"red", "green", "orange", "gray"}
+
+
 def test_formatters_reexport_same_objects() -> None:
     """formatters 의 색 상수 = theme 동일 객체 (단일 출처, 사본 금지)."""
     from app.utils import formatters

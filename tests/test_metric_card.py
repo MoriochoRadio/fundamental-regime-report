@@ -27,50 +27,52 @@ def _make_mock_st() -> MagicMock:
 
 
 def test_risk_score_card_low() -> None:
-    """proba 낮음 (0.05) → 🟢 낮음 + 퍼센트 caption + 설명 expander."""
+    """proba 낮음 (0.05) → 카드(border) + 낮음 + green badge + 설명 expander."""
     mock_st = _make_mock_st()
     with patch("app.components.metric_card.st", mock_st):
         RiskScoreCard(0.05)
         metric_args = mock_st.metric.call_args[0]
         assert metric_args[0] == "위험 점수"
-        assert "🟢" in metric_args[1]
-        assert "낮음" in metric_args[1]
+        assert metric_args[1] == "낮음"  # 이모지 제거 (U3 badge 교체)
+        mock_st.badge.assert_called_once_with("낮음", color="green")
+        mock_st.container.assert_called_once_with(border=True)
         mock_st.expander.assert_called_once_with("이 수치는 무엇인가요?")
 
 
 def test_risk_score_card_medium() -> None:
-    """proba 중간 (0.3) → 🟡 중간."""
+    """proba 중간 (0.3) → 중간 + orange badge."""
     mock_st = _make_mock_st()
     with patch("app.components.metric_card.st", mock_st):
         RiskScoreCard(0.3)
         metric_args = mock_st.metric.call_args[0]
-        assert "🟡" in metric_args[1]
-        assert "중간" in metric_args[1]
+        assert metric_args[1] == "중간"
+        mock_st.badge.assert_called_once_with("중간", color="orange")
 
 
 def test_risk_score_card_high() -> None:
-    """proba 높음 (0.7) → 🔴 높음."""
+    """proba 높음 (0.7) → 높음 + red badge."""
     mock_st = _make_mock_st()
     with patch("app.components.metric_card.st", mock_st):
         RiskScoreCard(0.7)
         metric_args = mock_st.metric.call_args[0]
-        assert "🔴" in metric_args[1]
-        assert "높음" in metric_args[1]
+        assert metric_args[1] == "높음"
+        mock_st.badge.assert_called_once_with("높음", color="red")
 
 
 def test_risk_score_card_none() -> None:
-    """proba None → ⚪ — + 분석 평가 제외 caption + 설명 expander 여전히 표시."""
+    """proba None → — (badge 생략) + 분석 평가 제외 caption + 설명 expander."""
     mock_st = _make_mock_st()
     with patch("app.components.metric_card.st", mock_st):
         RiskScoreCard(None)
         metric_args = mock_st.metric.call_args[0]
         assert "—" in metric_args[1]
+        mock_st.badge.assert_not_called()  # 결측은 badge 생략
         # 설명 expander 는 None 에서도 표시 (일반 교육 텍스트)
         mock_st.expander.assert_called_once_with("이 수치는 무엇인가요?")
 
 
 def test_risk_score_card_nan() -> None:
-    """proba NaN → ⚪ — (classify_risk NaN 처리)."""
+    """proba NaN → — (classify_risk NaN 처리, badge 생략)."""
     mock_st = _make_mock_st()
     with patch("app.components.metric_card.st", mock_st):
         RiskScoreCard(float("nan"))
@@ -82,38 +84,39 @@ def test_risk_score_card_nan() -> None:
 
 
 def test_state_card_risk_off() -> None:
-    """위험회피 → 🔴 위험회피 + 설명 expander."""
+    """위험회피 → red badge + 설명 expander."""
     mock_st = _make_mock_st()
     with patch("app.components.metric_card.st", mock_st):
         StateCard("위험회피")
         metric_args = mock_st.metric.call_args[0]
         assert metric_args[0] == "시장 상태"
-        assert "🔴" in metric_args[1]
-        assert "위험회피" in metric_args[1]
+        assert metric_args[1] == "위험회피"
+        mock_st.badge.assert_called_once_with("위험회피", color="red")
         mock_st.expander.assert_called_once_with("이 상태는 무엇인가요?")
 
 
 def test_state_card_neutral() -> None:
-    """중립 → ⚪ 중립."""
+    """중립 → gray badge."""
     mock_st = _make_mock_st()
     with patch("app.components.metric_card.st", mock_st):
         StateCard("중립")
         metric_args = mock_st.metric.call_args[0]
-        assert "중립" in metric_args[1]
+        assert metric_args[1] == "중립"
+        mock_st.badge.assert_called_once_with("중립", color="gray")
 
 
 def test_state_card_risk_on() -> None:
-    """위험선호 → 🟢 위험선호."""
+    """위험선호 → green badge."""
     mock_st = _make_mock_st()
     with patch("app.components.metric_card.st", mock_st):
         StateCard("위험선호")
         metric_args = mock_st.metric.call_args[0]
-        assert "🟢" in metric_args[1]
-        assert "위험선호" in metric_args[1]
+        assert metric_args[1] == "위험선호"
+        mock_st.badge.assert_called_once_with("위험선호", color="green")
 
 
 def test_state_card_none_warmup() -> None:
-    """state None → ⚪ — + 분석 시작 9 개월 caption."""
+    """state None → — (badge 생략) + 분석 시작 9 개월 caption."""
     mock_st = _make_mock_st()
     with patch("app.components.metric_card.st", mock_st):
         StateCard(None)
@@ -124,13 +127,13 @@ def test_state_card_none_warmup() -> None:
 
 
 def test_state_card_unknown_label() -> None:
-    """미지정 라벨 → ⚪ (방어적, _STATE_EMOJI fallback)."""
+    """미지정 라벨 → gray badge fallback (방어적)."""
     mock_st = _make_mock_st()
     with patch("app.components.metric_card.st", mock_st):
         StateCard("미지정")
         metric_args = mock_st.metric.call_args[0]
-        assert "⚪" in metric_args[1]
-        assert "미지정" in metric_args[1]
+        assert metric_args[1] == "미지정"
+        mock_st.badge.assert_called_once_with("미지정", color="gray")
 
 
 # ---- 검증 2 매핑: class_weight 폐기 + label/fs_div 카드 부재 ---------------

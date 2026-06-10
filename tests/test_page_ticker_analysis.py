@@ -224,13 +224,17 @@ def test_auto_jump_to_latest_eval() -> None:
 
 
 def test_eval_info_shown() -> None:
-    """Q3 (A): 평가 있는 종목 → 평가 시점·이유 st.info 노출."""
+    """U3 위계: 평가 있는 종목 → 한 줄 caption + 날짜는 expander 내부."""
     with patch.multiple("app.pages.ticker_analysis", **_TARGETS) as m:
         _setup(m)
         ta.render()
-        info_text = " ".join(str(a) for c in m["st"].info.call_args_list for a in c.args)
-        assert "위험 평가" in info_text
-        assert "2024-12-31" in info_text
+        cap_text = " ".join(str(a) for c in m["st"].caption.call_args_list for a in c.args)
+        assert "위험 평가 가능 시점" in cap_text  # 한 줄 요약
+        exp_labels = [c.args[0] for c in m["st"].expander.call_args_list if c.args]
+        assert "평가 시점 전체 보기" in exp_labels
+        md_text = " ".join(str(a) for c in m["st"].markdown.call_args_list for a in c.args)
+        assert "2024-12-31" in md_text  # 날짜 목록은 expander 의 markdown
+        assert m["st"].info.call_count == 0  # info 적층 해소 (헌법 3)
 
 
 def test_eval_info_empty() -> None:

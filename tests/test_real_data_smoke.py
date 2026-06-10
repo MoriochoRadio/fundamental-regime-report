@@ -102,9 +102,10 @@ def real_data() -> dict:
 
 
 def test_overview_real(real_data: dict) -> None:
-    """개요: 예시 종목 카드 실 렌더 (TickerHeader→st.header) + CTA."""
+    """개요: 예시 카드 실 렌더 (U3: PageHeader→st.title + 카드 컨테이너) + CTA."""
     st = _run_page("app.pages.overview")
-    assert st.header.call_count >= 1
+    assert st.title.call_count >= 1  # PageHeader
+    assert st.container.call_count >= 3  # 예시 카드 3 (border)
     assert st.button.called
 
 

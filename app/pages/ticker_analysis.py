@@ -139,14 +139,16 @@ def render() -> None:
     with col2:
         StateCard(state)
 
-    # 위험 평가 시점 안내 (희소 이유 — 일반어, ML 수치/jargon 비노출)
+    # 위험 평가 시점 안내 — U3 위계 정리: 한 줄 caption + 상세는 expander
+    # (희소 이유 설명문은 expander 로 이동 — 삭제 아님, 일반어 유지)
     if eval_dates:
-        dates_str = ", ".join(d.strftime("%Y-%m-%d") for d in reversed(eval_dates))
-        st.info(
-            f"이 종목은 {len(eval_dates)}개 시점({dates_str})에 위험 평가가 있습니다. "
-            "위험 평가는 실제 재무 충격 사건이 관측된 시점에서만 가능해 시점이 "
-            "제한적입니다 (한국 대형주에선 그런 사건이 드뭅니다)."
-        )
+        st.caption(f"위험 평가 가능 시점 {len(eval_dates)}개 — 최신 시점이 자동 선택됩니다.")
+        with st.expander("평가 시점 전체 보기"):
+            st.markdown("\n".join(f"- {d.strftime('%Y-%m-%d')}" for d in reversed(eval_dates)))
+            st.caption(
+                "위험 평가는 실제 재무 충격 사건이 관측된 시점에서만 가능해 시점이 "
+                "제한적입니다 (한국 대형주에선 그런 사건이 드뭅니다)."
+            )
     else:
         st.info(
             "이 종목은 위험 평가가 가능한 시점이 없습니다. 위험 평가는 실제 재무 충격 "

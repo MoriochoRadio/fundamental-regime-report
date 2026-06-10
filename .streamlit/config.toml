@@ -12,6 +12,14 @@ linkColor = "#29B6D1"
 baseRadius = "0.5rem"
 showWidgetBorder = true
 showSidebarBorder = true
+# U3: 숫자 위계 (카드 metric 값 크게)
+metricValueFontSize = "2.5rem"
+# U3: st.badge / :red[] 류 디렉티브 색을 탈채도 팔레트로 정렬
+# (badge 매핑 = app/utils/theme.py BADGE_COLOR_MAP, test_theme 정합 강제)
+redColor = "#E06C75"
+greenColor = "#4DB6AC"
+orangeColor = "#D4A04C"
+grayColor = "#6B7280"
 
 [theme.sidebar]
 backgroundColor = "#1E222D"
