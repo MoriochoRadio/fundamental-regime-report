@@ -65,3 +65,34 @@ def test_overview_empty_universe_no_crash() -> None:
         render()
         mock_ph.assert_called_once()
         assert mock_th.call_count == 3
+
+
+def test_cta_switch_page(  # U1: CTA 진짜 이동
+) -> None:
+    """CTA 클릭(True) → st.switch_page(ticker_page()) 호출."""
+    sentinel = MagicMock(name="ticker_page_obj")
+    with (
+        patch("app.pages.overview.st") as mock_st,
+        patch("app.pages.overview.load_universe", return_value=_universe()),
+        patch("app.pages.overview.PageHeader"),
+        patch("app.pages.overview.TickerHeader"),
+        patch("app.pages.overview.ticker_page", return_value=sentinel),
+    ):
+        mock_st.columns.return_value = [MagicMock(), MagicMock(), MagicMock()]
+        mock_st.button.return_value = True
+        render()
+        mock_st.switch_page.assert_called_once_with(sentinel)
+
+
+def test_cta_no_click_no_switch() -> None:
+    """CTA 미클릭(False) → switch_page 미호출."""
+    with (
+        patch("app.pages.overview.st") as mock_st,
+        patch("app.pages.overview.load_universe", return_value=_universe()),
+        patch("app.pages.overview.PageHeader"),
+        patch("app.pages.overview.TickerHeader"),
+    ):
+        mock_st.columns.return_value = [MagicMock(), MagicMock(), MagicMock()]
+        mock_st.button.return_value = False
+        render()
+        mock_st.switch_page.assert_not_called()

@@ -10,8 +10,10 @@ from app.components.chart import PriceChartWithStateOverlay, RatioGrid, StateStr
 from app.components.header import PageHeader, TickerHeader
 from app.components.interpretation import StateInterpretBox
 from app.components.metric_card import RiskScoreCard, StateCard
-from app.components.navigation import SidebarNav
 from app.components.warning import EmptyState, ModelLimitBadge
+
+# NOTE: navigation 은 *페이지 레지스트리* (st.Page 정의, U1) — 렌더링
+# 컴포넌트가 아니므로 모듈 경로 직접 import (app.components.navigation).
 
 __all__ = [
     "EmptyState",
@@ -20,7 +22,6 @@ __all__ = [
     "PriceChartWithStateOverlay",
     "RatioGrid",
     "RiskScoreCard",
-    "SidebarNav",
     "StateCard",
     "StateInterpretBox",
     "StateStripeChart",

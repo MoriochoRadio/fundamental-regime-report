@@ -1,10 +1,10 @@
 """개요 페이지 (docs/ui_design.md §1.1).
 
-render() — main.py shell 이 dispatch. 소개 + 예시 종목 카드 + 메뉴 둘러보기
-+ CTA. ModelLimitBadge 는 main.py shell 에서 전역 호출 (개요 중복 호출 안 함).
+render() — st.navigation(v2) 의 default Page. 소개 + 예시 종목 카드 + 메뉴
+둘러보기 + CTA. ModelLimitBadge 는 main.py shell 에서 전역 호출 (중복 없음).
 
-Q4 (A): CTA 는 표시만 — 클릭 → 종목 분석 라우팅은 단위 (j) 종목 분석 페이지와
-함께 구현.
+U1 개편: CTA 클릭 → st.switch_page(ticker_page()) 진짜 이동 (페이지 정체성
+= url_path 해시, 레지스트리 동일 정의 — app/components/navigation.py).
 """
 
 from __future__ import annotations
@@ -12,6 +12,7 @@ from __future__ import annotations
 import streamlit as st
 
 from app.components import PageHeader, TickerHeader
+from app.components.navigation import ticker_page
 from app.data_loader import load_universe
 
 # 예시 종목 (docs §1.1): 삼성전자 · SK하이닉스 · SK
@@ -45,6 +46,6 @@ def render() -> None:
         "- **한계** — 본 시스템의 정직한 한계 안내"
     )
 
-    # CTA (Q4 A: 표시만 — 클릭 라우팅은 단위 j)
+    # CTA — 종목 분석 페이지로 진짜 이동 (U1)
     if st.button("★ 종목 분석 시작"):
-        st.info("왼쪽 사이드바에서 **종목 분석** 메뉴를 선택해 주세요.")
+        st.switch_page(ticker_page())
