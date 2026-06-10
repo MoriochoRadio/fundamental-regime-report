@@ -1,56 +1,68 @@
-"""사이드바 네비게이션 컴포넌트 — SidebarNav.
+"""네비게이션 페이지 레지스트리 — build_nav_pages / ticker_page (U1 개편).
 
-docs/ui_design.md §2.10·§3.1. pure 렌더링 함수 (st.* 직접 호출).
+docs/ui_design.md §2.10·§3.1. SidebarNav 라디오 폐기 → st.navigation(v2)
+단일 한글 메뉴. 본 모듈이 4 페이지 정의(라벨·아이콘·url_path)의 *단일 출처*.
 
-Q1 (A): st.sidebar.radio selector + 선택 key 반환 (st.navigation 미사용 —
-app/pages/ 미생성, 페이지 조립 단계에서 main.py if/elif dispatch 와 연결).
-Q2 (A): stateless — 내부 session_state 없음, current_page 입력만.
-Q3 (A): radio 네이티브 강조 + "● 현재 페이지" caption (라벨 "●" prefix 금지).
+U1 개편 근거 (실측, 2026-06):
+- app/pages/ 폴더 존재로 streamlit v1 자동 등록(영문 메뉴)이 SidebarNav 와
+  이중화 → `st.navigation()` 호출이 v1 자동 등록을 명시적으로 끈다
+  (streamlit commands/navigation.py: `uses_pages_directory = False`)
+  — 폴더명 변경 불필요.
+- 페이지 정체성 = url_path 해시 (streamlit navigation/page.py:
+  `_script_hash = calc_hash(url_path)`) → CTA 의 st.switch_page 는
+  동일 정의 Page 재구성(ticker_page)으로 동작, 순환 import 0.
 
-Phase 4 자산 변환:
-- (B) 정정: render_sidebar_nav → SidebarNav, "시장 국면" → "시장 상태"
-  (검증 1, regime → state), 메뉴 5 → 4
-- (D) 폐기: "D2 baseline 결과" 페이지 (메뉴 5→4) + "★"·"⚠️ (방법론적
-  특징)" 장식 라벨 + 내부 st.session_state 동기화
-- (E) 신규: docs §3.1 4-라벨 + current_page 강조 + "● 현재 페이지"
+★ app.pages import 는 함수 내부 lazy — main → navigation → pages →
+(overview → navigation) 순환을 import 시점에서 차단.
 """
 
 from __future__ import annotations
 
 import streamlit as st
 
-# 4-페이지 메뉴 (라벨, key) — docs §3.1·§2.10 (5→4, D2 baseline 페이지 폐기)
-_PAGES = [
-    ("개요", "overview"),
-    ("종목 분석", "ticker"),
-    ("시장 상태", "state"),
-    ("한계", "limitations"),
-]
 
+def ticker_page() -> st.Page:
+    """종목 분석 Page 단건 — 레지스트리와 동일 정의 (CTA st.switch_page 용).
 
-def SidebarNav(current_page: str = "overview") -> str:
-    """사이드바 4-페이지 selector. 선택된 페이지 key (str) 반환.
-
-    docs/ui_design.md §2.10 spec + §3.1 라벨.
-
-    Args:
-        current_page: 현재 페이지 key (기본 선택 강조). 미지 key 는
-            첫 페이지("overview") 로 fallback.
-
-    Returns:
-        선택된 페이지 key ("overview"/"ticker"/"state"/"limitations").
+    url_path="ticker" 가 페이지 정체성 (해시 기준) — build_nav_pages 의
+    등록본과 동일해야 이동이 성립한다 (tests/test_navigation.py 박제).
     """
-    labels = [label for label, _ in _PAGES]
-    label_to_key = {label: key for label, key in _PAGES}
-    key_to_label = {key: label for label, key in _PAGES}
+    from app.pages import ticker_analysis
 
-    # 미지 current_page → 첫 페이지 fallback (방어 입력)
-    default_label = key_to_label.get(current_page, labels[0])
-
-    selected_label = st.sidebar.radio(
-        "페이지 선택",
-        labels,
-        index=labels.index(default_label),
+    return st.Page(
+        ticker_analysis.render,
+        title="종목 분석",
+        icon=":material/query_stats:",
+        url_path="ticker",
     )
-    st.sidebar.caption("● 현재 페이지")
-    return label_to_key[selected_label]
+
+
+def build_nav_pages() -> list[st.Page]:
+    """4 페이지 st.Page 목록 — 한글 라벨 + material 아이콘, 개요 = default.
+
+    main.py 의 `st.navigation(build_nav_pages())` 입력. 브라우저 탭 제목은
+    각 Page 의 title (set_page_config page_title 미지정, v2 동작).
+    """
+    from app.pages import limitations, market_state, overview
+
+    return [
+        st.Page(
+            overview.render,
+            title="개요",
+            icon=":material/home:",
+            default=True,
+        ),
+        ticker_page(),
+        st.Page(
+            market_state.render,
+            title="시장 상태",
+            icon=":material/waves:",
+            url_path="state",
+        ),
+        st.Page(
+            limitations.render,
+            title="한계",
+            icon=":material/warning:",
+            url_path="limitations",
+        ),
+    ]

@@ -1,4 +1,4 @@
-"""Streamlit 대시보드 entry point — thin shell (페이지 통합 단위 i).
+"""Streamlit 대시보드 entry point — thin shell (U1 네비 개편).
 
 CLAUDE.md §8.6 박제:
 - 정적 읽기 전용 (런타임 LLM 호출 0회·학습·계산·페치 0회)
@@ -11,9 +11,12 @@ CLAUDE.md §8.6 박제:
 에 추가하므로 repo-root 를 명시 주입한다. tests/test_app_no_llm_import.py 의
 cwd=app/ import 검증(절대 import + 명시 sys.path 처리)도 이 주입으로 통과.
 
-페이지 라우팅 (페이지 통합 단계):
-- 단위 (i): main.py shell + SidebarNav dispatch + 개요 페이지
-- 단위 (j)/(k)/(l): 종목 분석 / 시장 상태 / 한계 페이지 등록
+페이지 라우팅 (U1 개편):
+- `st.navigation(build_nav_pages())` 단일 한글 메뉴 — v2 멀티페이지.
+  st.navigation 호출이 app/pages/ 폴더의 v1 자동 등록(영문 메뉴)을 끈다
+  (이중 네비 해소 근거: app/components/navigation.py docstring 실측 기록).
+- v2 에서도 main 스크립트가 매 페이지 공통 실행 → 전역 배지 유지.
+- set_page_config 에 page_title 미지정 → 브라우저 탭 제목 = 현재 Page title.
 """
 
 from __future__ import annotations
@@ -28,22 +31,14 @@ if _REPO_ROOT not in sys.path:
 
 import streamlit as st  # noqa: E402
 
-from app.components import ModelLimitBadge, SidebarNav  # noqa: E402
-from app.pages import limitations, market_state, overview, ticker_analysis  # noqa: E402
-
-# 페이지 key → 렌더러 (SidebarNav 4 페이지 전부 등록 — 페이지 통합 4/4 완성).
-_PAGE_RENDERERS = {
-    "overview": overview.render,
-    "ticker": ticker_analysis.render,
-    "state": market_state.render,
-    "limitations": limitations.render,
-}
+from app.components import ModelLimitBadge  # noqa: E402
+from app.components.navigation import build_nav_pages  # noqa: E402
 
 
 def main() -> None:
-    """대시보드 entry — 전역 한계 배지 + 사이드바 dispatch."""
+    """대시보드 entry — 전역 한계 배지 + st.navigation 단일 메뉴."""
     st.set_page_config(
-        page_title="한국 KOSPI200 기업 분석 데모",
+        page_icon=":material/monitoring:",
         layout="wide",
         initial_sidebar_state="expanded",
     )
@@ -51,13 +46,8 @@ def main() -> None:
     # 전역 한계 배지 (모든 페이지 상단, docs §2.8·§3.4)
     ModelLimitBadge("badge")
 
-    page = SidebarNav("overview")
-    renderer = _PAGE_RENDERERS.get(page)
-    if renderer is not None:
-        renderer()
-    else:
-        # 방어 fallback — SidebarNav 4 페이지 전부 등록되어 정상 흐름엔 미도달
-        st.info("이 페이지는 준비 중입니다. 왼쪽에서 **개요** 메뉴를 먼저 둘러보세요.")
+    pg = st.navigation(build_nav_pages())
+    pg.run()
 
 
 if __name__ == "__main__":
