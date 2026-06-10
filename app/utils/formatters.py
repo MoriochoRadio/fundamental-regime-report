@@ -24,18 +24,13 @@ import pandas as pd
 RISK_HIGH_THRESHOLD = 0.5
 RISK_MEDIUM_THRESHOLD = 0.1
 
-RISK_COLORS: dict[str, str] = {
-    "높음": "#d62728",
-    "중간": "#ff9800",
-    "낮음": "#2ca02c",
-}
-
-# === state 색상 (2 단계 docs/ux_design.md §4.1, regime → state 정정) ===
-STATE_COLORS: dict[str, str] = {
-    "위험회피": "#d62728",
-    "중립": "#7f7f7f",
-    "위험선호": "#2ca02c",
-}
+# 색 상수 단일 출처 = app/utils/theme.py (U2 디자인 시스템).
+# 기존 사용처 호환을 위해 본 모듈에서 re-export 한다.
+from app.utils.theme import (  # noqa: E402
+    FALLBACK_COLOR,
+    RISK_COLORS,
+    STATE_COLORS,
+)
 
 
 def _is_missing(value: object) -> bool:
@@ -111,19 +106,19 @@ def classify_risk(proba: float | None) -> tuple[str, str]:
     임계: < 0.1 낮음 / 0.1 ~ 0.5 중간 / >= 0.5 높음.
 
     >>> classify_risk(0.05)
-    ('낮음', '#2ca02c')
+    ('낮음', '#4DB6AC')
     >>> classify_risk(0.3)
-    ('중간', '#ff9800')
+    ('중간', '#D4A04C')
     >>> classify_risk(0.7)
-    ('높음', '#d62728')
+    ('높음', '#E06C75')
     >>> classify_risk(None)
-    ('—', '#757575')
+    ('—', '#787B86')
     """
     if _is_missing(proba):
-        return ("—", "#757575")
+        return ("—", FALLBACK_COLOR)
     val = float(proba)  # type: ignore[arg-type]
     if math.isinf(val) or math.isnan(val):
-        return ("—", "#757575")
+        return ("—", FALLBACK_COLOR)
     if val >= RISK_HIGH_THRESHOLD:
         return ("높음", RISK_COLORS["높음"])
     if val >= RISK_MEDIUM_THRESHOLD:
@@ -137,18 +132,18 @@ def state_color(state_label: str | None) -> str:
     Phase 4 regime_color 의 정정 (검증 1 매핑).
 
     >>> state_color("위험회피")
-    '#d62728'
+    '#E06C75'
     >>> state_color("중립")
-    '#7f7f7f'
+    '#6B7280'
     >>> state_color("위험선호")
-    '#2ca02c'
+    '#4DB6AC'
     >>> state_color(None)
-    '#757575'
+    '#787B86'
     >>> state_color("미지정")
-    '#757575'
+    '#787B86'
     """
     if state_label is None or state_label not in STATE_COLORS:
-        return "#757575"
+        return FALLBACK_COLOR
     return STATE_COLORS[state_label]
 
 
