@@ -50,18 +50,28 @@ def test_page_header_empty_title_defensive() -> None:
 
 
 def test_ticker_header_full() -> None:
-    """3 인자 정상 → st.header (코드 종목명) + st.caption (시가총액)."""
+    """3 인자 정상 → st.header (코드 종목명) + st.caption (상대 순위)."""
     with patch("app.components.header.st") as mock_st:
-        TickerHeader("005930", "삼성전자", 412_000_000_000_000)
+        TickerHeader("005930", "삼성전자", 1)
         mock_st.header.assert_called_once_with("005930 삼성전자")
-        # caption 호출 + 시가총액 조원 표기 포함
+        # caption 호출 + 순위 표기 포함 (절대 금액 미노출)
         assert mock_st.caption.call_count == 1
         caption_arg = mock_st.caption.call_args[0][0]
-        assert "412.00 조원" in caption_arg
+        assert "1위" in caption_arg
+        assert "조원" not in caption_arg  # 절대 금액 비노출 (정직성)
+        assert "억원" not in caption_arg
 
 
-def test_ticker_header_marcap_none() -> None:
-    """market_cap None → caption 에 "—" 표기."""
+def test_ticker_header_rank_float() -> None:
+    """rank 가 float (pandas rank 산출) → 정수 표기."""
+    with patch("app.components.header.st") as mock_st:
+        TickerHeader("005930", "삼성전자", 12.0)
+        caption_arg = mock_st.caption.call_args[0][0]
+        assert "12위" in caption_arg
+
+
+def test_ticker_header_rank_none() -> None:
+    """marcap_rank None → caption 에 "—" 표기 (상장폐지 종목 등)."""
     with patch("app.components.header.st") as mock_st:
         TickerHeader("005930", "삼성전자", None)
         mock_st.header.assert_called_once_with("005930 삼성전자")
@@ -69,8 +79,8 @@ def test_ticker_header_marcap_none() -> None:
         assert "—" in caption_arg
 
 
-def test_ticker_header_marcap_nan() -> None:
-    """market_cap NaN → caption 에 "—" 표기 (format_won 처리)."""
+def test_ticker_header_rank_nan() -> None:
+    """marcap_rank NaN → caption 에 "—" 표기 (결측 방어)."""
     with patch("app.components.header.st") as mock_st:
         TickerHeader("005930", "삼성전자", float("nan"))
         caption_arg = mock_st.caption.call_args[0][0]
@@ -94,8 +104,8 @@ def test_ticker_header_no_fs_div_param() -> None:
 
     sig = inspect.signature(TickerHeader)
     assert "fs_div" not in sig.parameters
-    # 3 단계 §2.2 spec: ticker_code, ticker_name, market_cap 만
-    assert set(sig.parameters.keys()) == {"ticker_code", "ticker_name", "market_cap"}
+    # 3 단계 §2.2 spec + 절대 금액 미노출 결정: marcap_rank (상대 순위) 만
+    assert set(sig.parameters.keys()) == {"ticker_code", "ticker_name", "marcap_rank"}
 
 
 # ---- 검증 4 매핑: 출력 일반인 친화 (ML 용어 0) ----------------------------
@@ -104,7 +114,7 @@ def test_ticker_header_no_fs_div_param() -> None:
 def test_ticker_header_caption_no_ml_terms() -> None:
     """검증 4: TickerHeader caption 에 ML 용어 원본 노출 0."""
     with patch("app.components.header.st") as mock_st:
-        TickerHeader("005930", "삼성전자", 412_000_000_000_000)
+        TickerHeader("005930", "삼성전자", 1)
         caption_arg = mock_st.caption.call_args[0][0]
         forbidden = ["fs_div", "CFS", "OFS", "PR-AUC", "regime", "HMM"]
         for term in forbidden:

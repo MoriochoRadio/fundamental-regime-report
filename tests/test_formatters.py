@@ -4,7 +4,7 @@
 박제 UI 차원 적용) 매핑.
 
 Phase 4 tests/test_app_utils.py 자산 변환:
-- (C) 그대로 재사용 (format_won·format_percent·format_proba 등)
+- (C) 그대로 재사용 (format_percent·format_proba 등; format_won 은 제거)
 - (B) 정정 (regime_color → state_color)
 """
 
@@ -25,52 +25,11 @@ from app.utils.formatters import (
     format_proba,
     format_ratio,
     format_ticker_option,
-    format_won,
     state_color,
 )
 
-# ---- format_won --------------------------------------------------------
-
-
-def test_format_won_jo() -> None:
-    assert format_won(1_625_000_000_000_000) == "1,625.00 조원"
-
-
-def test_format_won_jo_decimal() -> None:
-    assert format_won(145_790_000_000_000) == "145.79 조원"
-
-
-def test_format_won_eok() -> None:
-    assert format_won(50_000_000_000) == "500.0 억원"
-
-
-def test_format_won_won() -> None:
-    assert format_won(12_345_678) == "12,345,678 원"
-
-
-def test_format_won_negative_jo() -> None:
-    assert format_won(-1_625_000_000_000_000) == "-1,625.00 조원"
-
-
-def test_format_won_zero() -> None:
-    assert format_won(0) == "0 원"
-
-
-def test_format_won_none() -> None:
-    assert format_won(None) == "—"
-
-
-def test_format_won_nan() -> None:
-    assert format_won(float("nan")) == "—"
-
-
-def test_format_won_inf() -> None:
-    assert format_won(float("inf")) == "—"
-
-
-def test_format_won_neg_inf() -> None:
-    assert format_won(float("-inf")) == "—"
-
+# NOTE: format_won 테스트 10개 제거 (2026-06) — 시가총액 절대 금액 화면
+# 미노출 결정 (출처 검증 한계 → 상대 순위 표기) 으로 함수 자체 삭제.
 
 # ---- format_percent ----------------------------------------------------
 
@@ -303,8 +262,8 @@ def test_risk_colors_keys() -> None:
 # ---- pytest doctest collection (Phase 4 자산 — doctest 보존) ----------
 
 
-def test_doctest_format_won() -> None:
-    """format_won doctest 통과 검증."""
+def test_doctest_formatters_module() -> None:
+    """formatters 모듈 전체 doctest 통과 검증 (format_won 제거 후에도 유지)."""
     import doctest
 
     from app.utils import formatters

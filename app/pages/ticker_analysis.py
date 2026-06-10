@@ -88,7 +88,9 @@ def render() -> None:
         return
 
     name_map: dict[str, str] = dict(zip(universe["ticker"], universe["name"], strict=False))
-    marcap_map: dict[str, float] = dict(zip(universe["ticker"], universe["marcap"], strict=False))
+    rank_map: dict[str, float] = dict(
+        zip(universe["ticker"], universe["marcap_rank"], strict=False)
+    )
 
     # === 1. 사이드바 selector (종목 / 분석 시점) ===
     tickers = sorted(name_map.keys())
@@ -124,7 +126,7 @@ def render() -> None:
         )
 
     # === 2. 헤더 ===
-    TickerHeader(ticker, name_map.get(ticker, ticker), marcap_map.get(ticker))
+    TickerHeader(ticker, name_map.get(ticker, ticker), rank_map.get(ticker))
 
     # === 3. 위험 점수 + 시장 상태 카드 ===
     state_series = load_state_series()

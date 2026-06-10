@@ -47,6 +47,7 @@ def _universe() -> pd.DataFrame:
             "ticker": ["005930", "000660"],
             "name": ["삼성전자", "SK하이닉스"],
             "marcap": [4.0e14, 1.0e14],
+            "marcap_rank": [1.0, 2.0],
         }
     )
 
@@ -158,7 +159,7 @@ def test_features_none_emptystate() -> None:
 
 def test_empty_universe_emptystate() -> None:
     """universe 빈 DataFrame → EmptyState."""
-    empty = pd.DataFrame(columns=["ticker", "name", "marcap"])
+    empty = pd.DataFrame(columns=["ticker", "name", "marcap", "marcap_rank"])
     with patch.multiple("app.pages.ticker_analysis", **_TARGETS) as m:
         _setup(m, universe=empty)
         ta.render()
