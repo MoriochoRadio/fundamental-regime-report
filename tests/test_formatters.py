@@ -152,36 +152,36 @@ def test_classify_risk_high() -> None:
 def test_classify_risk_none() -> None:
     label, color = classify_risk(None)
     assert label == "—"
-    assert color == "#757575"
+    assert color == "#787B86"
 
 
 def test_classify_risk_nan() -> None:
     label, color = classify_risk(float("nan"))
     assert label == "—"
-    assert color == "#757575"
+    assert color == "#787B86"
 
 
 # ---- state_color (Phase 4 regime_color 정정) --------------------------
 
 
 def test_state_color_risk_off() -> None:
-    assert state_color("위험회피") == "#d62728"
+    assert state_color("위험회피") == "#E06C75"
 
 
 def test_state_color_neutral() -> None:
-    assert state_color("중립") == "#7f7f7f"
+    assert state_color("중립") == "#6B7280"
 
 
 def test_state_color_risk_on() -> None:
-    assert state_color("위험선호") == "#2ca02c"
+    assert state_color("위험선호") == "#4DB6AC"
 
 
 def test_state_color_none() -> None:
-    assert state_color(None) == "#757575"
+    assert state_color(None) == "#787B86"
 
 
 def test_state_color_unknown_label() -> None:
-    assert state_color("미지정") == "#757575"
+    assert state_color("미지정") == "#787B86"
 
 
 def test_state_colors_constant_3_keys() -> None:

@@ -1,0 +1,18 @@
+# 다크 금융 리포트 테마 — 팔레트 A "차콜 + 시안" (U2)
+# ★ hex 는 app/utils/theme.py PALETTE 와 정합 의무 (tests/test_theme.py CI 강제)
+
+[theme]
+base = "dark"
+backgroundColor = "#131722"
+secondaryBackgroundColor = "#1E222D"
+textColor = "#D1D4DC"
+primaryColor = "#29B6D1"
+borderColor = "#2A2E39"
+linkColor = "#29B6D1"
+baseRadius = "0.5rem"
+showWidgetBorder = true
+showSidebarBorder = true
+
+[theme.sidebar]
+backgroundColor = "#1E222D"
+borderColor = "#2A2E39"
