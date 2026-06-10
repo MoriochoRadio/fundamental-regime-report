@@ -43,6 +43,31 @@ RISK_COLORS: dict[str, str] = {
     "낮음": "#4DB6AC",
 }
 
+# === st.badge 색 매핑 (U3 — 이모지 대체) ====================================
+# badge 의 color 이름은 config.toml 의 redColor/greenColor/orangeColor/
+# grayColor 가 위 탈채도 hex 로 정렬한다 (test_theme 정합 강제).
+# 텍스트 라벨 항상 병기 — 색맹 대응 (NFR-7) 유지.
+BADGE_COLOR_MAP: dict[str, str] = {
+    # 위험 단계
+    "낮음": "green",
+    "중간": "orange",
+    "높음": "red",
+    # 시장 상태
+    "위험선호": "green",
+    "중립": "gray",
+    "위험회피": "red",
+    # 결측 공통
+    "—": "gray",
+}
+
+# config.toml 의 색 이름 → 본 팔레트 hex (test_theme 가 toml 과 정합 검증)
+THEME_NAMED_COLORS: dict[str, str] = {
+    "redColor": "#E06C75",
+    "greenColor": "#4DB6AC",
+    "orangeColor": "#D4A04C",
+    "grayColor": "#6B7280",
+}
+
 # === plotly 공통 기반 (U2 는 상수만 — 차트별 적용은 U4) =====================
 # 상태 배경 띠 opacity (헌법 3: 0.25~0.35)
 STATE_BAND_OPACITY = 0.30

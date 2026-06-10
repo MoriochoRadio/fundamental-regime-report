@@ -24,6 +24,8 @@ from __future__ import annotations
 
 import streamlit as st
 
+from app.utils.theme import BADGE_COLOR_MAP
+
 # 시장 상태 × 위험 수준 9 조합 조건부 해석 (docs §3.5 verbatim)
 # 키: (state 한국어, risk_level 한국어) — Q2 (A): classify_risk 출력 정합
 _TEMPLATES = {
@@ -66,7 +68,19 @@ def StateInterpretBox(
             None/"—" (방어 입력). Q2 (A): classify_risk 출력 정합.
         llm_text: 빌드타임 생성 서술 (정적 입력). None 이면 template 만.
     """
-    body = _TEMPLATES.get((state, risk_level), _FALLBACK)
-    if llm_text:
-        body = f"{body}\n\n{llm_text}"
-    st.info(body)
+    # U3 간판화: st.info 1줄 → 테두리 컨테이너 + 헤더 + 조건 2축 badge + 본문.
+    # 본문 *문구* 는 무변경 (9-template + llm_text 그대로, U5 예약 준수).
+    key = (state, risk_level)
+    with st.container(border=True):
+        st.markdown("##### :material/insights: 종합 해석")
+        if key in _TEMPLATES:
+            state_badge = BADGE_COLOR_MAP.get(state, "gray")
+            risk_badge = BADGE_COLOR_MAP.get(risk_level, "gray")
+            st.markdown(f":{state_badge}-badge[{state}] :{risk_badge}-badge[위험 {risk_level}]")
+            body = _TEMPLATES[key]
+            if llm_text:
+                body = f"{body}\n\n{llm_text}"
+            st.markdown(body)
+        else:
+            # 정보 부족 fallback — caption 격하 (info 적층 해소, 헌법 3)
+            st.caption(_FALLBACK)

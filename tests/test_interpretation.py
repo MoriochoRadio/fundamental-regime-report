@@ -16,10 +16,11 @@ from app.components.interpretation import StateInterpretBox
 
 
 def _info_text(mock_st) -> str:
-    """mock_st.info 호출에 전달된 텍스트 인자 결합."""
+    """markdown + caption 호출 텍스트 결합 (U3: info → 컨테이너+markdown)."""
     texts: list[str] = []
-    for c in mock_st.info.call_args_list:
-        texts.extend(str(a) for a in c.args)
+    for meth in (mock_st.markdown, mock_st.caption):
+        for c in meth.call_args_list:
+            texts.extend(str(a) for a in c.args)
     return "\n".join(texts)
 
 
@@ -30,8 +31,10 @@ def test_template_risk_off_high() -> None:
     """위험회피 × 높음 → 신중한 검토 문구."""
     with patch("app.components.interpretation.st") as mock_st:
         StateInterpretBox("위험회피", "높음")
-        mock_st.info.assert_called_once()
-        assert "위험회피 시장 상태에서 높은 위험 수준은 신중한 검토" in _info_text(mock_st)
+        mock_st.container.assert_called_once_with(border=True)
+        text = _info_text(mock_st)
+        assert "종합 해석" in text  # U3 간판 헤더
+        assert "위험회피 시장 상태에서 높은 위험 수준은 신중한 검토" in text
 
 
 def test_template_neutral_medium() -> None:
@@ -94,16 +97,16 @@ def test_unknown_state_fallback() -> None:
     """미지 state → 예외 없이 fallback (st.info 1회)."""
     with patch("app.components.interpretation.st") as mock_st:
         StateInterpretBox("알수없음", "낮음")
-        mock_st.info.assert_called_once()
-        assert "충분하지 않아" in _info_text(mock_st)
+        text = _info_text(mock_st)
+        assert "충분하지 않아" in text  # caption 격하 (U3 헌법 3)
 
 
 def test_none_inputs_fallback() -> None:
     """state/risk None → fallback, 예외 없이 완료."""
     with patch("app.components.interpretation.st") as mock_st:
         StateInterpretBox(None, None)
-        mock_st.info.assert_called_once()
-        assert "충분하지 않아" in _info_text(mock_st)
+        text = _info_text(mock_st)
+        assert "충분하지 않아" in text  # caption 격하 (U3 헌법 3)
 
 
 # ---- 검증 1: 함수명 정정 ----------------------------------------------------

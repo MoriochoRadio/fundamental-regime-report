@@ -1,15 +1,15 @@
-"""위험 점수 + 시장 상태 카드 (docs/ui_design.md §2.3·§2.4).
+"""위험 점수 + 시장 상태 카드 (docs/ui_design.md §2.3·§2.4, U3 카드화).
 
 3 층 구조 (단계 + 수치 + 접는 설명) — 사용자 결정 (Q1).
 pure 렌더링 함수 (st.* 직접 호출, 반환 None).
 
-Phase 4 자산 변환:
-- (B) 정정: render_risk_score_card → RiskScoreCard, render_regime_card →
-  StateCard (검증 1), regime_color → state_color (단위 a)
-- (D) 폐기: render_label_card + render_fs_div_card (ML 라벨·재무 출처,
-  검증 2·4, 3 단계 §2 spec 부재) + class_weight 파라미터 (ablation ML 차원)
-- (C) 재사용 + (E): classify_risk·format_percent·state_color (단위 a)
-- 색 = 이모지 (Q3, unsafe_allow_html 폐기, 색맹 대응 NFR-7)
+U3 개편 (2026-06):
+- 카드를 카드답게 — st.container(border=True) 로 묶음 (헌법 4)
+- 색 원 이모지(🟢🟡🔴⚪) → st.badge 교체. badge 색은 config.toml
+  redColor/greenColor/orangeColor/grayColor 가 탈채도 팔레트로 정렬
+  (app/utils/theme.py BADGE_COLOR_MAP·test_theme 정합).
+  텍스트 라벨 항상 병기 — 색맹 대응 (NFR-7) 유지.
+- 숫자 위계: config.toml metricValueFontSize = 2.5rem (헌법 2)
 """
 
 from __future__ import annotations
@@ -17,11 +17,7 @@ from __future__ import annotations
 import streamlit as st
 
 from app.utils.formatters import classify_risk, format_percent, state_color
-
-# 위험 단계 → 색 이모지 (Q3: unsafe_allow_html 폐기, 색맹 대응)
-_RISK_EMOJI = {"낮음": "🟢", "중간": "🟡", "높음": "🔴", "—": "⚪"}
-# 시장 상태 → 색 이모지
-_STATE_EMOJI = {"위험회피": "🔴", "중립": "⚪", "위험선호": "🟢"}
+from app.utils.theme import BADGE_COLOR_MAP
 
 RISK_SCORE_EXPLANATION = (
     "이 점수는 해당 기업이 앞으로 1년 안에 '재무 충격'을 겪을 가능성을 "
@@ -42,47 +38,49 @@ STATE_EXPLANATION = (
 
 
 def RiskScoreCard(proba: float | None) -> None:
-    """위험 점수 카드 — 3 층 구조 (단계 + 퍼센트 + 접는 설명).
+    """위험 점수 카드 — 테두리 컨테이너 + 3 층 구조 (단계 badge + 수치 + 설명).
 
-    docs/ui_design.md §2.3 spec + 사용자 결정 (3 층 구조).
+    docs/ui_design.md §2.3 spec + U3 카드화.
 
     Args:
         proba: 0~1 위험 확률 또는 None (분석 평가 제외 시점).
     """
-    if proba is None:
-        # 1 층: 단계 (—)
-        st.metric("위험 점수", f"{_RISK_EMOJI['—']} —")
-        st.caption("분석 평가 제외 시점 (평가 자료 부족)")
-    else:
-        level, _ = classify_risk(proba)
-        emoji = _RISK_EMOJI.get(level, "⚪")
-        # 1 층: 단계 (낮음/중간/높음 + 이모지)
-        st.metric("위험 점수", f"{emoji} {level}")
-        # 2 층: 수치 (퍼센트 — 날것 확률 노출 금지, format_percent 출력)
-        st.caption(f"추정 위험 확률: {format_percent(proba, decimal=1)}")
-    # 3 층: 접는 설명 (None 에서도 일반 교육 텍스트 표시)
-    with st.expander("이 수치는 무엇인가요?"):
-        st.write(RISK_SCORE_EXPLANATION)
+    with st.container(border=True):
+        if proba is None:
+            # 1 층: 단계 (—) — 결측은 badge 생략 (caption 이 설명)
+            st.metric("위험 점수", "—")
+            st.caption("분석 평가 제외 시점 (평가 자료 부족)")
+        else:
+            level, _ = classify_risk(proba)
+            # 1 층: 단계 + 색 badge (이모지 대체, 라벨 병기 — 색맹 대응)
+            st.metric("위험 점수", level)
+            st.badge(level, color=BADGE_COLOR_MAP.get(level, "gray"))
+            # 2 층: 수치 (퍼센트 — 날것 확률 노출 금지, format_percent 출력)
+            st.caption(f"추정 위험 확률: {format_percent(proba, decimal=1)}")
+        # 3 층: 접는 설명 (None 에서도 일반 교육 텍스트 표시)
+        with st.expander("이 수치는 무엇인가요?"):
+            st.write(RISK_SCORE_EXPLANATION)
 
 
 def StateCard(state: str | None) -> None:
-    """시장 상태 카드 — 3 층 구조 (단계 + 라벨 + 접는 설명).
+    """시장 상태 카드 — 테두리 컨테이너 + 3 층 구조 (라벨 badge + 설명).
 
-    docs/ui_design.md §2.4 spec (← Phase 4 RegimeCard 정정).
+    docs/ui_design.md §2.4 spec (← Phase 4 RegimeCard 정정) + U3 카드화.
 
     Args:
         state: 시장 상태 한국어 라벨 ("위험회피"/"중립"/"위험선호") 또는
             None (분석 시작 9 개월간 정확도 낮음).
     """
-    if state is None:
-        st.metric("시장 상태", "⚪ —")
-        st.caption("분석 시작 9 개월간은 시장 상태 분류 정확도가 낮음")
-    else:
-        emoji = _STATE_EMOJI.get(state, "⚪")
-        # 1 층 + 2 층: 단계 (= 라벨, state 는 분류 라벨이라 별도 수치 없음)
-        st.metric("시장 상태", f"{emoji} {state}")
-        # state_color 는 향후 차트 차원 사용 (검증 1: regime_color → state_color)
-        _ = state_color(state)
-    # 3 층: 접는 설명
-    with st.expander("이 상태는 무엇인가요?"):
-        st.write(STATE_EXPLANATION)
+    with st.container(border=True):
+        if state is None:
+            st.metric("시장 상태", "—")
+            st.caption("분석 시작 9 개월간은 시장 상태 분류 정확도가 낮음")
+        else:
+            # 1 층 + 2 층: 라벨 + 색 badge (state 는 분류 라벨이라 별도 수치 없음)
+            st.metric("시장 상태", state)
+            st.badge(state, color=BADGE_COLOR_MAP.get(state, "gray"))
+            # state_color 는 향후 차트 차원 사용 (검증 1: regime_color → state_color)
+            _ = state_color(state)
+        # 3 층: 접는 설명
+        with st.expander("이 상태는 무엇인가요?"):
+            st.write(STATE_EXPLANATION)
