@@ -83,6 +83,9 @@ def render() -> None:
             else:
                 st.caption("위험 평가 시점 없음")
             if st.button("분석 보기", key=f"go_{ticker}"):
+                # U4 QA 후속: 종목 분석 selectbox(key="ticker_select") 에
+                # 선택 종목 전달 — 위젯 렌더 전 session_state 설정 패턴
+                st.session_state["ticker_select"] = ticker
                 st.switch_page(ticker_page())
 
     st.markdown("## 메뉴 둘러보기")

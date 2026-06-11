@@ -131,6 +131,8 @@ def test_card_button_switch_page() -> None:
     with p1, p2, p3, p4, p5, patch("app.pages.overview.ticker_page", return_value=sentinel):
         render()
     st.switch_page.assert_called_once_with(sentinel)
+    # U4 QA: 첫 카드(005930) 클릭 → 종목 분석 selectbox 에 종목 전달
+    st.session_state.__setitem__.assert_called_once_with("ticker_select", "005930")
 
 
 def test_cta_no_click_no_switch() -> None:

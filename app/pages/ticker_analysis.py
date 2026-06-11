@@ -94,9 +94,11 @@ def render() -> None:
 
     # === 1. 사이드바 selector (종목 / 분석 시점) ===
     tickers = sorted(name_map.keys())
+    # key="ticker_select" — 개요 카드 버튼이 session_state 로 종목 전달 (U4 QA)
     ticker = st.sidebar.selectbox(
         "종목 선택",
         tickers,
+        key="ticker_select",
         format_func=lambda t: format_ticker_option(t, name_map.get(t, "")),
     )
 

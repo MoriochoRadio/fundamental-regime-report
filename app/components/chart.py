@@ -29,9 +29,22 @@ from app.utils.state_mapper import (
     find_close_column,
     find_date_column_or_index,
 )
+from app.utils.theme import PALETTE, PLOTLY_LAYOUT, STATE_BAND_OPACITY
 
-# 빈 상태 범례 이모지 (Q4: 단위 d metric_card 일관, 색맹 대응 NFR-7)
-_STATE_LEGEND = "🔴 위험회피 · ⚪ 중립 · 🟢 위험선호"
+# 상태 범례 — U4: 이모지 → 인라인 badge (U3 metric_card 와 일관, 라벨 병기
+# = 색맹 대응 NFR-7 유지. badge 색 = config.toml 탈채도 팔레트 = 실제 띠 색)
+_STATE_LEGEND_MD = ":red-badge[위험회피] :gray-badge[중립] :green-badge[위험선호]"
+
+
+def _apply_dark(fig: go.Figure) -> None:
+    """U4 공통 다크 레이아웃 — PLOTLY_LAYOUT(U2 기반) + 전 subplot 축 그리드.
+
+    update_layout 의 xaxis/yaxis 키는 subplot 에선 첫 axes 만 적용되므로
+    update_x/yaxes 로 전 subplot 의 그리드를 희미하게 통일한다 (헌법 3).
+    """
+    fig.update_layout(**PLOTLY_LAYOUT)
+    fig.update_xaxes(gridcolor=PALETTE["border"], zerolinecolor=PALETTE["border"])
+    fig.update_yaxes(gridcolor=PALETTE["border"], zerolinecolor=PALETTE["border"])
 
 
 def PriceChartWithStateOverlay(
@@ -103,7 +116,7 @@ def PriceChartWithStateOverlay(
                 "y0": 0,
                 "y1": 1,
                 "fillcolor": state_color(block["label"]),
-                "opacity": 0.12,
+                "opacity": STATE_BAND_OPACITY,
                 "line": {"width": 0},
                 "layer": "below",
             }
@@ -119,14 +132,14 @@ def PriceChartWithStateOverlay(
             y=ohlcv[close_col],
             mode="lines",
             name="종가",
-            line={"color": "#1f77b4", "width": 1.5},
+            line={"color": PALETTE["accent"], "width": 1.5},
             hovertemplate="%{x|%Y-%m-%d}<br>종가: %{y:,.0f} 원<extra></extra>",
         )
     )
 
     # 분석 시점 vline + annotation — ★ to_pydatetime (검증 5.1)
     as_of_py = pd.Timestamp(as_of).to_pydatetime()
-    fig.add_vline(x=as_of_py, line_dash="dash", line_color="#444")
+    fig.add_vline(x=as_of_py, line_dash="dash", line_color=PALETTE["text_muted"])
     fig.add_annotation(
         x=as_of_py,
         y=1,
@@ -134,7 +147,7 @@ def PriceChartWithStateOverlay(
         text=f"분석 시점 {pd.Timestamp(as_of).strftime('%Y-%m-%d')}",
         showarrow=False,
         yanchor="bottom",
-        font={"size": 11, "color": "#444"},
+        font={"size": 11, "color": PALETTE["text_muted"]},
     )
 
     fig.update_layout(
@@ -145,8 +158,9 @@ def PriceChartWithStateOverlay(
         height=420,
         margin={"t": 50, "b": 40, "l": 40, "r": 20},
     )
+    _apply_dark(fig)
     st.plotly_chart(fig, use_container_width=True)
-    st.caption(f"배경 색상: {_STATE_LEGEND}. 점선: 선택한 분석 시점.")
+    st.markdown(f"배경 색상: {_STATE_LEGEND_MD} — 점선: 선택한 분석 시점.")
     if delisting_date is not None:
         st.caption(f"⚠️ 상장폐지로 거래 종료 ({pd.Timestamp(delisting_date).strftime('%Y-%m-%d')}).")
 
@@ -197,13 +211,15 @@ def RatioGrid(
         fig.add_trace(
             go.Scatter(
                 x=df["as_of"],
-                y=df[col],
+                # U4 단위 정합: 비율 → % 표시 (해석문 "부채비율 131.45%" 와
+                # 같은 화면 두 표기 해소). *표시 변환만* — 데이터/피처 무변경.
+                y=df[col] * 100,
                 mode="lines+markers",
                 name=col,
                 showlegend=False,
-                marker={"size": 5},
-                line={"width": 1.5},
-                hovertemplate="%{x|%Y-%m-%d}<br>%{y:.2f}<extra></extra>",
+                marker={"size": 5, "color": PALETTE["accent"]},
+                line={"width": 1.5, "color": PALETTE["accent"]},
+                hovertemplate="%{x|%Y-%m-%d}<br>%{y:.2f}%<extra></extra>",
             ),
             row=row_idx,
             col=col_idx,
@@ -212,7 +228,7 @@ def RatioGrid(
         fig.add_vline(
             x=as_of_py,
             line_dash="dash",
-            line_color="#444",
+            line_color=PALETTE["text_muted"],
             row=row_idx,
             col=col_idx,
         )
@@ -222,6 +238,8 @@ def RatioGrid(
         title=f"{ticker} 재무 비율 추이",
         margin={"t": 80, "b": 40, "l": 40, "r": 20},
     )
+    _apply_dark(fig)
+    fig.update_yaxes(ticksuffix="%")
     st.plotly_chart(fig, use_container_width=True)
     st.caption("점선: 선택한 분석 시점. 값이 없는 구간은 빈칸으로 표시됩니다.")
 
@@ -267,5 +285,6 @@ def StateStripeChart(state_series: pd.DataFrame | None) -> None:
         legend_title="시장 상태",
         margin={"t": 50, "b": 40, "l": 40, "r": 20},
     )
+    _apply_dark(fig)
     st.plotly_chart(fig, use_container_width=True)
-    st.caption(f"색상: {_STATE_LEGEND}.")
+    st.markdown(f"색상: {_STATE_LEGEND_MD}")

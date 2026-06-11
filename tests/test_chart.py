@@ -272,3 +272,89 @@ def test_mock_sanity() -> None:
     m = MagicMock()
     m.plotly_chart("x")
     m.plotly_chart.assert_called_once()
+
+
+# ---- U4: 다크 통일 + 가시성 + % 정합 (fig 캡처 단언) ------------------------
+
+
+def _captured_fig(mock_st):
+    return mock_st.plotly_chart.call_args[0][0]
+
+
+def test_price_chart_dark_palette_band_opacity_accent() -> None:
+    """U4: paper/plot 배경 = 팔레트 + 띠 opacity 0.30 + 주가 라인 = accent."""
+    from app.utils.theme import PALETTE, STATE_BAND_OPACITY
+
+    with (
+        patch("app.components.chart.st") as mock_st,
+        patch("app.components.chart.EmptyState"),
+    ):
+        PriceChartWithStateOverlay(
+            "005930", "삼성전자", _make_ohlcv(), _make_state_series(), pd.Timestamp("2020-01-05")
+        )
+        fig = _captured_fig(mock_st)
+        assert fig.layout.paper_bgcolor == PALETTE["bg"]
+        assert fig.layout.plot_bgcolor == PALETTE["surface"]
+        # 상태 띠 = rect shapes 만 (add_vline 도 line shape 로 들어오므로 분리)
+        rects = [s for s in fig.layout.shapes if s.type == "rect"]
+        assert rects  # 상태 띠 존재
+        for s in rects:
+            assert abs(s.opacity - STATE_BAND_OPACITY) < 1e-9
+        assert fig.data[0].line.color == PALETTE["accent"]
+
+
+def test_price_chart_legend_badge_markdown() -> None:
+    """U4: 범례 이모지 → 인라인 badge 마크다운 (라벨 병기 = 색맹 대응)."""
+    with (
+        patch("app.components.chart.st") as mock_st,
+        patch("app.components.chart.EmptyState"),
+    ):
+        PriceChartWithStateOverlay(
+            "005930", "삼성전자", _make_ohlcv(), _make_state_series(), pd.Timestamp("2020-01-05")
+        )
+        md = " ".join(str(a) for c in mock_st.markdown.call_args_list for a in c.args)
+        assert ":red-badge[위험회피]" in md
+        assert ":gray-badge[중립]" in md
+        assert ":green-badge[위험선호]" in md
+        assert "🔴" not in md and "⚪" not in md and "🟢" not in md
+
+
+def test_ratio_grid_percent_display_and_accent() -> None:
+    """U4 단위 정합: y = 원본 ×100 + hover '%' + 축 ticksuffix '%' + accent 단색.
+
+    표시 변환만 — 입력 DataFrame(데이터)은 무변경.
+    """
+    from app.utils.theme import PALETTE
+
+    feats = _make_features()
+    original_debt = feats["debt_ratio"].tolist()
+    with (
+        patch("app.components.chart.st") as mock_st,
+        patch("app.components.chart.EmptyState"),
+    ):
+        RatioGrid("005930", feats, pd.Timestamp("2020-06-30"))
+        fig = _captured_fig(mock_st)
+        # 첫 trace = debt_ratio — y 값이 ×100 표시 변환
+        assert list(fig.data[0].y) == [v * 100 for v in original_debt]
+        for tr in fig.data:
+            assert "%{y:.2f}%" in tr.hovertemplate
+            assert tr.line.color == PALETTE["accent"]
+        assert fig.layout.yaxis.ticksuffix == "%"
+        assert fig.layout.paper_bgcolor == PALETTE["bg"]
+    # 입력 데이터 무변경 (표시 변환만)
+    assert feats["debt_ratio"].tolist() == original_debt
+
+
+def test_stripe_chart_dark_and_badge_legend() -> None:
+    """U4: StateStripeChart 다크 적용 + badge 범례 (막대 opacity 1.0 유지)."""
+    from app.utils.theme import PALETTE
+
+    with (
+        patch("app.components.chart.st") as mock_st,
+        patch("app.components.chart.EmptyState"),
+    ):
+        StateStripeChart(_make_state_series())
+        fig = _captured_fig(mock_st)
+        assert fig.layout.paper_bgcolor == PALETTE["bg"]
+        md = " ".join(str(a) for c in mock_st.markdown.call_args_list for a in c.args)
+        assert ":red-badge[위험회피]" in md
