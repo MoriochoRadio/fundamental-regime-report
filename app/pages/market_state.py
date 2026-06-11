@@ -21,15 +21,14 @@ def render() -> None:
     """시장 상태 페이지 렌더 — stripe 차트 + 위기 안내 + 9개월 경고."""
     PageHeader(
         "시장 상태 시계열",
-        "본 시스템은 한국 KOSPI200 시장의 흐름을 위험회피·중립·위험선호 "
-        "3 상태로 분류합니다. 위기 시점이 색상으로 강조됩니다.",
+        "한국 KOSPI200 시장의 흐름을 위험회피·중립·위험선호 3가지 상태로 나눠 보여줍니다.",
     )
 
     state_series = load_state_series()
     if state_series is None or state_series.empty:
         EmptyState(
             message="시장 상태 시계열 데이터가 아직 준비되지 않았습니다.",
-            suggestion="데이터 파이프라인 생성 후 다시 시도해 주세요.",
+            suggestion="분석 데이터가 준비된 뒤 다시 열어 주세요.",
         )
         return
 
@@ -39,7 +38,7 @@ def render() -> None:
     # 위기 시점 안내 (docs §1.3 verbatim, Q2 (A): 일반 info — StateInterpretBox 미사용)
     st.info(
         "위험회피 시장 상태는 안전 자산 선호가 늘어나는 시점입니다. "
-        "예: 2020-02~04 코로나 충격 시점, 2022-09~10 금리 충격 시점."
+        r"예: 2020년 2\~4월 코로나 충격, 2022년 9\~10월 금리 충격."
     )
 
     # 분석 시작 9개월 정확도 한계 (docs §1.3 verbatim, Q3 (A): 정직 경고)

@@ -83,7 +83,7 @@ def render() -> None:
     if universe.empty or feats_all is None or feats_all.empty:
         EmptyState(
             message="종목 분석에 필요한 산출물이 아직 준비되지 않았습니다.",
-            suggestion="데이터 파이프라인 생성 후 다시 시도해 주세요.",
+            suggestion="분석 데이터가 준비된 뒤 다시 열어 주세요.",
         )
         return
 

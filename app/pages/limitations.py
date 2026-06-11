@@ -19,7 +19,9 @@ import streamlit as st
 from app.components import ModelLimitBadge
 from app.data_loader import load_model_card
 
-# 모델 카드 (name, 일반인용 라벨, 경로 표시) — docs §1.4 "기술 자료 (별도 노출)"
+# 모델 카드 (name, 일반인용 라벨, 저장소 경로) — docs §1.4 "기술 자료 (별도 노출)"
+# U5: 경로 텍스트 → GitHub 클릭 링크
+_REPO_URL = "https://github.com/MoriochoRadio/fundamental-regime-report"
 _MODEL_CARDS = [
     ("d2_baseline", "위험 예측 모델 상세", "reports/d2_baseline_model_card.md"),
     ("regime", "시장 상태 분류 모델 상세", "reports/regime_model_card.md"),
@@ -36,5 +38,7 @@ def render() -> None:
     if available:
         st.markdown("## 기술 상세 자료")
         for label, path in available:
-            st.markdown(f"- {label}: `{path}`")
-        st.caption("기술 차원 문서입니다 — 저장소에서 확인하세요 (일반인 직접 노출 본문 아님).")
+            st.markdown(f"- [{label}]({_REPO_URL}/blob/main/{path})")
+        st.caption(
+            "기술 차원 문서입니다 — 클릭하면 저장소에서 열립니다 (일반인 직접 노출 본문 아님)."
+        )
