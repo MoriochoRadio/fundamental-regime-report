@@ -218,6 +218,8 @@ def test_auto_jump_to_latest_eval() -> None:
         _setup(m, preds=preds, grid=grid, as_of=pd.Timestamp("2024-03-29"))
         ta.render()
         # 2번째 selectbox = 분석 시점. options=[12-31, 03-29] → 평가 03-29 = index 1
+        ticker_call = m["st"].sidebar.selectbox.call_args_list[0]
+        assert ticker_call.kwargs["key"] == "ticker_select"  # U4: 개요 카드 연동 통로
         asof_call = m["st"].sidebar.selectbox.call_args_list[1]
         assert asof_call.kwargs["index"] == 1
         assert asof_call.kwargs["key"] == "asof_005930"
