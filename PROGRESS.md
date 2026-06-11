@@ -3,28 +3,28 @@
 이 문서는 본 프로젝트의 **변하는 상태**를 추적한다.
 변하지 않는 사실·규칙·방향은 `CLAUDE.md` 에 있다.
 
-**마지막 갱신**: 2026-06-03 (**LLM 해석 파이프라인 단계 1~6** end-to-end 작동·검증 반영 — LLMProvider/Gemini → 프롬프트 v2 → 배치 스크립트(resume) → flash-lite 24개 생성 → StateInterpretBox 실 LLM 텍스트 연결 검증 + keeper 테스트 2. ★ 핵심 제약: 무료 Gemini 2.5 flash·flash-lite 둘 다 일일 20 req/day/모델 → 24/260 생성(저시총 위주), 헤드라인 top-40 우선 충원 계획. 직전 2026-06-02: 차트 성능 배치 shapes + UX 보완. 다음: 시총 상위 커버리지 + 누적분 main 병합. ※ 2026-05-21 "단계 5 종료"는 Phase 4 reset 으로 재진입 — §5.9 참조)
+**마지막 갱신**: 2026-06-11 (**마무리 체크리스트 완주** — LLM top-40 완비(PR #8·#9) → 프로젝트 감사(읽기 전용) → 정직성 수정 2건(PR #10) → **UI 대개편 U1~U5**(PR #11~#15: st.navigation 단일 한글 메뉴·다크 디자인 시스템·카드/badge/간판 해석·차트 다크+% 정합·문구 정정) → README 보강(PR #16, 스크린샷 3장) → methodology.md(PR #17). 감사 발견 항목 전부 이행. 테스트 415 + 통합 6 그린. 잔여는 *선택 항목만* (LLM ~200 충원·모바일 차트 제목·§4-pre). ※ 2026-05-21 "단계 5 종료"는 Phase 4 reset 으로 재진입 — §5.9 참조)
 
 ---
 
 ## ★ 다음 세션 시작 지점 (Resume Marker)
 
-> **단계 5 대시보드 + 성능 수정·UX 보완 main 병합 (2026-06-02)**:
+> **마무리 체크리스트 완주 — 잔여는 선택 항목만 (2026-06-11)**:
 >
 > ### 1. 현재 위치
-> Phase 4 reset 후 단계 5 app/ UI **재구축 → main 병합 완료** (PR #3,
-> `dac49b3`) 위에, QA 진단 기반 **성능 수정(차트 배치 shapes)** + **UX 보완**
-> (위험 평가 시점 자동 점프·희소 이유 info·상폐 차트 안내) 추가 반영. 컴포넌트
-> 8종 + 페이지 4/4 + QA 1·2 + §7.7 정리 + perf + UX 가 origin/main 에 반영.
-> 대시보드 실 산출물 정상 작동(CASE A full, 버그 0, ML 원본 수치 화면 비노출).
+> LLM 해석 파이프라인(top-40 완비, 60/260) + 프로젝트 감사 후속 전 항목
+> 이행 + **UI 대개편 U1~U5**(PR #11~#15) + README 보강(스크린샷 3장,
+> PR #16) + methodology.md(PR #17) 가 전부 origin/main 에 반영.
+> 테스트 비-integration **415** + integration **6** 그린.
+> 감사(2026-06-11) 발견 항목(README·methodology·choppiness·시총 노출)
+> 잔여 0.
 >
-> ### 2. 다음 세션 후보 (모두 선택 — 결정 게이트)
-> - **LLM 해석 산출물 채우기** — `data/interim/llm_interpretations/` (현 stub →
->   StateInterpretBox 가 template-only). 빌드타임 배치 1회 (CLAUDE.md §3.4).
-> - **국면(시장 상태) 안정화** — HMM 시드 불안정성(§5.6.2) 등 후속 검토.
-> - **(B) 상태 배경 클라이언트 렌더** — 741 shapes 브라우저 부담(perf (A) 와 별개).
-> - **자잘한 폴리시 / 브랜치·워크트리 정리** — 선택.
-> - 추가 기능·문서 보강 시 신규 PR.
+> ### 2. 다음 세션 후보 (전부 *선택* — 결정 게이트)
+> - **잔여 LLM 해석 ~200 종목 점진 충원** — 일 20~40 (무료 quota),
+>   resume/idempotent 동일 명령 재실행.
+> - **모바일 비율 차트 제목 겹침** — 375px 실측 발견 (README 는
+>   데스크톱 권장으로 완화 반영 완료), 미관 폴리시 후보.
+> - **KRX 상장일 이전 캐시 구간** — §4-pre 트리거(상장일 메타 작업 시) 유지.
 >
 > ### 3. 진입 전 점검 (§7.6 게이트 + 사례 6호)
 > - 매 Bash `cd <worktree> &&` 단일 compound + `git fetch origin` + `pwd`
@@ -151,6 +151,16 @@
 - [x] **LLM 단계 5a — 배치 스크립트 (2026-06-03, `6138e54`)** — `scripts/generate_interpretations.py`: `--scope latest|all --limit --throttle --model`, 종목별 최신 평가 시점 대상, **idempotent**(기존 YAML skip → resume 가능), 항목 실패 시 log+continue, `load_dotenv()` + lazy provider. `data/interim/llm_interpretations/{ticker}_{YYYY-MM-DD}.yaml` 출력. `.gitignore` `data/interim/` → `data/interim/*` + `!.../llm_interpretations/`(빌드타임 YAML 산출물만 추적).
 - [x] **LLM 단계 5b — flash-lite 24개 생성 (2026-06-03, `e8d6f4a`)** — 종목별 최신 평가 시점 해석 배치 생성. ★ **무료 Gemini 2.5 flash·flash-lite 둘 다 일일 20 req/day/모델** 한도 실측(flash 20 소진 → flash-lite 전환했으나 lite 도 동일 20/day) → 24/260 부분 생성(저시총 위주, resume 가능). 전부 `model=gemini-2.5-flash-lite`·`prompt_version=v2`·§7.7-clean. 환각 0·국면 조건부 서술 확인.
 - [x] **LLM 단계 6 — StateInterpretBox 실 LLM 텍스트 연결 검증 (2026-06-03, `e282586`)** — 생성 보유 종목 → 대시보드가 **실 LLM 텍스트 렌더**(template 아님), 미보유 → template fallback 통합 테스트 2 박제(`tests/test_real_data_smoke.py`, @integration, 동적 선택·graceful skip). 배선 실측: 24/24 YAML `as_of == page latest eval` 일치(auto-jump 정합). 연결 코드 기존(`load_llm_interpretation`→ticker_analysis→StateInterpretBox) 무변경. 비-integration **403** + integration **6**.
+- [x] **LLM top-40 완비 + main 병합 (2026-06-07~08, PR #8 `cf998f1` · PR #9 `daf444c`)** — `--order marcap` 옵션(시총 내림차순·결측 후순위) + 시총 상위 19종목 생성(`7668611`) → 익일 잔여 17종목 충원(`1f4d596`, 429 실패 0) = **top-40 커버리지 40/40** (동일 명령 재실행 시 생성 0·skip 40 idempotent 실측). 총 60/260, 전부 flash-lite·v2 일관.
+- [x] **프로젝트 감사 — 읽기 전용 (2026-06-11)** — 문서상 약속 vs 실제 이행 전수 대조. **이행 확인**: 격리 검증 테스트(약속 2종 → 3종+런타임 contract 4 로 초과 이행, 7 passed active)·줄바꿈 정책(.gitattributes 합의 범위 1줄·PR #7 revert 정합). **미이행 발견**: methodology.md 부재·choppiness 한계 미기록·README 보완 여지·marcap 절대값 노출 — → 이하 작업들로 **전 항목 이행 완료**. 수정 0 (보고 전용).
+- [x] **정직성 수정 2건 (2026-06-11, PR #10 `5e9fa80`)** — ① 시가총액 절대값(조원, FDR 스냅샷 부풀림) 화면 제거 → **동일 스냅샷 내 상대 순위** 표기(`marcap_rank`·format_won dead code 삭제·"조원 비노출" 회귀 단언) ② **choppiness 한계 박제** — regime 모델 카드 §4.5(741 구간/평균 3.1 거래일·§3.2 자기지속성과의 tension·평활화는 과거 방향 한정) + 한계 페이지 4번째 항목(일반어, 날 수치 0). 테스트 403→394(−10 format_won +1).
+- [x] **UI 대개편 U1/5 — 네비 구조 (2026-06-10, PR #11 `b189b04`, `cf2802c`)** — app/pages/ 폴더의 streamlit v1 자동 등록(영문 메뉴)과 SidebarNav 라디오 **이중 네비 해소**: `st.navigation()`(v2) 가 v1 자동 등록을 끔(소스 실측 `uses_pages_directory=False`). 레지스트리 build_nav_pages/ticker_page(한글 라벨+material 아이콘·lazy import 순환 차단)·페이지별 탭 제목·CTA `st.switch_page` 진짜 이동. 실 ctx 검증(AppTest)·394→397.
+- [x] **U2/5 — 다크 디자인 시스템 (2026-06-10, PR #12 `e753bea`, `ee8fd80`)** — 팔레트 A "차콜+시안"(.streamlit/config.toml [theme]+[theme.sidebar]) + `app/utils/theme.py` 색 단일 출처(PALETTE·STATE/RISK_COLORS 탈채도·STATE_BAND_OPACITY 0.30·PLOTLY_LAYOUT 기반). ★ **toml↔상수 정합 CI 강제**(tests/test_theme.py — 정적 파일 이중화의 단일 출처 계약). CSS 주입 0. 397→406.
+- [x] **U3/5 — 컴포넌트·위계 (2026-06-10, PR #13 `923f0b7`, `32f0065`)** — 위험/상태 카드 컨테이너(border)+큰 숫자(2.5rem)+**st.badge**(이모지 폐기, 라벨 병기 색맹 대응·config 4색 팔레트 정렬) · 종합 해석 **간판화**(컨테이너+헤더+조건 2축 badge, 본문 무변경) · info 적층 해소(한 줄 caption+expander) · 개요 예시 카드(badge 미리보기+분석 보기). 실 화면 before/after. 406→411. ※ gh REST 간헐 401 → CI 는 run list 교차 확인 + **GraphQL mutation 병합** 우회 확립.
+- [x] **U4/5 — 차트 다크 통일 (2026-06-11, PR #14 `e582e2b`, `a8ec2e3`)** — 3 차트 공통 `_apply_dark`(PLOTLY_LAYOUT+전 subplot 축) · 상태 띠 0.12→**0.30** · 하드코딩 hex 잔존 0 · **비율 4종 % 표시 정합**(해석문과 동일 표기, 표시 변환만) · 범례 이모지→인라인 badge · stripe 솔리드 유지(역할 구분) · **개요 카드→종목 자동 선택 연동**(session_state, QA 후속, 실 화면 검증). fig 캡처 단언 4 신규, 411→415.
+- [x] **U5/5 — 문구 마무리 + 개편 종결 (2026-06-11, PR #15 `dc1b395`, `d9e49a0`+`b4df79b`)** — 연도 범위 물결표 취소선 수정(`\~` 이스케이프+raw string) · "정직성 시연용" 중복 1회화 · **"200대 기업" 정정**(분기 구성 변동+상폐 포함 321곳 — 개요·한계·README) · 모델 카드 GitHub 클릭 링크 · 윤문 3건 · **handoff 문서 git rm**(외부 표면 정리, 별도 commit). 415 유지.
+- [x] **README 보강 (2026-06-11, PR #16 `5cbd452`, `e386ae4`)** — 실 화면 스크린샷 3장(docs/images/) + LLM 해석 일반어 설명(수치 결정 0·빌드 1회·런타임 0회·top-40+기본 틀 fallback) + 실행 방법에 해석 생성 단계(선택 표기) + 커밋 수 표기 제거 + ★ **모바일 375px 실측**(동작하나 비율 차트 제목 겹침) 근거로 "데스크톱 브라우저 권장" 완화.
+- [x] **docs/methodology.md 작성 (2026-06-11, PR #17 `ed9081c`, `58e1615`)** — 7장 통합 문서(point-in-time 유니버스·룩어헤드/격리·D2 진단 사슬·위험 모델 정직 결과·상태 모델·LLM 역할·한계 종합). 새 주장 0 — 기존 박제 사실만. 라벨 양성 20(셀) vs pooled 37(평가 행) 단위 구분 명시. README+한계 페이지 참조 링크 2곳. ★ 자문 측 지시 "0년 2개" 구버전 오류를 Code 사전 검증이 확정본(0년 3개)으로 정정.
 
 ---
 
@@ -165,10 +175,14 @@
 - [x] **차트 성능 수정** — 상태 배경 배치 shapes (~115초→~0.16초, `8e4092e`).
 - [x] **종목 분석 UX 보완** — 위험 평가 시점 자동 surface·이유 info·상폐 caption (`17fde0a`).
 - [x] **LLM 해석 파이프라인 단계 1~6** — Provider/Gemini → 프롬프트 v2 → 배치 스크립트 → flash-lite 24개 생성 → 대시보드 연결 검증 (`ceb16d0`~`e282586`). §2 Done 참조.
-- 후속(모두 선택 — 결정 게이트):
-  - **LLM 해석 시총 상위 커버리지** — 무료 티어 20 req/day/모델 한도 → 두 모델(flash·flash-lite) 병행 시 40/day. 헤드라인 **top-40**(삼성전자 005930·SK 034730 등 36 신규) 우선 충원. *KOSPI200 전체(260)는 무료 티어 한도로 점진* — 헤드라인 우선 시연. ★ 시총순 옵션(`--order marcap` 또는 `--tickers`) 소폭 추가 필요(현재 ticker 정렬). 단, **marcap 절대값 부풀림(상대 순위 proxy 로만)** 주의.
-  - **누적분 main 병합** — perf·UX·§7.7·LLM 1~6 (`8e4092e`~`e282586`) PR.
-  - **국면(시장 상태) 안정화** · **(B) 상태 배경 클라이언트 렌더**(741 shapes 브라우저 부담) · **자잘 폴리시 / 브랜치·워크트리 정리**.
+- [x] **LLM 해석 시총 상위 커버리지** — top-40 완비 (PR #8·#9, §2 Done 참조).
+- [x] **누적분 main 병합** — PR #8 로 완료 (`cf998f1`).
+- [x] **감사 후속·UI 대개편 U1~U5·README·methodology** — 전부 완료 (PR #10~#17, §2 Done 참조).
+- 후속(2026-06-11 기준, **전부 선택** — 결정 게이트):
+  - **잔여 LLM 해석 ~200 종목 점진 충원** — 일 20~40 (무료 quota), `--scope latest --order marcap` 재실행 (resume/idempotent).
+  - **모바일 비율 차트 제목 겹침** — 375px 실측 발견(README 데스크톱 권장 완화로 정직 처리 완료), 미관 폴리시 후보.
+  - **KRX 상장일 이전 캐시 구간** — §4-pre 트리거(상장일 메타 작업 시) 유지.
+  - **국면(시장 상태) 안정화** — 평활화(과거 방향 한정)·시드 불안정성 후속 검토.
 
 > 아래 3.0~ 항목은 단계 2 시점의 과거 "다음 할 일" 기록 (보존).
 
@@ -2700,6 +2714,27 @@ KOSPI200 + 상폐 유니버스 기준 추정 *10~30건* 가능 (자본잠식·�
 
 > 확정되면 시간 역순으로 누적. 동시에 CLAUDE.md에도 반영한다.
 
+- **2026-06-11** — **마무리 체크리스트 완주** (PR #10~#17). 상세는 §2 Done.
+  핵심 결정·학습 박제:
+  - **감사 → 이행 사이클**: 읽기 전용 감사(약속 vs 실측 전수 대조)로 미이행
+    4건 발견 → 정직성 수정(PR #10)·README(PR #16)·methodology(PR #17)·
+    choppiness 박제로 **잔여 0**. *문서상 약속의 주기적 실측 대조* 가
+    정직성 유지 장치로 유효함을 확인.
+  - **UI 대개편 U1~U5** (PR #11~#15): 매 단계 outline 게이트 → 사용자 결정
+    → 적용 → **실 화면 스크린샷 검증**(Preview MCP) 사이클. 디자인 헌법
+    (색 절제·위계·차트 주인공·일관성) + 팔레트 A 차콜+시안.
+    구조 차원 근거는 *streamlit 소스 실측* (v1 자동 등록 차단·url_path
+    해시 정체성·st.Page ctx 조기 return) 으로 확정 후 진입.
+  - **프로세스 학습 2건**: ① gh REST 간헐 401 → CI 는 `gh run list` 교차
+    확인 + 병합은 GraphQL mutation 우회 (PR #13 확립, #14~#17 재사용).
+    ② ★ **CLEAN 조기 신호 차단** — PR 생성 직후 `mergeStateStatus=CLEAN`
+    이어도 head SHA 의 run 이 in_progress 일 수 있음 (PR #17 실측) →
+    *run 완료(success) 확정 후에만 병합* 규칙.
+  - **방법론 사례**: 자문 측 지시의 "0년 2개" 는 구버전 α 수치 — Code 의
+    §7.6 사전 실측(CLAUDE.md §4.1 확정본 0년 3개)이 본문 진입 전 정정.
+    *지시문 수치도 실측 검증 대상* (§5.5.11 정신의 재확인).
+  - 모바일 375px 실측: 동작하나 비율 차트 제목 겹침 → README "데스크톱
+    브라우저 권장" 으로 *과장 없이* 완화 (미검증 주장 제거).
 - **2026-06-03** — **LLM 해석 파이프라인 단계 1~6** end-to-end 작동·검증
   (`ceb16d0`~`e282586`). `src/frr/llm/` 단일 출구(§8.6): `LLMProvider` ABC +
   `GeminiProvider`(google-genai, 503/429 재시도) → `interpretation.py`
