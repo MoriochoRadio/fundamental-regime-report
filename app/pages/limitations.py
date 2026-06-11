@@ -39,6 +39,7 @@ def render() -> None:
         st.markdown("## 기술 상세 자료")
         for label, path in available:
             st.markdown(f"- [{label}]({_REPO_URL}/blob/main/{path})")
+        st.markdown(f"- [방법론 통합 문서]({_REPO_URL}/blob/main/docs/methodology.md)")
         st.caption(
             "기술 차원 문서입니다 — 클릭하면 저장소에서 열립니다 (일반인 직접 노출 본문 아님)."
         )

@@ -39,8 +39,8 @@ Claude 와 함께 만든 프로젝트입니다.
   문장으로 표시됩니다.
 - 웹 페이지 (Streamlit) 로 결과 표시
 
-자세한 기술 자료는 [`docs/`](docs/) + [`reports/`](reports/) 폴더 별도
-참조.
+자세한 기술 자료는 [방법론 문서](docs/methodology.md) 와
+[`reports/`](reports/) 의 모델 카드 참조.
 
 ---
 
